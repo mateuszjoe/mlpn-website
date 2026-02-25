@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/mlpn-website/static/css/main.2ca36459.css",
+    "main.js": "/mlpn-website/static/js/main.9cc3763c.js",
+    "index.html": "/mlpn-website/index.html",
+    "main.2ca36459.css.map": "/mlpn-website/static/css/main.2ca36459.css.map",
+    "main.9cc3763c.js.map": "/mlpn-website/static/js/main.9cc3763c.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.2ca36459.css",
+    "static/js/main.9cc3763c.js"
+  ]
+}
