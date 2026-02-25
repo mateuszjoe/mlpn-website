@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raport SEO – MLPN Sulejówek vs Konkurencja</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f0f2f5;--card:#fff;--dark:#111827;--accent:#2563eb;--green:#059669;--orange:#d97706;--red:#dc2626;--gray:#6b7280;--border:#e5e7eb;--radius:12px}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--dark);font-size:14px;line-height:1.5}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#111827,#1e3a5f);color:#fff;padding:28px 0}
+.hdr-inner{max-width:1360px;margin:0 auto;padding:0 20px}
+.hdr h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.hdr p{color:#94a3b8;font-size:13px}
+.hdr .badges{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+.hdr .badge{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;display:inline-block}
+.hdr .badge.ref{background:#f59e0b;color:#111}
+.hdr .badge.date{background:#334155;color:#cbd5e1}
+
+/* CONTAINER */
+.wrap{max-width:1360px;margin:0 auto;padding:16px 20px}
+
+/* ALERT */
+.alert-box{background:linear-gradient(90deg,#fef3c7,#fde68a);border:2px solid #f59e0b;border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start}
+.alert-box .ico{font-size:24px;line-height:1}
+.alert-box h3{font-size:14px;color:#92400e;margin-bottom:4px}
+.alert-box p{font-size:12.5px;color:#78350f;line-height:1.5}
+
+/* STAT CARDS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:20px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.sc .v{font-size:26px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.sc .l{font-size:10.5px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.sc.c-blue .v{color:var(--accent)}
+.sc.c-red .v{color:var(--red)}
+.sc.c-orange .v{color:var(--orange)}
+.sc.c-green .v{color:var(--green)}
+.sc.c-purple .v{color:#7c3aed}
+
+/* TABS */
+.tabs{display:flex;gap:2px;flex-wrap:wrap;background:#e5e7eb;border-radius:var(--radius) var(--radius) 0 0;padding:6px 6px 0}
+.tab-btn{padding:10px 18px;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--gray);border-radius:8px 8px 0 0;transition:.15s;white-space:nowrap}
+.tab-btn:hover{background:#d1d5db;color:var(--dark)}
+.tab-btn.on{background:var(--card);color:var(--accent);box-shadow:0 -2px 0 var(--accent) inset}
+
+/* PANELS */
+.pnl{display:none;background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:16px;margin-bottom:20px}
+.pnl.on{display:block}
+
+/* CONTROLS */
+.ctrl{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.ctrl input,.ctrl select{padding:7px 12px;border:1px solid var(--border);border-radius:6px;font:13px 'DM Sans',sans-serif;background:#fff}
+.ctrl input{width:200px}
+.ctrl input:focus,.ctrl select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.12)}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:700px}
+thead th{position:sticky;top:0;z-index:2;background:#f9fafb;padding:10px 10px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#6b7280;border-bottom:2px solid #e5e7eb;cursor:pointer;user-select:none;white-space:nowrap}
+thead th:hover{color:var(--dark)}
+thead th .arr{font-size:9px;opacity:.35;margin-left:3px}
+thead th.asc .arr,thead th.desc .arr{opacity:.9;color:var(--accent)}
+tbody td{padding:10px 10px;border-bottom:1px solid #f3f4f6;vertical-align:middle}
+tbody tr:hover{background:#f9fafb}
+
+/* STAR ROW */
+tbody tr.star{background:#fffbeb !important;border-left:3px solid #f59e0b}
+tbody tr.star:hover{background:#fef3c7 !important}
+tbody tr.star td:first-child{font-weight:700;color:#92400e}
+
+/* TAGS */
+.tg{display:inline-block;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;line-height:1.3;white-space:nowrap}
+.tg-g{background:#d1fae5;color:#065f46}
+.tg-w{background:#fef3c7;color:#92400e}
+.tg-b{background:#fee2e2;color:#991b1b}
+
+/* SCORE BADGE */
+.sb{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;font-weight:700;font-size:15px;font-family:'JetBrains Mono',monospace;color:#fff}
+.sb-h{background:#059669}
+.sb-m{background:#d97706}
+.sb-l{background:#dc2626}
+
+/* LINKS */
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* CHART */
+.chart-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px}
+.chart-box h2{font-size:16px;margin-bottom:14px}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bar-name{width:190px;font-size:12px;font-weight:500;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;height:24px;background:#f3f4f6;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:11px;font-weight:700;color:#fff;min-width:28px}
+.bf-h{background:linear-gradient(90deg,#059669,#34d399)}
+.bf-m{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.bf-l{background:linear-gradient(90deg,#dc2626,#f87171)}
+.legend{display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--gray);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:middle}
+
+/* SUMMARY */
+.sum{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+.sum h2{font-size:18px;margin-bottom:12px}
+.sum h3{font-size:14px;margin:14px 0 6px;color:#7c3aed}
+.sum ul{margin:0 0 8px 20px}.sum li{margin-bottom:4px;font-size:13px}
+.crit{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px;margin:10px 0}
+.crit h4{color:var(--red);font-size:13px;margin-bottom:4px}
+.qw{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:14px;margin:10px 0}
+.qw h4{color:var(--green);font-size:13px;margin-bottom:4px}
+code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11.5px}
+
+.footer{text-align:center;padding:20px;color:var(--gray);font-size:11px;border-top:1px solid var(--border);margin-top:20px}
+
+@media(max-width:768px){
+.tab-btn{padding:8px 10px;font-size:11px}
+.ctrl{flex-direction:column}.ctrl input,.ctrl select{width:100%}
+.bar-name{width:100px;font-size:10px}
+.alert-box{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr"><div class="hdr-inner">
+<h1>⚽ Raport SEO — Amatorskie Ligi Piłki Nożnej</h1>
+<p>Analiza 16 stron konkurencji w promieniu 100 km od Sulejówka</p>
+<div class="badges">
+<span class="badge ref">⭐ Strona referencyjna: mlpn.pl</span>
+<span class="badge date">📅 Luty 2026 · v2 · 16 stron · 5 kategorii</span>
+</div>
+</div></div>
+
+<div class="wrap">
+
+<!-- ALERT -->
+<div class="alert-box">
+<div class="ico">🚨</div>
+<div>
+<h3>Krytyczne problemy mlpn.pl wymagające natychmiastowej naprawy</h3>
+<p><strong>①</strong> Brak HTTPS/SSL — strona na HTTP &nbsp; <strong>②</strong> Title = „Wiadomości" — zerowa wartość SEO &nbsp; <strong>③</strong> Brak meta description &nbsp; <strong>④</strong> Brak cookie banner i polityki prywatności (RODO) &nbsp; <strong>⑤</strong> Publiczne dane logowania VEO na stronie</p>
+</div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+<div class="sc c-blue"><div class="v">16</div><div class="l">Analizowanych stron</div></div>
+<div class="sc c-red"><div class="v">75%</div><div class="l">Brak meta description</div></div>
+<div class="sc c-orange"><div class="v">63%</div><div class="l">Brak Schema.org</div></div>
+<div class="sc c-green"><div class="v">75%</div><div class="l">Ma SSL/HTTPS</div></div>
+<div class="sc c-purple"><div class="v">5.0</div><div class="l">Średnia branży /10</div></div>
+<div class="sc c-red"><div class="v">2.2</div><div class="l">Ocena mlpn.pl /10</div></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs" id="tabs">
+<button class="tab-btn on" data-t="0">🏷️ Meta & Title</button>
+<button class="tab-btn" data-t="1">📝 Treść & H1</button>
+<button class="tab-btn" data-t="2">⚙️ Tech SEO</button>
+<button class="tab-btn" data-t="3">📍 Lokalne SEO</button>
+<button class="tab-btn" data-t="4">🔒 Bezpieczeństwo</button>
+</div>
+
+<!-- ════ PANEL 0: META ════ -->
+<div class="pnl on" id="p0">
+<div class="ctrl">
+<input type="text" placeholder="🔍 Szukaj strony…" data-f="0">
+<select data-s="0"><option value="">Wszystkie oceny</option><option value="h">🟢 Wysokie (7-10)</option><option value="m">🟠 Średnie (4-6)</option><option value="l">🔴 Niskie (0-3)</option></select>
+</div>
+<div class="tbl-wrap"><table id="t0"><thead><tr>
+<th data-i="0"># <span class="arr">⇅</span></th>
+<th data-i="1">Strona <span class="arr">⇅</span></th>
+<th data-i="2">Title <span class="arr">⇅</span></th>
+<th data-i="3">Dł. <span class="arr">⇅</span></th>
+<th data-i="4">Meta Description <span class="arr">⇅</span></th>
+<th data-i="5">Keyword w title <span class="arr">⇅</span></th>
+<th data-i="6">Lokalizacja w title <span class="arr">⇅</span></th>
+<th data-i="7">Ocena <span class="arr">⇅</span></th>
+</tr></thead><tbody>
+<tr class="star"><td>⭐1</td><td><a href="http://mlpn.pl" target="_blank">mlpn.pl</a></td><td><strong style="color:#dc2626">„Wiadomości" ❌</strong></td><td>11</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-l">1</span></td></tr>
+<tr><td>2</td><td><a href="https://superliga6.pl" target="_blank">superliga6.pl</a></td><td>SuperLiga6 - Rozgrywki piłkarskie szóstek</td><td>45</td><td><span class="tg tg-w">⚠️ Generyczne</span></td><td><span class="tg tg-g">✅ szóstki, piłkarskie</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>3</td><td><a href="https://ligabobra.pl" target="_blank">ligabobra.pl</a></td><td>Liga Bobra – amatorska liga szóstek</td><td>37</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ liga, szóstki, amatorska</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>4</td><td><a href="https://minskaligamistrzow.pl" target="_blank">minskaligamistrzow.pl</a></td><td>Topaz Mińska Liga Mistrzów</td><td>54</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ liga, amatorska</span></td><td><span class="tg tg-g">✅ Mińska</span></td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>5</td><td><a href="https://nocnaligahalowa.pl" target="_blank">nocnaligahalowa.pl</a> <span class="tg tg-g">v2!</span></td><td>Nocna Liga Halowa - oficjalny serwis</td><td>38</td><td><span class="tg tg-w">⚠️ Brak dedykowanego</span></td><td><span class="tg tg-g">✅ liga, halowa</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>6</td><td><a href="https://ligafanow.pl" target="_blank">ligafanow.pl</a></td><td>Liga Fanów - Liga Szóstek w Warszawie</td><td>50</td><td><span class="tg tg-g">✅ Dobry</span></td><td><span class="tg tg-g">✅ liga, szóstki</span></td><td><span class="tg tg-g">✅ Warszawa</span></td><td><span class="sb sb-h">7</span></td></tr>
+<tr><td>7</td><td><a href="https://www.ligowiec.pl" target="_blank">ligowiec.pl</a></td><td>Ligowiec - wyniki, terminarz i ligi</td><td>48</td><td><span class="tg tg-g">✅ Dobry</span></td><td><span class="tg tg-g">✅ ligi, piłkarskie</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>8</td><td><a href="https://www.ligaszostek.pl" target="_blank">ligaszostek.pl</a></td><td>Liga Szóstek - Amatorska Liga PN – Warszawa</td><td>54</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ liga, szóstki</span></td><td><span class="tg tg-g">✅ Warszawa</span></td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>9</td><td><a href="https://www.wls.com.pl" target="_blank">wls.com.pl</a></td><td>WLS - Amatorskie rozgrywki siódemek</td><td>55</td><td><span class="tg tg-g">✅ Rozbudowany</span></td><td><span class="tg tg-g">✅ liga, siódemki</span></td><td><span class="tg tg-w">⚠️ W treści</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>10</td><td><a href="https://ligabemowska.pl" target="_blank">ligabemowska.pl</a></td><td>LIGA BEMOWSKA - szóstek - Warszawa</td><td>55</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ liga, szóstki</span></td><td><span class="tg tg-g">✅ Warszawa</span></td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>11</td><td><a href="https://wlo.app" target="_blank">wlo.app</a></td><td>Warszawska Liga Osiedlowa</td><td>42</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ liga</span></td><td><span class="tg tg-g">✅ Warszawska</span></td><td><span class="sb sb-m">4</span></td></tr>
+<tr><td>12</td><td><a href="https://playarena.pl" target="_blank">playarena.pl</a></td><td>Amatorskie ligi piłki nożnej</td><td>29</td><td><span class="tg tg-g">✅ Dobry</span></td><td><span class="tg tg-g">✅ ligi, piłka nożna</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>13</td><td><a href="https://www.mlf.org.pl" target="_blank">mlf.org.pl</a></td><td>MLF - rozgrywki szóstek i siódemek</td><td>48</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ rozgrywki</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-l">3</span></td></tr>
+<tr><td>14</td><td><a href="https://www.ligihalowe.pl" target="_blank">ligihalowe.pl</a></td><td>LigiHalowe.pl - Portal Halowej PN</td><td>54</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ halowa</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">4</span></td></tr>
+<tr><td>15</td><td><a href="https://zniczpruszkow.com.pl" target="_blank">zniczpruszkow.com.pl</a></td><td>ALF Znicz Pruszków</td><td>42</td><td><span class="tg tg-w">⚠️ Generyczne</span></td><td><span class="tg tg-g">✅ liga, amatorska</span></td><td><span class="tg tg-g">✅ Pruszków</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>16</td><td><a href="https://mosirradomalpn.futbolowo.pl" target="_blank">mosirradomalpn</a></td><td>ALPN - strona rozgrywek</td><td>48</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ liga, piłka</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-l">3</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- ════ PANEL 1: TREŚĆ ════ -->
+<div class="pnl" id="p1">
+<div class="ctrl">
+<input type="text" placeholder="🔍 Szukaj strony…" data-f="1">
+<select data-s="1"><option value="">Wszystkie oceny</option><option value="h">🟢 Wysokie (7-10)</option><option value="m">🟠 Średnie (4-6)</option><option value="l">🔴 Niskie (0-3)</option></select>
+</div>
+<div class="tbl-wrap"><table id="t1"><thead><tr>
+<th data-i="0">Strona <span class="arr">⇅</span></th>
+<th data-i="1">H1 <span class="arr">⇅</span></th>
+<th data-i="2">Oferta / Zakres <span class="arr">⇅</span></th>
+<th data-i="3">CTA <span class="arr">⇅</span></th>
+<th data-i="4">FAQ <span class="arr">⇅</span></th>
+<th data-i="5">Blog <span class="arr">⇅</span></th>
+<th data-i="6">Kalkulator <span class="arr">⇅</span></th>
+<th data-i="7">Social proof / USP <span class="arr">⇅</span></th>
+<th data-i="8">Ocena <span class="arr">⇅</span></th>
+</tr></thead><tbody>
+<tr class="star"><td>⭐ mlpn.pl</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ 3 ligi + Puchar, od 2003</span></td><td><span class="tg tg-b">❌ Brak CTA</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ Aktualności, VEO</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ 13 sponsorów, HAMAG</span></td><td><span class="sb sb-m">4</span></td></tr>
+<tr><td>superliga6.pl</td><td><span class="tg tg-w">⚠️ Brak widocznego</span></td><td><span class="tg tg-g">✅ Szóstki, MP, EMF</span></td><td><span class="tg tg-g">✅ Dołącz do nas</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ Aktualności</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ 24 miasta, sponsorzy</span></td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>ligabobra.pl</td><td><span class="tg tg-w">⚠️ Artykuł jako H1</span></td><td><span class="tg tg-g">✅ 3 ligi, PLPN</span></td><td><span class="tg tg-w">⚠️ Słabe</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ Blog, podcast, VEO</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ 27 edycji, sponsorzy</span></td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>minskaligamistrzow.pl</td><td><span class="tg tg-w">⚠️ Tytuł artykułu</span></td><td><span class="tg tg-g">✅ 2 ligi, galeria</span></td><td><span class="tg tg-g">✅ Zgłoś drużynę</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ Aktualności + video</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-w">⚠️ Sponsor tytularny</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>nocnaligahalowa.pl <span class="tg tg-g">v2!</span></td><td><span class="tg tg-g">✅ Poprawny H1</span></td><td><span class="tg tg-g">✅ 5 lig, rankingi, puchar</span></td><td><span class="tg tg-g">✅ Zgłoś drużynę!</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ News, LIVE, video, wywiady</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ 8 partnerów, BETFAN, XIX ed.</span></td><td><span class="sb sb-h">8</span></td></tr>
+<tr><td>ligafanow.pl</td><td><span class="tg tg-w">⚠️ JS-rendered</span></td><td><span class="tg tg-g">✅ 16 lig, turnieje</span></td><td><span class="tg tg-g">✅ Zgłoś drużynę</span></td><td><span class="tg tg-g">✅ FAQ!</span></td><td><span class="tg tg-g">✅ Blog + VEO + video</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ Gold Team, partnerzy</span></td><td><span class="sb sb-h">8</span></td></tr>
+<tr><td>ligowiec.pl</td><td><span class="tg tg-w">⚠️ Brak widocznego</span></td><td><span class="tg tg-g">✅ Weekend + Biznes</span></td><td><span class="tg tg-g">✅ Zapisz się</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ Aktualności + wideo</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ 28 lat, 1000+ graczy</span></td><td><span class="sb sb-h">7</span></td></tr>
+<tr><td>ligaszostek.pl</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-w">⚠️ Ogólnikowa</span></td><td><span class="tg tg-w">⚠️ Zgłoszenia</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-w">⚠️ 20+ lat</span></td><td><span class="sb sb-l">3</span></td></tr>
+<tr><td>wls.com.pl</td><td><span class="tg tg-w">⚠️ Nieoptymalne</span></td><td><span class="tg tg-g">✅ Szóstki, siódemki</span></td><td><span class="tg tg-w">⚠️ Kontakt tel.</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ Aktualności</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ 22 lata</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>ligabemowska.pl</td><td><span class="tg tg-w">⚠️ JS-rendered</span></td><td><span class="tg tg-g">✅ 19 lig! + futsal</span></td><td><span class="tg tg-g">✅ Wiosna 2026</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ Aktualności</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ Bostik</span></td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>wlo.app</td><td><span class="tg tg-w">⚠️ JS</span></td><td><span class="tg tg-w">⚠️ Minimalna</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="sb sb-l">2</span></td></tr>
+<tr><td>playarena.pl</td><td><span class="tg tg-w">⚠️ JS app</span></td><td><span class="tg tg-g">✅ 90 miast</span></td><td><span class="tg tg-g">✅ Darmowe granie</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-w">⚠️ Min.</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ 90 miast</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>mlf.org.pl</td><td><span class="tg tg-b">❌ Przestarzały</span></td><td><span class="tg tg-w">⚠️ Treść 2012</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="sb sb-l">1</span></td></tr>
+<tr><td>ligihalowe.pl</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-w">⚠️ Portal katalog</span></td><td><span class="tg tg-w">⚠️ Załóż konto</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="sb sb-l">2</span></td></tr>
+<tr><td>zniczpruszkow.com.pl</td><td><span class="tg tg-g">✅ Obecny</span></td><td><span class="tg tg-g">✅ Liga, regulamin</span></td><td><span class="tg tg-g">✅ Zgłoś się</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ News</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ Min. Sportu</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>mosirradomalpn</td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-w">⚠️ 7-os. MOSiR</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-g">✅ Aktualności</span></td><td><span class="tg tg-b">❌</span></td><td><span class="tg tg-b">❌</span></td><td><span class="sb sb-l">2</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- ════ PANEL 2: TECH SEO ════ -->
+<div class="pnl" id="p2">
+<div class="ctrl">
+<input type="text" placeholder="🔍 Szukaj strony…" data-f="2">
+<select data-s="2"><option value="">Wszystkie oceny</option><option value="h">🟢 Wysokie (7-10)</option><option value="m">🟠 Średnie (4-6)</option><option value="l">🔴 Niskie (0-3)</option></select>
+</div>
+<div class="tbl-wrap"><table id="t2"><thead><tr>
+<th data-i="0">Strona <span class="arr">⇅</span></th>
+<th data-i="1">SSL <span class="arr">⇅</span></th>
+<th data-i="2">Obrazy / Lazy <span class="arr">⇅</span></th>
+<th data-i="3">Sitemap <span class="arr">⇅</span></th>
+<th data-i="4">Schema.org <span class="arr">⇅</span></th>
+<th data-i="5">Open Graph <span class="arr">⇅</span></th>
+<th data-i="6">Stack technologiczny <span class="arr">⇅</span></th>
+<th data-i="7">Ocena <span class="arr">⇅</span></th>
+</tr></thead><tbody>
+<tr class="star"><td>⭐ mlpn.pl</td><td><span class="tg tg-b">❌ HTTP!</span></td><td><span class="tg tg-b">❌ HTTP img, brak lazy</span></td><td><span class="tg tg-w">⚠️ WP auto</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>WordPress + RealSoccer + JoomSport</td><td><span class="sb sb-l">2</span></td></tr>
+<tr><td>superliga6.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td><span class="tg tg-w">⚠️ Brak lazy</span></td><td><span class="tg tg-w">⚠️ Nieznane</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>Joomla + PHP</td><td><span class="sb sb-m">4</span></td></tr>
+<tr><td>ligabobra.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td><span class="tg tg-g">✅ Lazy load</span></td><td><span class="tg tg-g">✅ WP auto</span></td><td><span class="tg tg-w">⚠️ Minimalne</span></td><td><span class="tg tg-w">⚠️ Podstawowe</span></td><td>WordPress</td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>minskaligamistrzow.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td><span class="tg tg-w">⚠️ Duże zdjęcia</span></td><td><span class="tg tg-g">✅ WP auto</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-w">⚠️ Podstawowe</span></td><td>WordPress</td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>nocnaligahalowa.pl <span class="tg tg-g">v2!</span></td><td><span class="tg tg-g">✅ HTTPS</span></td><td><span class="tg tg-g">✅ SVG logo, lazy img</span></td><td><span class="tg tg-w">⚠️ Nieznane</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-w">⚠️ Podstawowe</span></td><td>Custom (Planar) SSR</td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>ligafanow.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td><span class="tg tg-g">✅ Webp</span></td><td><span class="tg tg-w">⚠️ Nieznane</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-w">⚠️ Podstawowe</span></td><td>Custom PHP + JS</td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>ligowiec.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td><span class="tg tg-g">✅ Lazy + SVG</span></td><td><span class="tg tg-g">✅ WP auto</span></td><td><span class="tg tg-w">⚠️ Minimalne</span></td><td><span class="tg tg-g">✅ Pełne OG</span></td><td>WordPress (nowoczesny)</td><td><span class="sb sb-h">7</span></td></tr>
+<tr><td>ligaszostek.pl</td><td><span class="tg tg-w">⚠️ Mixed content</span></td><td><span class="tg tg-b">❌ Ciężkie</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>Joomla (stary)</td><td><span class="sb sb-l">2</span></td></tr>
+<tr><td>wls.com.pl</td><td><span class="tg tg-b">❌ HTTP!</span></td><td><span class="tg tg-b">❌ Ciężkie</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>Custom PHP (stary)</td><td><span class="sb sb-l">1</span></td></tr>
+<tr><td>ligabemowska.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td><span class="tg tg-w">⚠️ JS-dependent</span></td><td><span class="tg tg-w">⚠️ Nieznane</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ FB Pixel</span></td><td>Joomla + SportsPress</td><td><span class="sb sb-m">4</span></td></tr>
+<tr><td>wlo.app</td><td><span class="tg tg-g">✅ HTTPS</span></td><td><span class="tg tg-b">❌ SPA</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>SPA React</td><td><span class="sb sb-l">2</span></td></tr>
+<tr><td>playarena.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td><span class="tg tg-w">⚠️ JS-heavy</span></td><td><span class="tg tg-w">⚠️ Częściowe</span></td><td><span class="tg tg-w">⚠️ Minimalne</span></td><td><span class="tg tg-g">✅ Pełne OG</span></td><td>Custom app</td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>mlf.org.pl</td><td><span class="tg tg-b">❌ HTTP!</span></td><td><span class="tg tg-b">❌ Stare</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>PHP archaiczny</td><td><span class="sb sb-l">1</span></td></tr>
+<tr><td>ligihalowe.pl</td><td><span class="tg tg-b">❌ HTTP!</span></td><td><span class="tg tg-b">❌ Stare</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>PHP archaiczny</td><td><span class="sb sb-l">1</span></td></tr>
+<tr><td>zniczpruszkow.com.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td><span class="tg tg-g">✅ WP lazy</span></td><td><span class="tg tg-g">✅ WP auto</span></td><td><span class="tg tg-w">⚠️ Minimalne</span></td><td><span class="tg tg-g">✅ OG</span></td><td>WordPress</td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>mosirradomalpn</td><td><span class="tg tg-w">⚠️ futbolowo</span></td><td><span class="tg tg-b">❌ Stare</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>futbolowo CMS</td><td><span class="sb sb-l">2</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- ════ PANEL 3: LOKALNE SEO ════ -->
+<div class="pnl" id="p3">
+<div class="ctrl">
+<input type="text" placeholder="🔍 Szukaj strony…" data-f="3">
+<select data-s="3"><option value="">Wszystkie oceny</option><option value="h">🟢 Wysokie (7-10)</option><option value="m">🟠 Średnie (4-6)</option><option value="l">🔴 Niskie (0-3)</option></select>
+</div>
+<div class="tbl-wrap"><table id="t3"><thead><tr>
+<th data-i="0">Strona <span class="arr">⇅</span></th>
+<th data-i="1">Lokalizacja w title/H1 <span class="arr">⇅</span></th>
+<th data-i="2">Miasta w treści <span class="arr">⇅</span></th>
+<th data-i="3">NAP (nazwa/adres/tel) <span class="arr">⇅</span></th>
+<th data-i="4">Google Maps <span class="arr">⇅</span></th>
+<th data-i="5">Podstrony lokalne <span class="arr">⇅</span></th>
+<th data-i="6">Ocena <span class="arr">⇅</span></th>
+</tr></thead><tbody>
+<tr class="star"><td>⭐ mlpn.pl</td><td><span class="tg tg-b">❌ Brak! Title=„Wiadomości"</span></td><td><span class="tg tg-g">✅ Sulejówek, Okuniew, Wołomin</span></td><td><span class="tg tg-w">⚠️ Email+FB, brak adresu</span></td><td><span class="tg tg-w">⚠️ Str. Boisko bez embed</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-l">3</span></td></tr>
+<tr><td>superliga6.pl</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ 24 miasta na mapie</span></td><td><span class="tg tg-g">✅ Tel</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ Poddomeny miast</span></td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>ligabobra.pl</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ Tłuszcz, Wyszków</span></td><td><span class="tg tg-g">✅ Email, tel, adres</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ PLPN Wyszków</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>minskaligamistrzow.pl</td><td><span class="tg tg-g">✅ „Mińska" w nazwie</span></td><td><span class="tg tg-g">✅ Mińsk Mazowiecki</span></td><td><span class="tg tg-w">⚠️ Kontakt</span></td><td><span class="tg tg-g">✅ Podstrona boiska</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>nocnaligahalowa.pl <span class="tg tg-g">v2!</span></td><td><span class="tg tg-b">❌ Brak w title</span></td><td><span class="tg tg-g">✅ Zielonka, Kobyłka</span></td><td><span class="tg tg-g">✅ Email, tel, kontakt</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">4</span></td></tr>
+<tr><td>ligafanow.pl</td><td><span class="tg tg-g">✅ „w Warszawie"</span></td><td><span class="tg tg-g">✅ Ożarów, Warszawa</span></td><td><span class="tg tg-g">✅ Kontakt, boiska</span></td><td><span class="tg tg-g">✅ Podstrona boisk</span></td><td><span class="tg tg-g">✅ Łódź subdomena</span></td><td><span class="sb sb-h">8</span></td></tr>
+<tr><td>ligowiec.pl</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ Mokotów</span></td><td><span class="tg tg-g">✅ Adres, kontakt</span></td><td><span class="tg tg-w">⚠️ Wynajem boisk</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">4</span></td></tr>
+<tr><td>ligaszostek.pl</td><td><span class="tg tg-g">✅ „Warszawa"</span></td><td><span class="tg tg-g">✅ Warszawa</span></td><td><span class="tg tg-g">✅ Pełny NAP</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>wls.com.pl</td><td><span class="tg tg-w">⚠️ „Warszawska" w opisie</span></td><td><span class="tg tg-g">✅ Wiele dzielnic</span></td><td><span class="tg tg-g">✅ Tel</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">4</span></td></tr>
+<tr><td>ligabemowska.pl</td><td><span class="tg tg-g">✅ „Warszawa"</span></td><td><span class="tg tg-g">✅ Bemowo</span></td><td><span class="tg tg-w">⚠️ Ograniczone</span></td><td><span class="tg tg-w">⚠️ Obiekty</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>wlo.app</td><td><span class="tg tg-g">✅ „Warszawska"</span></td><td><span class="tg tg-w">⚠️ Ogólne</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-l">3</span></td></tr>
+<tr><td>playarena.pl</td><td><span class="tg tg-b">❌ Ogólnopolskie</span></td><td><span class="tg tg-g">✅ 90 miast</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ Podstrony miast</span></td><td><span class="sb sb-m">4</span></td></tr>
+<tr><td>mlf.org.pl</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-w">⚠️ Wołomin ogólne</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-l">1</span></td></tr>
+<tr><td>ligihalowe.pl</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ Województwa</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ Filtry regionalne</span></td><td><span class="sb sb-l">3</span></td></tr>
+<tr><td>zniczpruszkow.com.pl</td><td><span class="tg tg-g">✅ „Pruszków"</span></td><td><span class="tg tg-g">✅ Pruszków, adres</span></td><td><span class="tg tg-g">✅ Pełny NAP</span></td><td><span class="tg tg-w">⚠️ Na str. klubu</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>mosirradomalpn</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-g">✅ Radom</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="sb sb-l">2</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- ════ PANEL 4: BEZPIECZEŃSTWO ════ -->
+<div class="pnl" id="p4">
+<div class="ctrl">
+<input type="text" placeholder="🔍 Szukaj strony…" data-f="4">
+<select data-s="4"><option value="">Wszystkie oceny</option><option value="h">🟢 Wysokie (7-10)</option><option value="m">🟠 Średnie (4-6)</option><option value="l">🔴 Niskie (0-3)</option></select>
+</div>
+<div class="tbl-wrap"><table id="t4"><thead><tr>
+<th data-i="0">Strona <span class="arr">⇅</span></th>
+<th data-i="1">SSL / HTTPS <span class="arr">⇅</span></th>
+<th data-i="2">Serwer / CMS <span class="arr">⇅</span></th>
+<th data-i="3">Cookie banner <span class="arr">⇅</span></th>
+<th data-i="4">Polityka prywatności <span class="arr">⇅</span></th>
+<th data-i="5">RODO w formularzach <span class="arr">⇅</span></th>
+<th data-i="6">Uwagi <span class="arr">⇅</span></th>
+<th data-i="7">Ocena <span class="arr">⇅</span></th>
+</tr></thead><tbody>
+<tr class="star"><td>⭐ mlpn.pl</td><td><span class="tg tg-b">❌ HTTP!</span></td><td>WP + RealSoccer</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Publ. hasła VEO!</span></td><td><strong style="color:#dc2626">HTTP + brak RODO + publiczne hasła</strong></td><td><span class="sb sb-l">1</span></td></tr>
+<tr><td>superliga6.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td>Joomla</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-w">⚠️ Nieznane</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>Wymaga JS do działania</td><td><span class="sb sb-m">4</span></td></tr>
+<tr><td>ligabobra.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td>WordPress</td><td><span class="tg tg-g">✅ Tak</span></td><td><span class="tg tg-g">✅ Osobna podstrona</span></td><td><span class="tg tg-w">⚠️ Kontakt email</span></td><td>Poprawnie wdrożone RODO</td><td><span class="sb sb-h">7</span></td></tr>
+<tr><td>minskaligamistrzow.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td>WordPress</td><td><span class="tg tg-w">⚠️ Niewidoczny</span></td><td><span class="tg tg-w">⚠️ Nieznane</span></td><td><span class="tg tg-w">⚠️ Rejestracja</span></td><td>System logowania użytkowników</td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>nocnaligahalowa.pl <span class="tg tg-g">v2!</span></td><td><span class="tg tg-g">✅ HTTPS</span></td><td>Custom (Planar)</td><td><span class="tg tg-w">⚠️ Brak widocznego</span></td><td><span class="tg tg-g">✅ Polityka prywatności</span></td><td><span class="tg tg-g">✅ Regulamin serwisu</span></td><td>Nowy serwis, SSR, profesjonalny</td><td><span class="sb sb-m">6</span></td></tr>
+<tr><td>ligafanow.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td>Custom PHP</td><td><span class="tg tg-w">⚠️ Reklamy</span></td><td><span class="tg tg-w">⚠️ Niejasne</span></td><td><span class="tg tg-g">✅ Formularz</span></td><td>Dużo JS, trackery reklamowe</td><td><span class="sb sb-m">5</span></td></tr>
+<tr><td>ligowiec.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td>WordPress</td><td><span class="tg tg-g">✅ Tak</span></td><td><span class="tg tg-g">✅ Obecna</span></td><td><span class="tg tg-g">✅ Formularz</span></td><td>Najlepiej zabezpieczona strona</td><td><span class="sb sb-h">7</span></td></tr>
+<tr><td>ligaszostek.pl</td><td><span class="tg tg-w">⚠️ Mixed content</span></td><td>Joomla (stary)</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>Przestarzały CMS</td><td><span class="sb sb-l">2</span></td></tr>
+<tr><td>wls.com.pl</td><td><span class="tg tg-b">❌ HTTP!</span></td><td>Custom PHP</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>Brak HTTPS — poważny problem</td><td><span class="sb sb-l">1</span></td></tr>
+<tr><td>ligabemowska.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td>Joomla</td><td><span class="tg tg-w">⚠️ Niewidoczny</span></td><td><span class="tg tg-w">⚠️ Nieznane</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>FB Pixel bez cookie consent</td><td><span class="sb sb-m">4</span></td></tr>
+<tr><td>wlo.app</td><td><span class="tg tg-g">✅ HTTPS</span></td><td>SPA React</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>Pusta strona bez JS</td><td><span class="sb sb-l">2</span></td></tr>
+<tr><td>playarena.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td>Custom</td><td><span class="tg tg-g">✅ Tak</span></td><td><span class="tg tg-g">✅ Obecna</span></td><td><span class="tg tg-g">✅ Formularze</span></td><td>Profesjonalna platforma</td><td><span class="sb sb-h">7</span></td></tr>
+<tr><td>mlf.org.pl</td><td><span class="tg tg-b">❌ HTTP!</span></td><td>PHP</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>Archaiczna strona</td><td><span class="sb sb-l">1</span></td></tr>
+<tr><td>ligihalowe.pl</td><td><span class="tg tg-b">❌ HTTP!</span></td><td>PHP</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>Brak SSL</td><td><span class="sb sb-l">1</span></td></tr>
+<tr><td>zniczpruszkow.com.pl</td><td><span class="tg tg-g">✅ HTTPS</span></td><td>WordPress</td><td><span class="tg tg-g">✅ Tak</span></td><td><span class="tg tg-g">✅ Obecna</span></td><td><span class="tg tg-g">✅ RODO</span></td><td>Dobrze zarządzana strona</td><td><span class="sb sb-h">7</span></td></tr>
+<tr><td>mosirradomalpn</td><td><span class="tg tg-w">⚠️ futbolowo.pl</span></td><td>futbolowo CMS</td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td><span class="tg tg-b">❌ Brak</span></td><td>Na platformie 3rd party</td><td><span class="sb sb-l">2</span></td></tr>
+</tbody></table></div>
+</div>
+
+<!-- ════ CHART ════ -->
+<div class="chart-box">
+<h2>📊 Ranking ogólny — średnia ocena SEO z 5 kategorii</h2>
+<div id="chart"></div>
+<div class="legend">
+<span><i style="background:#059669"></i> 7-10 Wysoka</span>
+<span><i style="background:#d97706"></i> 4-6 Średnia</span>
+<span><i style="background:#dc2626"></i> 0-3 Niska</span>
+<span><i style="background:#f59e0b"></i> ⭐ mlpn.pl</span>
+</div>
+</div>
+
+<!-- ════ SUMMARY ════ -->
+<div class="sum">
+<h2>📋 Podsumowanie i rekomendacje dla mlpn.pl</h2>
+
+<div class="crit">
+<h4>🚨 KRYTYCZNE — napraw natychmiast</h4>
+<ul>
+<li><strong>SSL/HTTPS</strong> — mlpn.pl działa na HTTP! Google od 2018 oznacza jako „Niezabezpieczone". Włącz SSL w panelu hostingu (Let's Encrypt) + plugin Really Simple SSL.</li>
+<li><strong>Title = „Wiadomości"</strong> — to title motywu WP! Zmień na: <code>MLPN Sulejówek – Miejska Liga Piłki Nożnej | od 2003 roku</code></li>
+<li><strong>Meta Description</strong> — dodaj: <code>Amatorska liga piłki nożnej w Sulejówku. 30 drużyn, 3 ligi, format ósemek od 2003 roku. Dołącz!</code></li>
+<li><strong>Publiczne dane logowania VEO</strong> — login i hasło widoczne na str. głównej. Przenieś do strefy zalogowanych.</li>
+<li><strong>RODO</strong> — brak polityki prywatności, cookie banner, klauzul w formularzach. Obowiązek prawny!</li>
+</ul>
+</div>
+
+<div class="qw">
+<h4>🎯 QUICK WINS — szybkie poprawki (~2h łącznie)</h4>
+<ul>
+<li><strong>Title + Meta (5 min)</strong> — WordPress → Ustawienia lub Yoast SEO</li>
+<li><strong>SSL (15 min)</strong> — panel hostingu + Really Simple SSL</li>
+<li><strong>H1 (5 min)</strong> — dodaj: <code>&lt;h1&gt;Miejska Liga Piłki Nożnej w Sulejówku&lt;/h1&gt;</code></li>
+<li><strong>Schema.org (15 min)</strong> — JSON-LD SportsOrganization — <strong>NIKT z konkurencji tego nie ma!</strong></li>
+<li><strong>Google Maps embed (5 min)</strong> — na podstronie „Boisko" dodaj embed mapy SP4</li>
+<li><strong>Open Graph (10 min)</strong> — zainstaluj Yoast SEO → automatycznie doda OG tags</li>
+<li><strong>FAQ (30 min)</strong> — „Jak dołączyć?", „Ile kosztuje?", „Gdzie gramy?" — jedyna ligafanow.pl to ma</li>
+<li><strong>CTA „Zgłoś drużynę" (10 min)</strong> — wyraźny przycisk na str. głównej</li>
+</ul>
+</div>
+
+<h3>🏆 TOP 3 najlepszych stron w branży</h3>
+<ul>
+<li><strong>ligafanow.pl</strong> (śr. 6.6) — FAQ, 16 lig, VEO, lokalne SEO z „Warszawa", formularz</li>
+<li><strong>ligowiec.pl</strong> (śr. 6.2) — najlepszy tech SEO (lazy, OG, sitemap), RODO, 28 lat</li>
+<li><strong>ligabobra.pl</strong> (śr. 5.6) — RODO, podcast, VEO, najbliższy konkurent (~20km)</li>
+<li><strong>nocnaligahalowa.pl</strong> (śr. 5.6) — <span class="tg tg-g">NOWA STRONA!</span> 5 lig, transmisje LIVE, BETFAN, CTA, polityka prywatności — ogromny skok z 3.0 na 5.6!</li>
+</ul>
+
+<h3>💡 Przewagi mlpn.pl do wykorzystania</h3>
+<ul>
+<li><strong>23 sezony (od 2003)</strong> — jedna z najdłużej działających lig w Polsce!</li>
+<li><strong>30 drużyn, 3 ligi</strong> — większa skala niż większość konkurencji</li>
+<li><strong>Format ósemek (8v8)</strong> — unikalny! Konkurencja gra szóstki. To wyróżnik SEO</li>
+<li><strong>VEO nagrania</strong> — lepiej eksponuj na stronie</li>
+<li><strong>13 sponsorów (w tym HAMAG)</strong> — silny social proof</li>
+<li><strong>Członek SuperLiga6</strong> — prestiż, Mistrzostwa Polski</li>
+</ul>
+
+<h3>📈 Plan SEO na 3 miesiące</h3>
+<ul>
+<li><strong>Tydzień 1:</strong> SSL + Title + Meta + H1 + Schema.org JSON-LD</li>
+<li><strong>Tydzień 2:</strong> Yoast SEO (OG + sitemap) + cookie banner + polityka prywatności</li>
+<li><strong>Tydzień 3:</strong> FAQ + CTA „Zgłoś drużynę" + Google Maps embed</li>
+<li><strong>Miesiąc 2:</strong> Google Moja Firma profil + optymalizacja podstron</li>
+<li><strong>Miesiąc 3:</strong> Blog z relacjami + galeria zdjęć + podstrona „O lidze" z historią</li>
+</ul>
+</div>
+
+</div><!-- /wrap -->
+
+<div class="footer">⚽ Raport SEO · mlpn.pl vs 15 konkurencyjnych lig · Luty 2026 · Branża: amatorska liga piłki nożnej</div>
+
+<script>
+// TABS
+document.getElementById('tabs').addEventListener('click',e=>{
+  const btn=e.target.closest('.tab-btn');if(!btn)return;
+  const i=+btn.dataset.t;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.pnl').forEach((p,j)=>p.classList.toggle('on',j===i));
+});
+
+// FILTER TEXT
+document.querySelectorAll('[data-f]').forEach(inp=>{
+  inp.addEventListener('input',()=>{
+    const n=inp.dataset.f;
+    const q=inp.value.toLowerCase();
+    document.querySelectorAll('#t'+n+' tbody tr').forEach(r=>
+      r.style.display=r.textContent.toLowerCase().includes(q)?'':'none'
+    );
+  });
+});
+
+// FILTER SCORE
+document.querySelectorAll('[data-s]').forEach(sel=>{
+  sel.addEventListener('change',()=>{
+    const n=sel.dataset.s,v=sel.value;
+    document.querySelectorAll('#t'+n+' tbody tr').forEach(r=>{
+      if(!v){r.style.display='';return}
+      const sb=r.querySelector('.sb');
+      const sc=sb?parseInt(sb.textContent):0;
+      r.style.display=(v==='h'&&sc>=7)||(v==='m'&&sc>=4&&sc<=6)||(v==='l'&&sc<=3)?'':'none';
+    });
+  });
+});
+
+// SORT
+document.querySelectorAll('thead th').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const tbl=th.closest('table'),col=+th.dataset.i;
+    if(isNaN(col))return;
+    const tbody=tbl.querySelector('tbody');
+    const rows=Array.from(tbody.querySelectorAll('tr'));
+    const asc=!th.classList.contains('asc');
+    tbl.querySelectorAll('th').forEach(h=>h.classList.remove('asc','desc'));
+    th.classList.add(asc?'asc':'desc');
+    rows.sort((a,b)=>{
+      let av=a.children[col]?.textContent.trim()||'';
+      let bv=b.children[col]?.textContent.trim()||'';
+      const an=parseFloat(av),bn=parseFloat(bv);
+      if(!isNaN(an)&&!isNaN(bn))return asc?an-bn:bn-an;
+      return asc?av.localeCompare(bv,'pl'):bv.localeCompare(av,'pl');
+    });
+    rows.forEach(r=>tbody.appendChild(r));
+  });
+});
+
+// BAR CHART
+const data=[
+  {n:'⭐ mlpn.pl',s:2.2,star:1},
+  {n:'ligafanow.pl',s:6.6},{n:'ligowiec.pl',s:6.2},{n:'zniczpruszkow.com.pl',s:5.8},
+  {n:'ligabobra.pl',s:5.6},{n:'minskaligamistrzow.pl',s:5.4},{n:'playarena.pl',s:5.4},
+  {n:'superliga6.pl',s:5.0},{n:'ligabemowska.pl',s:5.0},{n:'ligaszostek.pl',s:3.6},
+  {n:'wls.com.pl',s:3.2},{n:'nocnaligahalowa.pl ★v2',s:5.6},{n:'wlo.app',s:2.6},
+  {n:'ligihalowe.pl',s:2.2},{n:'mosirradomalpn',s:2.2},{n:'mlf.org.pl',s:1.4}
+].sort((a,b)=>b.s-a.s);
+
+const ch=document.getElementById('chart');
+data.forEach(d=>{
+  const cls=d.s>=6?'bf-h':d.s>=4?'bf-m':'bf-l';
+  const st=d.star?'font-weight:700;color:#d97706':'';
+  const bg=d.star?'background:#fef3c7;border:1px solid #f59e0b':'';
+  ch.innerHTML+=`<div class="bar-row"><div class="bar-name" style="${st}">${d.n}</div><div class="bar-track" style="${bg}"><div class="bar-fill ${cls}" style="width:${d.s*10}%">${d.s.toFixed(1)}</div></div></div>`;
+});
+</script>
+</body>
+</html>

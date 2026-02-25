@@ -1,0 +1,41 @@
+{
+  "name": "mlpn-website",
+  "version": "1.0.0",
+  "homepage": "https://mateuszjoe.github.io/mlpn-website",
+  "description": "Miejska Liga Piłki Nożnej w Sulejówku",
+  "keywords": [
+    "mlpn",
+    "football",
+    "react"
+  ],
+  "main": "src/index.tsx",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.97.0",
+    "loader-utils": "3.2.1",
+    "lucide-react": "0.562.0",
+    "pg": "^8.18.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.2.38",
+    "@types/react-dom": "18.2.15",
+    "gh-pages": "^6.3.0",
+    "typescript": "4.4.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
+}

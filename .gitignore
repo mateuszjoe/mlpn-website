@@ -1,0 +1,25 @@
+# Dependencies
+/node_modules
+
+# Environment variables (NIGDY nie commituj!)
+.env
+.env.local
+.env.*.local
+
+# Build
+/build
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dane importowe i backupy (za duże na GitHub)
+/supabase/import/
+/supabase/import_archive_2003_2017.sql
+/baza 2018-2025/
+/baza, wytyczne/
+/archiwum 2003-2017/
