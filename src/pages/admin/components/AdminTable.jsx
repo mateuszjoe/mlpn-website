@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ChevronUp, ChevronDown, Pencil, Trash2 } from "lucide-react";
 
-export default function AdminTable({ columns, rows, darkMode, onEdit, onDelete, emptyMessage = "Brak danych" }) {
+export default function AdminTable({ columns, rows, darkMode, onEdit, onDelete, extraActions, emptyMessage = "Brak danych" }) {
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
 
@@ -51,7 +51,7 @@ export default function AdminTable({ columns, rows, darkMode, onEdit, onDelete, 
                 </span>
               </th>
             ))}
-            {(onEdit || onDelete) && (
+            {(onEdit || onDelete || extraActions) && (
               <th className={`px-3 py-2 text-right font-medium ${textMuted} border-b ${borderColor}`}>Akcje</th>
             )}
           </tr>
@@ -64,9 +64,10 @@ export default function AdminTable({ columns, rows, darkMode, onEdit, onDelete, 
                   {col.render ? col.render(row[col.key], row) : (row[col.key] ?? "—")}
                 </td>
               ))}
-              {(onEdit || onDelete) && (
+              {(onEdit || onDelete || extraActions) && (
                 <td className="px-3 py-2 text-right">
                   <div className="flex items-center justify-end gap-1">
+                    {extraActions && extraActions(row)}
                     {onEdit && (
                       <button onClick={() => onEdit(row)} className="p-1.5 rounded-lg hover:bg-blue-500/20 text-blue-400" title="Edytuj">
                         <Pencil size={15} />

@@ -5,7 +5,71 @@ import AdminTable from "./components/AdminTable";
 import AdminModal from "./components/AdminModal";
 import AdminAlert from "./components/AdminAlert";
 import AdminImageUpload from "./components/AdminImageUpload";
-import { Plus, Lock, AlertTriangle, GitMerge } from "lucide-react";
+import { Plus, Lock, AlertTriangle, GitMerge, UserMinus } from "lucide-react";
+
+function levenshtein(a, b) {
+  const la = a.length, lb = b.length;
+  if (!la) return lb;
+  if (!lb) return la;
+  const dp = Array.from({ length: la + 1 }, (_, i) => i);
+  for (let j = 1; j <= lb; j++) {
+    let prev = dp[0];
+    dp[0] = j;
+    for (let i = 1; i <= la; i++) {
+      const tmp = dp[i];
+      dp[i] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[i], dp[i - 1]);
+      prev = tmp;
+    }
+  }
+  return dp[la];
+}
+
+function findFuzzyCandidates(firstName, lastName, players, threshold = 3) {
+  const newKey = normalizePlayerKey(firstName, lastName);
+  if (!newKey || newKey.length < 3) return [];
+  const newLast = (lastName || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+  const newFirst = (firstName || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+
+  const results = [];
+  for (const p of players) {
+    if (isMergedPlayerRecord(p)) continue;
+    const pKey = normalizePlayerKey(p.first_name, p.last_name);
+    if (!pKey) continue;
+
+    // Exact match
+    if (pKey === newKey) {
+      results.push({ player: p, distance: 0, reason: "Identyczne imię i nazwisko" });
+      continue;
+    }
+
+    // Full name fuzzy
+    const dist = levenshtein(newKey, pKey);
+    if (dist <= threshold) {
+      results.push({ player: p, distance: dist, reason: `Podobne imię i nazwisko (różnica: ${dist} znaki)` });
+      continue;
+    }
+
+    // Same last name, similar first name
+    const pLast = (p.last_name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+    const pFirst = (p.first_name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+
+    if (newLast === pLast && newFirst && pFirst) {
+      const firstDist = levenshtein(newFirst, pFirst);
+      if (firstDist <= 2) {
+        results.push({ player: p, distance: firstDist, reason: `To samo nazwisko, podobne imię (różnica: ${firstDist})` });
+        continue;
+      }
+    }
+    if (newFirst === pFirst && newLast && pLast) {
+      const lastDist = levenshtein(newLast, pLast);
+      if (lastDist <= 2) {
+        results.push({ player: p, distance: lastDist, reason: `To samo imię, podobne nazwisko (różnica: ${lastDist})` });
+        continue;
+      }
+    }
+  }
+  return results.sort((a, b) => a.distance - b.distance);
+}
 
 function normalizePlayerKey(firstName, lastName) {
   return String(`${firstName || ""} ${lastName || ""}`)
@@ -77,6 +141,8 @@ export default function AdminPlayers({ darkMode }) {
   const [mergeLoadingStats, setMergeLoadingStats] = useState(false);
   const [mergeBusy, setMergeBusy] = useState(false);
   const [mergeStatStrategy, setMergeStatStrategy] = useState(DEFAULT_PLAYER_MERGE_STAT_STRATEGY);
+  const [playerTeams, setPlayerTeams] = useState({});
+  const [releasingId, setReleasingId] = useState(null);
   const [dupPrompt, setDupPrompt] = useState({
     open: false,
     payload: null,
@@ -97,11 +163,32 @@ export default function AdminPlayers({ darkMode }) {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("players")
-      .select("*, players_private(*)")
-      .order("last_name");
-    setPlayers(data || []);
+    const [playersRes, teamsRes] = await Promise.all([
+      supabase
+        .from("players")
+        .select("*, players_private(*)")
+        .order("last_name"),
+      supabase
+        .from("team_players")
+        .select("player_id, team_id, season_id, joined_date, left_date, teams(name), seasons(year)")
+        .is("left_date", null)
+        .order("joined_date", { ascending: false }),
+    ]);
+    setPlayers(playersRes.data || []);
+
+    // Build map: player_id -> { team_name, season_year, team_players_id }
+    const teamsMap = {};
+    for (const tp of teamsRes.data || []) {
+      if (teamsMap[tp.player_id]) continue; // keep first (most recent)
+      const teamObj = Array.isArray(tp.teams) ? tp.teams[0] : tp.teams;
+      const seasonObj = Array.isArray(tp.seasons) ? tp.seasons[0] : tp.seasons;
+      teamsMap[tp.player_id] = {
+        team_name: teamObj?.name || "?",
+        season_year: seasonObj?.year || null,
+        team_id: tp.team_id,
+      };
+    }
+    setPlayerTeams(teamsMap);
     setLoading(false);
   }, []);
 
@@ -665,10 +752,9 @@ export default function AdminPlayers({ darkMode }) {
     const { payload, rodoPayload } = buildPayloads();
 
     if (!editId) {
-      const key = normalizePlayerKey(payload.first_name, payload.last_name);
-      const candidates = players.filter((p) => normalizePlayerKey(p.first_name, p.last_name) === key);
-      if (key && candidates.length > 0) {
-        setDupPrompt({ open: true, payload, rodoPayload, candidates });
+      const fuzzyResults = findFuzzyCandidates(payload.first_name, payload.last_name, players);
+      if (fuzzyResults.length > 0) {
+        setDupPrompt({ open: true, payload, rodoPayload, candidates: fuzzyResults });
         return;
       }
     }
@@ -771,6 +857,30 @@ export default function AdminPlayers({ darkMode }) {
     }
   };
 
+  const handleRelease = async (player) => {
+    const info = playerTeams[player.id];
+    if (!info) {
+      setAlert({ type: "error", message: "Ten zawodnik nie jest przypisany do żadnej drużyny." });
+      return;
+    }
+    if (!window.confirm(`Zwolnić ${player.display_name} z drużyny ${info.team_name}? Zawodnik stanie się wolnym zawodnikiem.`)) return;
+    setReleasingId(player.id);
+    try {
+      const { error } = await supabase
+        .from("team_players")
+        .update({ left_date: new Date().toISOString().split("T")[0] })
+        .eq("player_id", player.id)
+        .is("left_date", null);
+      if (error) throw error;
+      setAlert({ type: "success", message: `${player.display_name} został zwolniony z ${info.team_name}. Jest teraz wolnym zawodnikiem.` });
+      loadData();
+    } catch (err) {
+      setAlert({ type: "error", message: err.message || "Nie udało się zwolnić zawodnika." });
+    } finally {
+      setReleasingId(null);
+    }
+  };
+
   const positionLabels = { BR: "Bramkarz", OBR: "Obrońca", POM: "Pomocnik", NAP: "Napastnik" };
 
   const columns = [
@@ -786,6 +896,14 @@ export default function AdminPlayers({ darkMode }) {
     },
     { key: "birth_year", label: "Rocznik", sortable: true },
     { key: "city", label: "Miasto", sortable: true },
+    {
+      key: "id", label: "Drużyna",
+      render: (_, row) => {
+        const info = playerTeams[row?.id];
+        if (!info) return <span className={`text-xs ${textMuted}`}>Wolny</span>;
+        return <span className="text-xs font-medium">{info.team_name}</span>;
+      }
+    },
     {
       key: "is_active", label: "Status",
       render: (v) => v
@@ -860,6 +978,16 @@ export default function AdminPlayers({ darkMode }) {
           darkMode={darkMode}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          extraActions={(row) => playerTeams[row.id] ? (
+            <button
+              onClick={() => handleRelease(row)}
+              disabled={releasingId === row.id}
+              className="p-1.5 rounded-lg hover:bg-orange-500/20 text-orange-400"
+              title={`Zwolnij z ${playerTeams[row.id]?.team_name}`}
+            >
+              <UserMinus size={15} />
+            </button>
+          ) : null}
           emptyMessage="Brak zawodników"
         />
       </div>
@@ -1163,18 +1291,25 @@ export default function AdminPlayers({ darkMode }) {
           )}
 
           <div className="space-y-2">
-            {dupPrompt.candidates.map((candidate) => {
+            {dupPrompt.candidates.map((match) => {
+              const candidate = match.player || match;
               const priv = privateRow(candidate);
+              const teamInfo = playerTeams[candidate.id];
               return (
                 <div key={candidate.id} className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-white"}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="font-semibold truncate">{candidate.display_name}</div>
-                      <div className={`text-xs ${textMuted}`}>
+                      {match.reason && (
+                        <div className={`text-xs mt-0.5 ${match.distance === 0 ? "text-red-400" : "text-orange-400"}`}>
+                          {match.reason}
+                        </div>
+                      )}
+                      <div className={`text-xs ${textMuted} mt-1`}>
                         {candidate.is_active ? "Aktywny" : "Nieaktywny"} • {positionLabels[candidate.position] || candidate.position} • {candidate.birth_year || "brak rocznika"}
                       </div>
-                      <div className={`text-xs ${textMuted} mt-1`}>
-                        Miasto: {candidate.city || "brak"} • Telefon: {priv?.phone || "brak"} • Email: {priv?.email || "brak"}
+                      <div className={`text-xs ${textMuted}`}>
+                        Drużyna: {teamInfo ? teamInfo.team_name : "Wolny"} • Miasto: {candidate.city || "brak"}
                       </div>
                     </div>
                     <button
@@ -1182,7 +1317,7 @@ export default function AdminPlayers({ darkMode }) {
                       onClick={() => mergeWithExistingCandidate(candidate)}
                       className="px-3 py-1.5 rounded-lg bg-orange-500 text-black text-xs font-semibold hover:bg-orange-400 shrink-0"
                     >
-                      Scal - to ten sam zawodnik
+                      To ten sam - kontynuuj karierę
                     </button>
                   </div>
                 </div>
