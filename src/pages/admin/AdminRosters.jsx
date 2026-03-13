@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 import AdminFormField from "./components/AdminFormField";
 import AdminModal from "./components/AdminModal";
 import AdminAlert from "./components/AdminAlert";
-import { Plus, UserMinus, Shield, Star } from "lucide-react";
+import { Plus, UserMinus, Shield, Star, Copy, Loader2 } from "lucide-react";
 
 export default function AdminRosters({ darkMode }) {
   const [seasons, setSeasons] = useState([]);
@@ -21,6 +21,7 @@ export default function AdminRosters({ darkMode }) {
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
   const [addForm, setAddForm] = useState({ player_id: "", shirt_number: "", is_captain: false, joined_date: new Date().toISOString().split("T")[0] });
+  const [copyingRosters, setCopyingRosters] = useState(false);
 
   const card = darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-200";
   const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
@@ -133,6 +134,97 @@ export default function AdminRosters({ darkMode }) {
     loadRoster();
   }
 
+  async function copyRostersFromPreviousSeason() {
+    if (!selectedSeason || !selectedLeague) return;
+
+    const currentSeason = seasons.find(s => s.id === selectedSeason);
+    if (!currentSeason) return;
+
+    // Find previous season (one year back)
+    const prevSeason = seasons.find(s => s.year === currentSeason.year - 1);
+    if (!prevSeason) {
+      setAlert({ type: "error", message: `Nie znaleziono poprzedniego sezonu (${currentSeason.year - 1}).` });
+      return;
+    }
+
+    if (!window.confirm(
+      `Skopiować kadry wszystkich drużyn z sezonu ${prevSeason.name || prevSeason.year} do ${currentSeason.name || currentSeason.year}?\n\n` +
+      `Zostaną skopiowani aktywni zawodnicy (bez left_date) ze wszystkich drużyn w tej lidze. ` +
+      `Zawodnicy którzy już są w kadrze nowego sezonu nie zostaną zduplikowani.`
+    )) return;
+
+    setCopyingRosters(true);
+    try {
+      // Get all active team_players from previous season in this league
+      const { data: prevRosters, error: prevErr } = await supabase
+        .from("team_players")
+        .select("player_id, team_id, shirt_number, is_captain, players(is_active)")
+        .eq("season_id", prevSeason.id)
+        .eq("league_id", selectedLeague)
+        .is("left_date", null);
+
+      if (prevErr) throw prevErr;
+      if (!prevRosters || prevRosters.length === 0) {
+        setAlert({ type: "error", message: `Brak zawodników w kadrach sezonu ${prevSeason.name || prevSeason.year}.` });
+        setCopyingRosters(false);
+        return;
+      }
+
+      // Filter only active players and teams that exist in new season
+      const newSeasonTeamIds = new Set(seasonTeams.map(st => st.team_id));
+      const activePrev = prevRosters.filter(r => {
+        const playerObj = Array.isArray(r.players) ? r.players[0] : r.players;
+        return playerObj?.is_active !== false && newSeasonTeamIds.has(r.team_id);
+      });
+
+      if (activePrev.length === 0) {
+        setAlert({ type: "error", message: "Brak aktywnych zawodników do skopiowania (sprawdź czy drużyny są dodane do nowej ligi)." });
+        setCopyingRosters(false);
+        return;
+      }
+
+      // Get existing team_players in new season to avoid duplicates
+      const { data: existingNew } = await supabase
+        .from("team_players")
+        .select("player_id, team_id")
+        .eq("season_id", selectedSeason)
+        .eq("league_id", selectedLeague);
+
+      const existingSet = new Set((existingNew || []).map(r => `${r.player_id}|${r.team_id}`));
+
+      const toInsert = activePrev
+        .filter(r => !existingSet.has(`${r.player_id}|${r.team_id}`))
+        .map(r => ({
+          player_id: r.player_id,
+          team_id: r.team_id,
+          season_id: selectedSeason,
+          league_id: selectedLeague,
+          shirt_number: r.shirt_number,
+          is_captain: r.is_captain,
+          joined_date: new Date().toISOString().split("T")[0],
+        }));
+
+      if (toInsert.length === 0) {
+        setAlert({ type: "info", message: "Wszystkie kadry są już skopiowane - nie ma nowych zawodników do dodania." });
+        setCopyingRosters(false);
+        return;
+      }
+
+      const { error: insertErr } = await supabase.from("team_players").insert(toInsert);
+      if (insertErr) throw insertErr;
+
+      setAlert({
+        type: "success",
+        message: `Skopiowano ${toInsert.length} zawodników z sezonu ${prevSeason.name || prevSeason.year}. Teraz możesz zaktualizować składy - kogo trzeba zwolnij, kogo trzeba dodaj.`,
+      });
+      loadRoster();
+    } catch (err) {
+      setAlert({ type: "error", message: err.message || "Nie udało się skopiować kadr." });
+    } finally {
+      setCopyingRosters(false);
+    }
+  }
+
   const rosterPlayerIds = new Set(roster.map(r => r.player_id));
   const availablePlayers = allPlayers.filter(p =>
     !rosterPlayerIds.has(p.id) &&
@@ -170,6 +262,28 @@ export default function AdminRosters({ darkMode }) {
           onChange={e => setSelectedTeam(e.target.value)} darkMode={darkMode}
           options={seasonTeams.map(st => ({ value: st.teams?.id, label: st.teams?.name }))} />
       </div>
+
+      {/* Copy rosters from previous season */}
+      {selectedSeason && selectedLeague && seasonTeams.length > 0 && (
+        <div className={`rounded-2xl border p-4 ${darkMode ? "border-blue-500/20 bg-blue-500/5" : "border-blue-200 bg-blue-50"}`}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div className="text-sm font-medium">Nowy sezon?</div>
+              <div className={`text-xs ${textMuted}`}>
+                Skopiuj kadry wszystkich drużyn z poprzedniego sezonu. Potem zaktualizuj kto odszedł, kto doszedł.
+              </div>
+            </div>
+            <button
+              onClick={copyRostersFromPreviousSeason}
+              disabled={copyingRosters}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500 text-white font-medium text-sm hover:bg-blue-400 disabled:opacity-50"
+            >
+              {copyingRosters ? <Loader2 size={16} className="animate-spin" /> : <Copy size={16} />}
+              Kopiuj kadry z poprzedniego sezonu
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Teams in season */}
       <div className={`rounded-2xl border p-4 ${card}`}>
