@@ -7,13 +7,7 @@ import {
   KeyRound,
   ShieldCheck,
   UserPlus,
-  Users,
-  Plus,
-  Pencil,
-  Trash2,
-  Undo2,
   Loader2,
-  X,
   Mail,
   Info,
   RefreshCw,
@@ -68,10 +62,6 @@ function toLocalDatetimeValue(dateObj) {
   if (Number.isNaN(d.getTime())) return "";
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function normalizeRefereeName(value) {
-  return String(value || "").trim().replace(/\s+/g, " ");
 }
 
 function TeamLogoThumb({ src, name, darkMode }) {
@@ -154,15 +144,6 @@ export default function AdminControlCenter({ darkMode }) {
   const [loadedConfigId, setLoadedConfigId] = useState(null);
   const [typerConfigTableMissing, setTyperConfigTableMissing] = useState(false);
 
-  const [referees, setReferees] = useState([]);
-  const [refereesLoading, setRefereesLoading] = useState(false);
-  const [refereesTableMissing, setRefereesTableMissing] = useState(false);
-  const [refereeName, setRefereeName] = useState("");
-  const [creatingReferee, setCreatingReferee] = useState(false);
-  const [editingRefereeId, setEditingRefereeId] = useState("");
-  const [editingRefereeName, setEditingRefereeName] = useState("");
-  const [busyRefereeId, setBusyRefereeId] = useState("");
-
   const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
   const softBox = darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50";
   const inputCls = darkMode
@@ -173,19 +154,11 @@ export default function AdminControlCenter({ darkMode }) {
   const btnGhost = darkMode
     ? "px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-gray-200 hover:bg-white/10"
     : "px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50";
-  const btnSmall = darkMode
-    ? "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-gray-200 hover:bg-white/10 disabled:opacity-50"
-    : "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50";
-  const btnDangerSmall = darkMode
-    ? "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-400/20 bg-red-500/10 text-sm text-red-200 hover:bg-red-500/15 disabled:opacity-50"
-    : "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-sm text-red-700 hover:bg-red-100 disabled:opacity-50";
-
   const tabs = useMemo(
     () => [
       { id: "polls", label: "Ankiety", icon: <Vote size={16} /> },
-      { id: "typer", label: "Typer na kolejkÄ™", icon: <Target size={16} /> },
-      { id: "referees", label: "Sedziowie", icon: <Users size={16} /> },
-      { id: "password", label: "Zmiana hasĹ‚a", icon: <KeyRound size={16} /> },
+      { id: "typer", label: "Typer na kolejkę", icon: <Target size={16} /> },
+      { id: "password", label: "Zmiana hasła", icon: <KeyRound size={16} /> },
       { id: "permissions", label: "Uprawnienia", icon: <ShieldCheck size={16} /> },
       { id: "admins", label: "Podadmini / zaproszenia", icon: <UserPlus size={16} /> },
     ],
@@ -219,7 +192,7 @@ export default function AdminControlCenter({ darkMode }) {
         }));
       }
     } catch (err) {
-      setAlert({ type: "error", message: err.message || "Nie udaĹ‚o siÄ™ zaĹ‚adowaÄ‡ danych konfiguracyjnych." });
+      setAlert({ type: "error", message: err.message || "Nie udało się załadować danych konfiguracyjnych." });
     } finally {
       setMetaLoading(false);
     }
@@ -228,35 +201,6 @@ export default function AdminControlCenter({ darkMode }) {
   useEffect(() => {
     loadMeta();
   }, [loadMeta]);
-
-  const loadReferees = useCallback(async () => {
-    setRefereesLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("referees")
-        .select("id, full_name, is_active, updated_at")
-        .order("is_active", { ascending: false })
-        .order("full_name");
-
-      if (error) throw error;
-
-      setReferees(data || []);
-      setRefereesTableMissing(false);
-    } catch (err) {
-      const message = String(err?.message || "");
-      setReferees([]);
-      setRefereesTableMissing(message.toLowerCase().includes("referees"));
-      if (!message.toLowerCase().includes("referees")) {
-        setAlert({ type: "error", message: message || "Nie udalo sie zaladowac listy sedziow." });
-      }
-    } finally {
-      setRefereesLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadReferees();
-  }, [loadReferees]);
 
   const loadTyperMatches = useCallback(async () => {
     if (!typerForm.season_id || !typerForm.round) {
@@ -284,7 +228,7 @@ export default function AdminControlCenter({ darkMode }) {
       const rows = (matchRows || []).filter((m) => !["completed", "walkover_home", "walkover_away", "cancelled"].includes(m.status));
       setTyperMatches(rows);
 
-      // SprĂłbuj zaĹ‚adowaÄ‡ istniejÄ…cÄ… konfiguracjÄ™ dla sezonu + kolejki (globalnie dla tej kolejki).
+      // Spróbuj załadować istniejącą konfigurację dla sezonu + kolejki (globalnie dla tej kolejki).
       const { data: cfg, error: cfgErr } = await supabase
         .from("typer_round_configs")
         .select(`
@@ -330,7 +274,7 @@ export default function AdminControlCenter({ darkMode }) {
         setTyperSelectedIds([]);
       }
     } catch (err) {
-      setAlert({ type: "error", message: err.message || "Nie udaĹ‚o siÄ™ zaĹ‚adowaÄ‡ meczĂłw do typera." });
+      setAlert({ type: "error", message: err.message || "Nie udało się załadować meczów do typera." });
       setTyperMatches([]);
       setTyperSelectedIds([]);
       setLoadedConfigId(null);
@@ -391,18 +335,18 @@ export default function AdminControlCenter({ darkMode }) {
       return;
     }
     if (options.length < 2) {
-      setAlert({ type: "error", message: "Ankieta musi mieÄ‡ co najmniej 2 opcje." });
+      setAlert({ type: "error", message: "Ankieta musi mieć co najmniej 2 opcje." });
       return;
     }
     if (!pollForm.end_at) {
-      setAlert({ type: "error", message: "Ustaw datÄ™ zakoĹ„czenia ankiety." });
+      setAlert({ type: "error", message: "Ustaw datę zakończenia ankiety." });
       return;
     }
 
     setPollSaving(true);
     try {
       const endDate = new Date(pollForm.end_at);
-      if (Number.isNaN(endDate.getTime())) throw new Error("NieprawidĹ‚owa data zakoĹ„czenia.");
+      if (Number.isNaN(endDate.getTime())) throw new Error("Nieprawidłowa data zakończenia.");
 
       const { data: pollInsert, error: pollErr } = await supabase
         .from("polls")
@@ -431,10 +375,10 @@ export default function AdminControlCenter({ darkMode }) {
         throw optionsErr;
       }
 
-      setAlert({ type: "success", message: `Ankieta zostaĹ‚a utworzona (${options.length} opcji).` });
+      setAlert({ type: "success", message: `Ankieta została utworzona (${options.length} opcji).` });
       resetPollForm();
     } catch (err) {
-      setAlert({ type: "error", message: err.message || "Nie udaĹ‚o siÄ™ zapisaÄ‡ ankiety." });
+      setAlert({ type: "error", message: err.message || "Nie udało się zapisać ankiety." });
     } finally {
       setPollSaving(false);
     }
@@ -443,7 +387,7 @@ export default function AdminControlCenter({ darkMode }) {
   function toggleTyperMatch(matchId) {
     const alreadySelected = typerSelectedIds.includes(matchId);
     if (!alreadySelected && typerSelectedIds.length >= 5) {
-      setAlert({ type: "error", message: "Typer musi zawieraÄ‡ dokĹ‚adnie 5 spotkaĹ„. UsuĹ„ najpierw jedno zaznaczenie." });
+      setAlert({ type: "error", message: "Typer musi zawierać dokładnie 5 spotkań. Usuń najpierw jedno zaznaczenie." });
       return;
     }
     setTyperSelectedIds((prev) =>
@@ -458,113 +402,6 @@ export default function AdminControlCenter({ darkMode }) {
 
   function clearTyperSelection() {
     setTyperSelectedIds([]);
-  }
-
-  function resetRefereeEditor() {
-    setEditingRefereeId("");
-    setEditingRefereeName("");
-  }
-
-  function notifyRefereesChanged() {
-    window.dispatchEvent(new CustomEvent("mlpn:referees-updated"));
-  }
-
-  async function handleCreateReferee() {
-    const fullName = normalizeRefereeName(refereeName);
-    if (!fullName) {
-      setAlert({ type: "error", message: "Wpisz imie i nazwisko sedziego." });
-      return;
-    }
-
-    const duplicate = referees.find(
-      (referee) => referee.full_name.localeCompare(fullName, "pl", { sensitivity: "base" }) === 0
-    );
-    if (duplicate) {
-      setAlert({ type: "error", message: "Taki sedzia jest juz na liscie." });
-      return;
-    }
-
-    setCreatingReferee(true);
-    try {
-      const { error } = await supabase
-        .from("referees")
-        .insert({ full_name: fullName, is_active: true });
-
-      if (error) throw error;
-
-      setRefereeName("");
-      await loadReferees();
-      notifyRefereesChanged();
-      setAlert({ type: "success", message: "Sedzia zostal dodany do listy." });
-    } catch (err) {
-      setAlert({ type: "error", message: err?.message || "Nie udalo sie dodac sedziego." });
-    } finally {
-      setCreatingReferee(false);
-    }
-  }
-
-  async function handleSaveReferee(refereeId) {
-    const fullName = normalizeRefereeName(editingRefereeName);
-    if (!fullName) {
-      setAlert({ type: "error", message: "Wpisz poprawne imie i nazwisko sedziego." });
-      return;
-    }
-
-    const duplicate = referees.find(
-      (referee) =>
-        referee.id !== refereeId &&
-        referee.full_name.localeCompare(fullName, "pl", { sensitivity: "base" }) === 0
-    );
-    if (duplicate) {
-      setAlert({ type: "error", message: "Na liscie jest juz sedzia o takiej nazwie." });
-      return;
-    }
-
-    setBusyRefereeId(refereeId);
-    try {
-      const { error } = await supabase
-        .from("referees")
-        .update({ full_name: fullName })
-        .eq("id", refereeId);
-
-      if (error) throw error;
-
-      resetRefereeEditor();
-      await loadReferees();
-      notifyRefereesChanged();
-      setAlert({ type: "success", message: "Dane sedziego zostaly zaktualizowane." });
-    } catch (err) {
-      setAlert({ type: "error", message: err?.message || "Nie udalo sie zapisac zmian sedziego." });
-    } finally {
-      setBusyRefereeId("");
-    }
-  }
-
-  async function handleSetRefereeActive(refereeId, isActive) {
-    setBusyRefereeId(refereeId);
-    try {
-      const { error } = await supabase
-        .from("referees")
-        .update({ is_active: isActive })
-        .eq("id", refereeId);
-
-      if (error) throw error;
-
-      if (!isActive && editingRefereeId === refereeId) resetRefereeEditor();
-
-      await loadReferees();
-      notifyRefereesChanged();
-      setAlert({
-        type: "success",
-        message: isActive
-          ? "Sedzia wrocil na liste dostepnych osob."
-          : "Sedzia zostal ukryty z listy nowych wyborow.",
-      });
-    } catch (err) {
-      setAlert({ type: "error", message: err?.message || "Nie udalo sie zaktualizowac statusu sedziego." });
-    } finally {
-      setBusyRefereeId("");
-    }
   }
 
   async function handleSaveTyperConfig() {
@@ -589,7 +426,7 @@ export default function AdminControlCenter({ darkMode }) {
     const selectedRows = typerMatches.filter((m) => selectedIdSet.has(m.id));
 
     if (selectedRows.length !== 5) {
-      setAlert({ type: "error", message: `Typer musi zawieraÄ‡ dokĹ‚adnie 5 spotkaĹ„ (teraz: ${selectedRows.length}/5).` });
+      setAlert({ type: "error", message: `Typer musi zawierać dokładnie 5 spotkań (teraz: ${selectedRows.length}/5).` });
       return;
     }
 
@@ -655,15 +492,15 @@ export default function AdminControlCenter({ darkMode }) {
     e.preventDefault();
 
     if (!password || !password2) {
-      setAlert({ type: "error", message: "Wpisz i potwierdĹş nowe hasĹ‚o." });
+      setAlert({ type: "error", message: "Wpisz i potwierdź nowe hasło." });
       return;
     }
     if (password !== password2) {
-      setAlert({ type: "error", message: "HasĹ‚a nie sÄ… takie same." });
+      setAlert({ type: "error", message: "Hasła nie są takie same." });
       return;
     }
     if (password.length < 8) {
-      setAlert({ type: "error", message: "HasĹ‚o musi mieÄ‡ minimum 8 znakĂłw." });
+      setAlert({ type: "error", message: "Hasło musi mieć minimum 8 znaków." });
       return;
     }
 
@@ -673,9 +510,9 @@ export default function AdminControlCenter({ darkMode }) {
       if (error) throw error;
       setPassword("");
       setPassword2("");
-      setAlert({ type: "success", message: "HasĹ‚o zostaĹ‚o zmienione." });
+      setAlert({ type: "success", message: "Hasło zostało zmienione." });
     } catch (err) {
-      setAlert({ type: "error", message: err?.message || "Nie udaĹ‚o siÄ™ zmieniÄ‡ hasĹ‚a." });
+      setAlert({ type: "error", message: err?.message || "Nie udało się zmienić hasła." });
     } finally {
       setPwLoading(false);
     }
@@ -685,21 +522,12 @@ export default function AdminControlCenter({ darkMode }) {
     () => [{ id: "all", name: "Wszystkie ligi" }, ...(leagues || [])],
     [leagues]
   );
-  const activeReferees = useMemo(
-    () => (referees || []).filter((referee) => referee.is_active),
-    [referees]
-  );
-  const inactiveReferees = useMemo(
-    () => (referees || []).filter((referee) => !referee.is_active),
-    [referees]
-  );
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Ustawienia panelu admina</h2>
         <p className={`text-sm mt-1 ${textMuted}`}>
-          Konfiguracja ankiet, typera, kont administracyjnych i uprawnieĹ„.
+          Konfiguracja ankiet, typera, kont administracyjnych i uprawnień.
         </p>
       </div>
 
@@ -728,7 +556,7 @@ export default function AdminControlCenter({ darkMode }) {
           darkMode={darkMode}
           icon={<Vote size={18} />}
           title="Konfiguracja ankiety"
-          subtitle="Tworzenie ankiety z opcjami i publikacjÄ… do sekcji Ankiety."
+          subtitle="Tworzenie ankiety z opcjami i publikacją do sekcji Ankiety."
         >
           <div className="grid gap-3">
             <input
@@ -781,17 +609,17 @@ export default function AdminControlCenter({ darkMode }) {
               <div className="flex items-start gap-2">
                 <Info size={16} className="mt-0.5 shrink-0" />
                 <div>
-                  Ankieta zapisze siÄ™ do tabel `polls` + `poll_options`. Po zapisaniu bÄ™dzie widoczna w zakĹ‚adce â€žAnkietyâ€ť (jeĹ›li jest opublikowana).
+                  Ankieta zapisze się do tabel `polls` + `poll_options`. Po zapisaniu będzie widoczna w zakładce "Ankiety" (jeśli jest opublikowana).
                 </div>
               </div>
             </div>
 
             <div className="flex gap-2">
               <button type="button" className={btnPrimary} onClick={handleCreatePoll} disabled={pollSaving || metaLoading}>
-                {pollSaving ? "Zapisywanie..." : "Zapisz ankietÄ™"}
+                {pollSaving ? "Zapisywanie..." : "Zapisz ankietę"}
               </button>
               <button type="button" className={btnGhost} onClick={resetPollForm}>
-                WyczyĹ›Ä‡
+                Wyczyść
               </button>
             </div>
           </div>
@@ -802,8 +630,8 @@ export default function AdminControlCenter({ darkMode }) {
         <SectionCard
           darkMode={darkMode}
           icon={<Target size={18} />}
-          title="Tworzenie typera na kolejkÄ™"
-          subtitle="Ustawiasz mecze widoczne w typerze na stronie gĹ‚Ăłwnej i w zakĹ‚adce Typer."
+          title="Tworzenie typera na kolejkę"
+          subtitle="Ustawiasz mecze widoczne w typerze na stronie głównej i w zakładce Typer."
         >
           <div className="grid md:grid-cols-6 gap-3">
             <select className={inputCls} value={typerForm.season_id} onChange={(e) => updateTyperField("season_id", e.target.value)}>
@@ -836,7 +664,7 @@ export default function AdminControlCenter({ darkMode }) {
             <button type="button" className={btnGhost} onClick={loadTyperMatches} disabled={typerLoading}>
               <span className="inline-flex items-center gap-2">
                 <RefreshCw size={14} className={typerLoading ? "animate-spin" : ""} />
-                OdĹ›wieĹĽ listÄ™
+                Odświeź listę
               </span>
             </button>
 
@@ -853,7 +681,7 @@ export default function AdminControlCenter({ darkMode }) {
           <div className="grid md:grid-cols-2 gap-3 mt-3">
             <input
               className={inputCls}
-              placeholder="TytuĹ‚ typera (np. Typer kolejki 9)"
+              placeholder="Tytuł typera (np. Typer kolejki 9)"
               value={typerForm.title}
               onChange={(e) => updateTyperField("title", e.target.value)}
             />
@@ -903,9 +731,9 @@ export default function AdminControlCenter({ darkMode }) {
             )}
 
             {typerLoading ? (
-              <div className={`text-sm py-4 ${textMuted}`}>Ĺadowanie meczĂłwâ€¦</div>
+              <div className={`text-sm py-4 ${textMuted}`}>Ładowanie meczów…</div>
             ) : typerMatches.length === 0 ? (
-              <div className={`text-sm py-4 ${textMuted}`}>Brak meczĂłw dla wybranego zakresu (sezon / liga / kolejka).</div>
+              <div className={`text-sm py-4 ${textMuted}`}>Brak meczów dla wybranego zakresu (sezon / liga / kolejka).</div>
             ) : (
               <div className="max-h-[420px] overflow-y-auto pr-1">
                 <div className="grid md:grid-cols-2 gap-2">
@@ -959,186 +787,15 @@ export default function AdminControlCenter({ darkMode }) {
             <div className="flex items-start gap-2">
               <Info size={16} className="mt-0.5 shrink-0" />
               <div>
-                Po zapisaniu konfiguracji typer na stronie uĹĽyje wybranych meczĂłw. JeĹ›li konfiguracja nie istnieje, strona dziaĹ‚a po staremu (automatyczny wybĂłr).
+                Po zapisaniu konfiguracji typer na stronie użyje wybranych meczów. Jeśli konfiguracja nie istnieje, strona działa po staremu (automatyczny wybór).
               </div>
             </div>
           </div>
 
           <div className="mt-3 flex gap-2">
             <button type="button" className={btnPrimary} onClick={handleSaveTyperConfig} disabled={typerSaving || metaLoading}>
-              {typerSaving ? "Zapisywanie..." : "Zapisz konfiguracjÄ™ typera"}
+              {typerSaving ? "Zapisywanie..." : "Zapisz konfigurację typera"}
             </button>
-          </div>
-        </SectionCard>
-      )}
-
-      {tab === "referees" && (
-        <SectionCard
-          darkMode={darkMode}
-          icon={<Users size={18} />}
-          title="Lista sedziow"
-          subtitle="Dodajesz, poprawiasz i ukrywasz sedziow bez psucia historii rozegranych meczow."
-        >
-          <div className="grid lg:grid-cols-[minmax(0,340px)_1fr] gap-4">
-            <div className={`rounded-2xl border p-4 ${softBox}`}>
-              <div className="font-semibold mb-2">Dodaj nowego sedziego</div>
-              <p className={`text-sm mb-3 ${textMuted}`}>
-                Ukrycie z listy nie usuwa sedziego ze starych meczow. Edycja nazwy aktualizuje stare spotkania automatycznie.
-              </p>
-              <div className="space-y-3">
-                <input
-                  className={inputCls}
-                  value={refereeName}
-                  onChange={(e) => setRefereeName(e.target.value)}
-                  placeholder="Imie i nazwisko"
-                />
-                <button
-                  type="button"
-                  className={`${btnPrimary} inline-flex items-center gap-2`}
-                  onClick={handleCreateReferee}
-                  disabled={creatingReferee || refereesTableMissing}
-                >
-                  {creatingReferee ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                  Dodaj sedziego
-                </button>
-              </div>
-
-              {refereesTableMissing && (
-                <div className={`mt-4 rounded-xl border p-3 text-sm ${darkMode ? "border-amber-400/30 bg-amber-500/10 text-amber-200" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
-                  Brakuje tabeli sedziow w bazie. W Supabase uruchom plik:{" "}
-                  <code className="font-mono">supabase/migrations/015_referees.sql</code>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-4">
-              <div className={`rounded-2xl border p-4 ${softBox}`}>
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div>
-                    <div className="font-semibold">Aktywni sedziowie</div>
-                    <div className={`text-sm ${textMuted}`}>Ta lista jest widoczna przy wpisywaniu nowych wynikow.</div>
-                  </div>
-                  {refereesLoading && <Loader2 size={16} className="animate-spin" />}
-                </div>
-
-                <div className="space-y-3">
-                  {activeReferees.length === 0 ? (
-                    <div className={`text-sm ${textMuted}`}>Brak aktywnych sedziow na liscie.</div>
-                  ) : (
-                    activeReferees.map((referee) => {
-                      const isEditing = editingRefereeId === referee.id;
-                      const isBusy = busyRefereeId === referee.id;
-
-                      return (
-                        <div
-                          key={referee.id}
-                          className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-white"}`}
-                        >
-                          {isEditing ? (
-                            <div className="flex flex-col sm:flex-row gap-3">
-                              <input
-                                className={inputCls}
-                                value={editingRefereeName}
-                                onChange={(e) => setEditingRefereeName(e.target.value)}
-                                placeholder="Imie i nazwisko"
-                                disabled={isBusy}
-                              />
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  className={btnSmall}
-                                  onClick={() => handleSaveReferee(referee.id)}
-                                  disabled={isBusy}
-                                >
-                                  {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Pencil size={14} />}
-                                  Zapisz
-                                </button>
-                                <button
-                                  type="button"
-                                  className={btnGhost}
-                                  onClick={resetRefereeEditor}
-                                  disabled={isBusy}
-                                >
-                                  <span className="inline-flex items-center gap-2">
-                                    <X size={14} />
-                                    Anuluj
-                                  </span>
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                              <div>
-                                <div className="font-semibold">{referee.full_name}</div>
-                                <div className={`text-xs mt-1 ${textMuted}`}>Dostepny przy kolejnych meczach.</div>
-                              </div>
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  className={btnSmall}
-                                  onClick={() => {
-                                    setEditingRefereeId(referee.id);
-                                    setEditingRefereeName(referee.full_name);
-                                  }}
-                                  disabled={isBusy}
-                                >
-                                  <Pencil size={14} />
-                                  Edytuj
-                                </button>
-                                <button
-                                  type="button"
-                                  className={btnDangerSmall}
-                                  onClick={() => handleSetRefereeActive(referee.id, false)}
-                                  disabled={isBusy}
-                                >
-                                  {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                                  Ukryj z listy
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
-              <div className={`rounded-2xl border p-4 ${softBox}`}>
-                <div className="font-semibold mb-1">Ukryci sedziowie</div>
-                <div className={`text-sm mb-3 ${textMuted}`}>Nie pojawiaja sie przy nowych meczach, ale stare spotkania dalej ich pokazuja.</div>
-
-                <div className="space-y-3">
-                  {inactiveReferees.length === 0 ? (
-                    <div className={`text-sm ${textMuted}`}>Brak ukrytych sedziow.</div>
-                  ) : (
-                    inactiveReferees.map((referee) => {
-                      const isBusy = busyRefereeId === referee.id;
-                      return (
-                        <div
-                          key={referee.id}
-                          className={`rounded-xl border p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-white"}`}
-                        >
-                          <div>
-                            <div className="font-semibold">{referee.full_name}</div>
-                            <div className={`text-xs mt-1 ${textMuted}`}>Historia meczow zostaje zachowana.</div>
-                          </div>
-                          <button
-                            type="button"
-                            className={btnSmall}
-                            onClick={() => handleSetRefereeActive(referee.id, true)}
-                            disabled={isBusy}
-                          >
-                            {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Undo2 size={14} />}
-                            Przywroc na liste
-                          </button>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
           </div>
         </SectionCard>
       )}
@@ -1147,8 +804,8 @@ export default function AdminControlCenter({ darkMode }) {
         <SectionCard
           darkMode={darkMode}
           icon={<KeyRound size={18} />}
-          title="Zmiana hasĹ‚a administratora"
-          subtitle="To dziaĹ‚a od razu dla aktualnie zalogowanego konta."
+          title="Zmiana hasła administratora"
+          subtitle="To działa od razu dla aktualnie zalogowanego konta."
         >
           <form className="grid gap-3 max-w-xl" onSubmit={handlePasswordChange}>
             <input
@@ -1156,18 +813,18 @@ export default function AdminControlCenter({ darkMode }) {
               className={inputCls}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Nowe hasĹ‚o"
+              placeholder="Nowe hasło"
             />
             <input
               type="password"
               className={inputCls}
               value={password2}
               onChange={(e) => setPassword2(e.target.value)}
-              placeholder="PowtĂłrz nowe hasĹ‚o"
+              placeholder="Powtórz nowe hasło"
             />
             <div className="flex gap-2">
               <button type="submit" className={btnPrimary} disabled={pwLoading}>
-                {pwLoading ? "Zapisywanie..." : "ZmieĹ„ hasĹ‚o"}
+                {pwLoading ? "Zapisywanie..." : "Zmień hasło"}
               </button>
             </div>
           </form>
@@ -1178,27 +835,27 @@ export default function AdminControlCenter({ darkMode }) {
         <SectionCard
           darkMode={darkMode}
           icon={<ShieldCheck size={18} />}
-          title="Nadawanie i modyfikowanie uprawnieĹ„"
-          subtitle="Gotowy ekran roboczy pod podpiÄ™cie tabeli profili / rĂłl."
+          title="Nadawanie i modyfikowanie uprawnień"
+          subtitle="Gotowy ekran roboczy pod podpięcie tabeli profili / ról."
         >
           <div className="grid md:grid-cols-[1fr_auto] gap-3 mb-3">
             <input
               className={inputCls}
               value={permissionSearch}
               onChange={(e) => setPermissionSearch(e.target.value)}
-              placeholder="Szukaj uĹĽytkownika po e-mailu lub nazwie"
+              placeholder="Szukaj użytkownika po e-mailu lub nazwie"
             />
             <button type="button" className={btnGhost}>Szukaj</button>
           </div>
           <div className={`rounded-xl border overflow-hidden ${darkMode ? "border-white/10" : "border-gray-200"}`}>
             <div className={`grid grid-cols-[1.2fr_0.7fr_0.9fr_auto] gap-2 px-3 py-2 text-xs font-semibold ${darkMode ? "bg-white/5 text-gray-300" : "bg-gray-50 text-gray-600"}`}>
-              <div>UĹĽytkownik</div>
+              <div>Użytkownik</div>
               <div>Rola</div>
               <div>Zakres</div>
               <div>Akcja</div>
             </div>
             <div className={`px-3 py-4 text-sm ${textMuted}`}>
-              Tu podepnÄ™ listÄ™ kont po potwierdzeniu modelu rĂłl w Twojej bazie (np. `profiles`, `user_roles`).
+              Tu podepnę listę kont po potwierdzeniu modelu ról w Twojej bazie (np. `profiles`, `user_roles`).
             </div>
           </div>
         </SectionCard>
@@ -1209,7 +866,7 @@ export default function AdminControlCenter({ darkMode }) {
           darkMode={darkMode}
           icon={<UserPlus size={18} />}
           title="Podadmini i zaproszenia"
-          subtitle="Formularz gotowy. WysyĹ‚ka zaproszeĹ„ wymaga bezpiecznej funkcji backendowej."
+          subtitle="Formularz gotowy. Wysyłka zaproszeń wymaga bezpiecznej funkcji backendowej."
         >
           <div className="grid md:grid-cols-[1fr_220px_auto] gap-3">
             <div className="relative">
@@ -1228,11 +885,11 @@ export default function AdminControlCenter({ darkMode }) {
               <option value="editor">Redaktor</option>
             </select>
             <button type="button" className={btnPrimary} disabled>
-              WyĹ›lij zaproszenie
+              Wyślij zaproszenie
             </button>
           </div>
           <div className={`mt-3 rounded-xl border p-3 text-sm ${softBox}`}>
-            Bezpieczne tworzenie kont i wysyĹ‚ka zaproszeĹ„ powinny dziaĹ‚aÄ‡ przez funkcjÄ™ backendowÄ… (Supabase Edge Function / serwer), bo wymagajÄ… uprawnieĹ„ serwisowych.
+            Bezpieczne tworzenie kont i wysyłka zaproszeń powinny działać przez funkcję backendową (Supabase Edge Function / serwer), bo wymagają uprawnień serwisowych.
           </div>
         </SectionCard>
       )}

@@ -22,7 +22,7 @@ export default function AdminTeams({ darkMode }) {
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState({ type: null, message: null });
   const [showForm, setShowForm] = useState(false);
-  const [hideActiveTeams, setHideActiveTeams] = useState(false);
+  const [hideInactiveTeams, setHideInactiveTeams] = useState(false);
   const [showLogoCreator, setShowLogoCreator] = useState(false);
   const [editId, setEditId] = useState(null);
   const [dangerTarget, setDangerTarget] = useState(null);
@@ -101,8 +101,8 @@ export default function AdminTeams({ darkMode }) {
   );
 
   const visibleTeams = useMemo(
-    () => (hideActiveTeams ? teams.filter((t) => !t.is_active) : teams),
-    [teams, hideActiveTeams]
+    () => (hideInactiveTeams ? teams.filter((t) => t.is_active) : teams),
+    [teams, hideInactiveTeams]
   );
 
   const mergePickerTeams = useMemo(() => {
@@ -631,11 +631,11 @@ export default function AdminTeams({ darkMode }) {
           }`}>
             <input
               type="checkbox"
-              checked={hideActiveTeams}
-              onChange={(e) => setHideActiveTeams(e.target.checked)}
+              checked={hideInactiveTeams}
+              onChange={(e) => setHideInactiveTeams(e.target.checked)}
               className="w-4 h-4"
             />
-            Ukryj aktywne
+            Ukryj nieaktywne
           </label>
           <button
             onClick={() => openMergePicker()}
