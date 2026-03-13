@@ -23,7 +23,7 @@ export default function AdminConfirmDanger({ isOpen, onClose, onConfirm, darkMod
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!password.trim()) { setError("Wpisz haslo"); return; }
+    if (!password.trim()) { setError("Wpisz hasło"); return; }
 
     setLoading(true);
     setError("");
@@ -32,17 +32,17 @@ export default function AdminConfirmDanger({ isOpen, onClose, onConfirm, darkMod
       // Weryfikuj hasło przez ponowne logowanie
       const { data: { session } } = await supabase.auth.getSession();
       const email = session?.user?.email;
-      if (!email) { setError("Brak sesji. Zaloguj sie ponownie."); setLoading(false); return; }
+      if (!email) { setError("Brak sesji. Zaloguj się ponownie."); setLoading(false); return; }
 
       const { error: authErr } = await supabase.auth.signInWithPassword({ email, password });
-      if (authErr) { setError("Bledne haslo!"); setLoading(false); return; }
+      if (authErr) { setError("Błędne hasło!"); setLoading(false); return; }
 
       // Hasło poprawne — wykonaj operację
       setPassword("");
       onClose();
       await onConfirm();
     } catch (err) {
-      setError(err.message || "Blad weryfikacji");
+      setError(err.message || "Błąd weryfikacji");
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ export default function AdminConfirmDanger({ isOpen, onClose, onConfirm, darkMod
             <ShieldAlert size={22} className="text-red-400" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-red-400">{title || "Potwierdz operacje"}</h3>
+            <h3 className="text-lg font-bold text-red-400">{title || "Potwierdź operację"}</h3>
           </div>
         </div>
 
@@ -76,13 +76,13 @@ export default function AdminConfirmDanger({ isOpen, onClose, onConfirm, darkMod
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className={`block text-sm font-medium mb-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-              Wpisz swoje haslo aby potwierdzic:
+              Wpisz swoje hasło aby potwierdzić:
             </label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Haslo admina"
+              placeholder="Hasło admina"
               autoFocus
               className={`w-full px-3 py-2 rounded-xl border outline-none transition-colors ${inputCls}`}
             />

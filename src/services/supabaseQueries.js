@@ -199,6 +199,8 @@ export async function fetchAllMatches(seasonYear) {
     const fixture = {
       id: row.id,
       league: row.league_code,
+      homeTeamId: row.home_team_id,
+      awayTeamId: row.away_team_id,
       status: row.status || 'scheduled',
       round: row.round,
       date: row.match_date,
@@ -225,7 +227,16 @@ export async function fetchAllMatches(seasonYear) {
         awayGoals: row.away_goals ?? 0,
         status: row.status,
         referee: row.referee || '',
-        mvp: row.mvp_name ? { playerName: row.mvp_name, team: null } : null,
+        mvp: row.mvp_name ? {
+          playerId: row.mvp_player_id,
+          playerName: row.mvp_name,
+          team:
+            row.mvp_team_id === row.home_team_id
+              ? row.home_team_name
+              : row.mvp_team_id === row.away_team_id
+                ? row.away_team_name
+                : null,
+        } : null,
         events: [],
         homeLineup: [],
         awayLineup: [],
@@ -446,12 +457,25 @@ export async function fetchPolls() {
     const options = (poll.poll_options || [])
       .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
+    // Format daty i godziny zakończenia
+    let endDate = null;
+    let endTime = null;
+    if (poll.end_date) {
+      const d = new Date(poll.end_date);
+      endDate = d.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      endTime = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    }
+
     return {
       id: poll.id,
       question: poll.title,
+      title: poll.title,
       options: options.map(o => o.option_text),
       votes: options.map(o => o.vote_count || 0),
       active: poll.status === 'active',
+      status: poll.status || 'active',
+      endDate,
+      endTime,
     };
   });
 }
@@ -506,6 +530,114 @@ export async function fetchActiveTyperConfig(seasonYear, round) {
     console.warn('Błąd pobierania konfiguracji typera:', err?.message || err);
     return null;
   }
+}
+
+function sortGalleryPhotos(rows) {
+  return (rows || [])
+    .slice()
+    .sort((a, b) => {
+      const orderDiff = (a.display_order || 0) - (b.display_order || 0);
+      if (orderDiff !== 0) return orderDiff;
+      return String(a.created_at || "").localeCompare(String(b.created_at || ""));
+    })
+    .map((photo) => ({
+      id: photo.id,
+      url: photo.photo_url || '',
+      caption: photo.caption || '',
+      displayOrder: photo.display_order || 0,
+      createdAt: photo.created_at || null,
+    }))
+    .filter((photo) => photo.url);
+}
+
+function normalizeGalleryAlbum(album) {
+  const photos = sortGalleryPhotos(album?.gallery_photos || []);
+  return {
+    id: album?.id || null,
+    matchId: album?.match_id || null,
+    title: album?.title || '',
+    description: album?.description || '',
+    coverUrl: album?.cover_photo_url || photos[0]?.url || '',
+    publishedAt: album?.published_at || album?.created_at || null,
+    photoCount: photos.length,
+    photos,
+  };
+}
+
+export async function fetchSeasonMatchGalleries(seasonYear) {
+  const { data: season, error: seasonError } = await publicSupabase
+    .from('seasons')
+    .select('id')
+    .eq('year', seasonYear)
+    .single();
+
+  if (seasonError || !season?.id) return [];
+
+  const { data, error } = await publicSupabase
+    .from('gallery_albums')
+    .select(`
+      id,
+      title,
+      description,
+      match_id,
+      cover_photo_url,
+      published_at,
+      created_at,
+      gallery_photos (
+        id,
+        photo_url,
+        display_order,
+        created_at
+      )
+    `)
+    .eq('season_id', season.id)
+    .not('match_id', 'is', null)
+    .order('published_at', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn('Błąd pobierania galerii meczowych:', error.message);
+    return [];
+  }
+
+  return (data || [])
+    .map(normalizeGalleryAlbum)
+    .filter((album) => album.matchId && album.photoCount > 0);
+}
+
+export async function fetchMatchGallery(matchId) {
+  if (!matchId) return null;
+
+  const { data, error } = await publicSupabase
+    .from('gallery_albums')
+    .select(`
+      id,
+      title,
+      description,
+      match_id,
+      cover_photo_url,
+      published_at,
+      created_at,
+      gallery_photos (
+        id,
+        photo_url,
+        caption,
+        display_order,
+        created_at
+      )
+    `)
+    .eq('match_id', matchId)
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  if (error) throw error;
+
+  const album = data?.[0];
+  if (!album) return null;
+
+  const normalized = normalizeGalleryAlbum(album);
+  if (normalized.photoCount === 0) return null;
+  return normalized;
 }
 
 export async function fetchFreeAgents() {
@@ -633,7 +765,7 @@ export async function fetchMatchDetails(matchId) {
       .order('event_order'),
     publicSupabase
       .from('match_lineups')
-      .select('*, players(display_name, position)')
+      .select('*, players(display_name, position), teams(name)')
       .eq('match_id', matchId),
   ]);
 
@@ -641,6 +773,7 @@ export async function fetchMatchDetails(matchId) {
     type: e.event_type === 'YELLOW_CARD' ? 'YELLOW' :
           e.event_type === 'RED_CARD' ? 'RED' :
           e.event_type,
+    teamId: e.team_id,
     team: e.teams?.name || '',
     playerId: e.player_id,
     playerName: e.players?.display_name || '',
@@ -651,24 +784,16 @@ export async function fetchMatchDetails(matchId) {
     minute: e.minute,
   }));
 
-  const homeLineup = [];
-  const awayLineup = [];
-  for (const l of (lineups || [])) {
-    const entry = {
-      id: l.player_id,
-      name: l.players?.display_name || '',
-      pos: l.players?.position || '',
-      number: l.shirt_number,
-    };
-    // Rozdzielenie na home/away wymaga match.home_team_id - przekazujemy team_id
-    // Na razie wrzucamy wszystko do jednej listy, App.js obsłuży
-    if (l.team_id) {
-      entry.teamId = l.team_id;
-    }
-    homeLineup.push(entry); // App.js rozdzieli po team_id
-  }
+  const transformedLineups = (lineups || []).map(l => ({
+    id: l.player_id,
+    name: l.players?.display_name || '',
+    pos: l.position_played || l.players?.position || '',
+    number: l.shirt_number,
+    teamId: l.team_id,
+    team: l.teams?.name || '',
+  }));
 
-  return { events: transformedEvents, lineups: homeLineup };
+  return { events: transformedEvents, lineups: transformedLineups };
 }
 
 // ============================================================

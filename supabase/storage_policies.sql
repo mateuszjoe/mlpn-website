@@ -28,3 +28,16 @@ CREATE POLICY "player_photos_admin_update" ON storage.objects
 
 CREATE POLICY "player_photos_admin_delete" ON storage.objects
   FOR DELETE USING (bucket_id = 'player-photos' AND is_admin());
+
+-- Match galleries - publiczny odczyt, admin zapis
+CREATE POLICY "match_galleries_public_read" ON storage.objects
+  FOR SELECT USING (bucket_id = 'match-galleries');
+
+CREATE POLICY "match_galleries_admin_insert" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'match-galleries' AND is_admin());
+
+CREATE POLICY "match_galleries_admin_update" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'match-galleries' AND is_admin());
+
+CREATE POLICY "match_galleries_admin_delete" ON storage.objects
+  FOR DELETE USING (bucket_id = 'match-galleries' AND is_admin());

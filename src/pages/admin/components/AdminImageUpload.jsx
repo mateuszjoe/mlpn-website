@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Upload, Image } from "lucide-react";
 import { supabase } from "../../../lib/supabase";
 
-export default function AdminImageUpload({ bucket, folder, currentUrl, onUpload, darkMode, label = "Zdjecie" }) {
+export default function AdminImageUpload({ bucket, folder, currentUrl, onUpload, darkMode, label = "Zdjęcie" }) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentUrl);
   const [error, setError] = useState(null);
@@ -14,7 +14,7 @@ export default function AdminImageUpload({ bucket, folder, currentUrl, onUpload,
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      setError("Plik za duzy (max 2MB)");
+      setError("Plik za duży (max 2MB)");
       return;
     }
 
@@ -29,7 +29,7 @@ export default function AdminImageUpload({ bucket, folder, currentUrl, onUpload,
       .upload(fileName, file, { upsert: true });
 
     if (uploadError) {
-      setError("Blad uploadu: " + uploadError.message);
+      setError("Błąd uploadu: " + uploadError.message);
       setUploading(false);
       return;
     }
@@ -53,7 +53,7 @@ export default function AdminImageUpload({ bucket, folder, currentUrl, onUpload,
         )}
         <label className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${borderColor} cursor-pointer hover:bg-white/5 transition-colors text-sm ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
           <Upload size={16} />
-          {uploading ? "Przesylanie..." : "Wybierz plik"}
+          {uploading ? "Przesyłanie..." : "Wybierz plik"}
           <input type="file" accept="image/*" onChange={handleUpload} className="hidden" disabled={uploading} />
         </label>
       </div>

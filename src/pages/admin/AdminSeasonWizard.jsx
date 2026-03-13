@@ -9,8 +9,8 @@ import {
 // ── Helpers ──
 const pad2 = (n) => String(n).padStart(2, "0");
 const fmtDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-const dayLabels = ["Pon", "Wt", "Sr", "Czw", "Pt", "Sob", "Nie"];
-const monthLabels = ["Styczen","Luty","Marzec","Kwiecien","Maj","Czerwiec","Lipiec","Sierpien","Wrzesien","Pazdziernik","Listopad","Grudzien"];
+const dayLabels = ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Nie"];
+const monthLabels = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
 const roundsPerRunda = (c) => c >= 2 ? c - 1 : 0;
 const roundsForTeams = (c) => roundsPerRunda(c) * 2;
 
@@ -52,10 +52,10 @@ const TIEBREAKER_OPTIONS = [
   { value: "goals_conceded", label: "Bramki stracone" },
   { value: "goals_scored", label: "Bramki strzelone" },
   { value: "fair_play", label: "Fair play (mniej kartek)" },
-  { value: "alphabetical", label: "Kolejnosc alfabetyczna" },
-  { value: "draws", label: "Liczba remisow" },
+  { value: "alphabetical", label: "Kolejność alfabetyczna" },
+  { value: "draws", label: "Liczba remisów" },
   { value: "wins", label: "Liczba wygranych" },
-  { value: "head_to_head", label: "Mecze bezposrednie" },
+  { value: "head_to_head", label: "Mecze bezpośrednie" },
   { value: "points", label: "Punkty" },
 ];
 
@@ -212,7 +212,7 @@ export default function AdminSeasonWizard({ darkMode }) {
     const sd = season.start_date || matches?.[0]?.match_date;
     if (sd) { const d = new Date(sd); setCalMonth({ year: d.getFullYear(), month: d.getMonth() }); }
 
-    addToast("success", `Zaladowano: ${season.name}`);
+    addToast("success", `Załadowano: ${season.name}`);
   };
 
   const resetWizard = () => {
@@ -225,9 +225,9 @@ export default function AdminSeasonWizard({ darkMode }) {
 
   const steps = [
     { num: 1, label: "Sezon" }, { num: 2, label: "Zasady" },
-    { num: 3, label: "Druzyny" }, { num: 4, label: "Kalendarz" },
+    { num: 3, label: "Drużyny" }, { num: 4, label: "Kalendarz" },
     { num: 5, label: "Timeline" }, { num: 6, label: "Generuj" },
-    { num: 7, label: "Podglad" }, { num: 8, label: "Publikuj" },
+    { num: 7, label: "Podgląd" }, { num: 8, label: "Publikuj" },
   ];
 
   const tpl = (lid) => Object.values(teamAssignments).filter(v => v === lid).length;
@@ -255,10 +255,10 @@ export default function AdminSeasonWizard({ darkMode }) {
     const { data: s } = await supabase.from("seasons").select("id, year").lt("year", parseInt(seasonForm.year)).order("year", { ascending: false }).limit(1);
     if (!s?.length) { addToast("error", "Brak poprzedniego sezonu"); return; }
     const { data: pt } = await supabase.from("season_teams").select("team_id, league_id").eq("season_id", s[0].id);
-    if (!pt?.length) { addToast("error", "Brak druzyn"); return; }
+    if (!pt?.length) { addToast("error", "Brak drużyn"); return; }
     const m = {}; for (const p of pt) m[p.team_id] = p.league_id;
     setTeamAssignments(m);
-    addToast("success", `Import ${pt.length} druzyn`);
+    addToast("success", `Import ${pt.length} drużyn`);
   };
 
   // ═══ KROK 4: Kalendarz ═══
@@ -368,24 +368,24 @@ export default function AdminSeasonWizard({ darkMode }) {
       if (slErr) throw new Error("Ligi: " + slErr.message);
 
       // 3. Przypisz drużyny
-      setGenLog(l => [...l, "Przypisywanie druzyn..."]);
+      setGenLog(l => [...l, "Przypisywanie drużyn..."]);
       const stEntries = Object.entries(teamAssignments).map(([tid, lid]) => ({
         season_id: sid, league_id: lid, team_id: tid,
       }));
       const { error: stErr } = await supabase.from("season_teams").insert(stEntries);
-      if (stErr) throw new Error("Druzyny: " + stErr.message);
+      if (stErr) throw new Error("Drużyny: " + stErr.message);
 
       // 4. Generuj round-robin
       const firstDate = matchWeekends[0] || seasonForm.start_date || fmtDate(new Date());
       for (const league of leagues) {
         const count = tpl(league.id);
         if (count < 2) continue;
-        setGenLog(l => [...l, `Generowanie ${league.name} (${count} druzyn)...`]);
+        setGenLog(l => [...l, `Generowanie ${league.name} (${count} drużyn)...`]);
         const { data, error } = await supabase.rpc("generate_round_robin", {
           p_season_id: sid, p_league_id: league.id, p_start_date: firstDate,
         });
         if (error) throw new Error(`${league.name}: ${error.message}`);
-        setGenLog(l => [...l, `  ${data?.matches_created || 0} meczow`]);
+        setGenLog(l => [...l, `  ${data?.matches_created || 0} meczów`]);
 
         await supabase.rpc("initialize_standings", { p_season_id: sid, p_league_id: league.id });
       }
@@ -449,7 +449,7 @@ export default function AdminSeasonWizard({ darkMode }) {
         setGenLog(l => [...l, `  ${league.name}: R1=${rpr} kol, R2=${rpr} kol`]);
       }
       if (updateErrors > 0) {
-        setGenLog(l => [...l, `  UWAGA: ${updateErrors} bledow podczas przypisywania dat`]);
+        setGenLog(l => [...l, `  UWAGA: ${updateErrors} błędów podczas przypisywania dat`]);
       }
 
       setGenLog(l => [...l, "Gotowe!"]);
@@ -457,7 +457,7 @@ export default function AdminSeasonWizard({ darkMode }) {
       setStep(7);
       await loadPreview(sid);
     } catch (err) {
-      setGenLog(l => [...l, `BLAD: ${err.message}`]);
+      setGenLog(l => [...l, `BŁĄD: ${err.message}`]);
       addToast("error", err.message);
       // Cleanup: usuń sezon jeśli został utworzony
       if (createdSeasonId) {
@@ -497,7 +497,7 @@ export default function AdminSeasonWizard({ darkMode }) {
   const handleMatchClick = async (matchId) => {
     if (!selectedSwapMatch) {
       setSelectedSwapMatch(matchId);
-      addToast("info", "Mecz zaznaczony — kliknij inny aby zamienic pozycje");
+      addToast("info", "Mecz zaznaczony — kliknij inny aby zamienić pozycję");
       return;
     }
     if (selectedSwapMatch === matchId) {
@@ -564,7 +564,7 @@ export default function AdminSeasonWizard({ darkMode }) {
           {/* Edycja istniejącego sezonu */}
           {existingSeasons.length > 0 && !editSeasonId && (
             <div className={`mb-6 pb-6 border-b ${darkMode ? "border-white/10" : "border-gray-200"}`}>
-              <h3 className="font-semibold mb-3">Edytuj istniejacy sezon</h3>
+              <h3 className="font-semibold mb-3">Edytuj istniejący sezon</h3>
               <div className="space-y-1 max-h-48 overflow-y-auto">
                 {existingSeasons.map(s => (
                   <button key={s.id} onClick={() => loadExistingSeason(s.id)}
@@ -577,7 +577,7 @@ export default function AdminSeasonWizard({ darkMode }) {
                       s.status === "active" ? "bg-green-500/20 text-green-400" :
                       s.status === "completed" ? "bg-blue-500/20 text-blue-400" :
                       darkMode ? "bg-white/10 text-gray-400" : "bg-gray-100 text-gray-500"
-                    }`}>{s.status === "active" ? "Aktywny" : s.status === "completed" ? "Zakonczony" : s.status === "planned" ? "Planowany" : s.status}</span>
+                    }`}>{s.status === "active" ? "Aktywny" : s.status === "completed" ? "Zakończony" : s.status === "planned" ? "Planowany" : s.status}</span>
                   </button>
                 ))}
               </div>
@@ -600,7 +600,7 @@ export default function AdminSeasonWizard({ darkMode }) {
             <AdminFormField label="Data startu" name="start_date" type="date" value={seasonForm.start_date}
               onChange={e => setSeasonForm(f => ({ ...f, start_date: e.target.value }))} darkMode={darkMode} />
           </div>
-          <p className={`text-xs mt-2 ${muted}`}>Sezon zostanie zapisany w bazie dopiero po pomyslnym wygenerowaniu.</p>
+          <p className={`text-xs mt-2 ${muted}`}>Sezon zostanie zapisany w bazie dopiero po pomyślnym wygenerowaniu.</p>
           <div className="mt-6">
             <button onClick={() => {
               if (seasonForm.start_date) {
@@ -624,7 +624,7 @@ export default function AdminSeasonWizard({ darkMode }) {
               <div className="grid grid-cols-2 gap-3 max-w-sm">
                 <AdminFormField label="Czas meczu (min)" name="dur" type="number" darkMode={darkMode}
                   value={matchDuration} onChange={e => setMatchDuration(parseInt(e.target.value) || 60)} min={30} max={120} />
-                <AdminFormField label="Przerwa miedzy meczami (min)" name="brk" type="number" darkMode={darkMode}
+                <AdminFormField label="Przerwa między meczami (min)" name="brk" type="number" darkMode={darkMode}
                   value={breakBetween} onChange={e => setBreakBetween(parseInt(e.target.value) || 10)} min={0} max={60} />
               </div>
             </div>
@@ -644,7 +644,7 @@ export default function AdminSeasonWizard({ darkMode }) {
             <div>
               <h3 className="font-semibold mb-3">Walkower</h3>
               <div className="grid grid-cols-2 gap-3 max-w-xs">
-                <AdminFormField label="Bramki zwyciezcy" name="ww" type="number" darkMode={darkMode} value={rules.walkover_goals_winner}
+                <AdminFormField label="Bramki zwycięzcy" name="ww" type="number" darkMode={darkMode} value={rules.walkover_goals_winner}
                   onChange={e => setRules(r => ({ ...r, walkover_goals_winner: parseInt(e.target.value) || 0 }))} />
                 <AdminFormField label="Bramki przegranego" name="wl" type="number" darkMode={darkMode} value={rules.walkover_goals_loser}
                   onChange={e => setRules(r => ({ ...r, walkover_goals_loser: parseInt(e.target.value) || 0 }))} />
@@ -654,14 +654,14 @@ export default function AdminSeasonWizard({ darkMode }) {
             <div>
               <h3 className="font-semibold mb-3">Karty</h3>
               <div className="max-w-xs">
-                <AdminFormField label="Zolte karty do pauzy" name="yc" type="number" darkMode={darkMode} value={rules.yellow_card_suspension_threshold}
+                <AdminFormField label="Żółte karty do pauzy" name="yc" type="number" darkMode={darkMode} value={rules.yellow_card_suspension_threshold}
                   onChange={e => setRules(r => ({ ...r, yellow_card_suspension_threshold: parseInt(e.target.value) || 2 }))} />
               </div>
             </div>
 
             {/* Kolejność rozstrzygania */}
             <div>
-              <h3 className="font-semibold mb-3">Kolejnosc rozstrzygania pozycji w tabeli</h3>
+              <h3 className="font-semibold mb-3">Kolejność rozstrzygania pozycji w tabeli</h3>
               <div className="space-y-2 max-w-md">
                 {tiebreakers.map((tb, idx) => (
                   <div key={idx} className="flex items-center gap-3">
@@ -713,7 +713,7 @@ export default function AdminSeasonWizard({ darkMode }) {
 
           <div className="mt-6 flex gap-3">
             <button onClick={() => setStep(1)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Wstecz</span></button>
-            <button onClick={() => { setStep(3); setActiveLeagueIdx(0); }} className={btnP}>Dalej: Druzyny</button>
+            <button onClick={() => { setStep(3); setActiveLeagueIdx(0); }} className={btnP}>Dalej: Drużyny</button>
           </div>
         </div>
       )}
@@ -722,7 +722,7 @@ export default function AdminSeasonWizard({ darkMode }) {
       {step === 3 && (
         <div className={`rounded-2xl border p-6 ${card}`}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Przypisz druzyny</h2>
+            <h2 className="text-xl font-bold">Przypisz drużyny</h2>
             <button onClick={importTeams} className={btnS}><span className="flex items-center gap-2"><Copy size={16} /> Import</span></button>
           </div>
 
@@ -746,7 +746,7 @@ export default function AdminSeasonWizard({ darkMode }) {
           {curLeague && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className={`rounded-xl border p-4 ${darkMode ? "border-white/10" : "border-gray-200"}`}>
-                <h3 className={`text-sm font-semibold mb-3 ${muted}`}>Dostepne ({availTeams.filter(t => teamAssignments[t.id] !== curLeague.id).length})</h3>
+                <h3 className={`text-sm font-semibold mb-3 ${muted}`}>Dostępne ({availTeams.filter(t => teamAssignments[t.id] !== curLeague.id).length})</h3>
                 <div className="space-y-1 max-h-96 overflow-y-auto">
                   {availTeams.filter(t => teamAssignments[t.id] !== curLeague.id).map(t => (
                     <button key={t.id} onClick={() => toggleTeam(t.id)}
@@ -761,7 +761,7 @@ export default function AdminSeasonWizard({ darkMode }) {
               </div>
               <div className={`rounded-xl border p-4 ${darkMode ? "border-yellow-500/30 bg-yellow-500/5" : "border-yellow-300 bg-yellow-50"}`}>
                 <h3 className="text-sm font-semibold mb-1">{curLeague.name}</h3>
-                <p className={`text-xs mb-3 ${muted}`}>{inCurLeague.length} druzyn = {roundsPerRunda(inCurLeague.length)} kol/runda × 2 = {roundsForTeams(inCurLeague.length)} kolejek</p>
+                <p className={`text-xs mb-3 ${muted}`}>{inCurLeague.length} drużyn = {roundsPerRunda(inCurLeague.length)} kol/runda × 2 = {roundsForTeams(inCurLeague.length)} kolejek</p>
                 <div className="space-y-1 max-h-96 overflow-y-auto">
                   {inCurLeague.map((t, i) => (
                     <button key={t.id} onClick={() => toggleTeam(t.id)}
@@ -792,10 +792,10 @@ export default function AdminSeasonWizard({ darkMode }) {
       {/* ═══ KROK 4: KALENDARZ ═══ */}
       {step === 4 && calMonth && (
         <div className={`rounded-2xl border p-6 ${card}`}>
-          <h2 className="text-xl font-bold mb-2">Wybierz weekendy meczowe</h2>
+          <h2 className="text-xl font-bold mb-2">Wybierz weekendy meczówe</h2>
           <p className={`text-sm mb-4 ${muted}`}>
-            Kliknij w weekend (sob+nie) aby oznaczyc jako termin.
-            Potrzebujesz <strong>{totalRoundsNeeded}</strong> weekendow ({maxRPR} kol. × 2 rundy).
+            Kliknij w weekend (sob+nie) aby oznaczyć jako termin.
+            Potrzebujesz <strong>{totalRoundsNeeded}</strong> weekendów ({maxRPR} kol. × 2 rundy).
             Wybrano: <strong className={matchWeekends.length >= totalRoundsNeeded ? "text-green-400" : "text-orange-400"}>{matchWeekends.length}</strong>.
             {maxRPR > 0 && <><br/>Runda 1: weekendy 1–{maxRPR} • Runda 2: weekendy {maxRPR+1}–{maxRPR*2}</>}
           </p>
@@ -863,10 +863,10 @@ export default function AdminSeasonWizard({ darkMode }) {
       {/* ═══ KROK 5: TIMELINE ═══ */}
       {step === 5 && (
         <div className={`rounded-2xl border p-6 ${card}`}>
-          <h2 className="text-xl font-bold mb-2">Rozklad dnia meczowego</h2>
+          <h2 className="text-xl font-bold mb-2">Rozkład dnia meczowego</h2>
           <p className={`text-sm mb-4 ${muted}`}>
             Ustaw godziny startowe, potem kliknij kafelek ligi i przypisz go do slotu na osi czasu.
-            Kazdy mecz = {matchDuration} min + {breakBetween} min przerwy.
+            Każdy mecz = {matchDuration} min + {breakBetween} min przerwy.
           </p>
 
           {/* Godziny startu */}
@@ -907,7 +907,7 @@ export default function AdminSeasonWizard({ darkMode }) {
             })}
           </div>
 
-          {activeTile && <p className={`text-xs mb-4 ${muted}`}>Kliknij w pusty slot aby przypisac lige. Kliknij zajety slot tej ligi aby usunac.</p>}
+          {activeTile && <p className={`text-xs mb-4 ${muted}`}>Kliknij w pusty slot aby przypisać ligę. Kliknij zajęty slot tej ligi aby usunąć.</p>}
 
           {/* Timeline sobota */}
           <div className="space-y-4">
@@ -968,8 +968,8 @@ export default function AdminSeasonWizard({ darkMode }) {
               return (
                 <div key={lg.id} className={`rounded-xl border p-4 text-center ${darkMode ? "border-white/10" : "border-gray-200"}`}>
                   <div className="font-bold">{lg.name}</div>
-                  <div className={`text-2xl font-black mt-1 ${leagueTextColors[idx]}`}>{c} druzyn</div>
-                  <div className={`text-sm ${muted}`}>{roundsPerRunda(c)} kol/runda × 2 = {roundsForTeams(c)} kol. • {roundsForTeams(c) * matchesPerRound(lg.id)} meczow</div>
+                  <div className={`text-2xl font-black mt-1 ${leagueTextColors[idx]}`}>{c} drużyn</div>
+                  <div className={`text-sm ${muted}`}>{roundsPerRunda(c)} kol/runda × 2 = {roundsForTeams(c)} kol. • {roundsForTeams(c) * matchesPerRound(lg.id)} meczów</div>
                 </div>
               );
             })}
@@ -977,20 +977,20 @@ export default function AdminSeasonWizard({ darkMode }) {
 
           <div className={`rounded-xl border p-4 mb-6 text-sm ${darkMode ? "border-white/10" : "border-gray-200"}`}>
             <div className="grid grid-cols-2 gap-2">
-              <div><span className={muted}>Weekendow:</span> <strong>{matchWeekends.length}</strong></div>
+              <div><span className={muted}>Weekendów:</span> <strong>{matchWeekends.length}</strong></div>
               <div><span className={muted}>Mecz:</span> <strong>{matchDuration} min + {breakBetween} min</strong></div>
             </div>
           </div>
 
           {genLog.length > 0 && (
             <div className={`rounded-xl border p-3 mb-4 font-mono text-xs max-h-40 overflow-y-auto ${darkMode ? "border-white/10 bg-black/30" : "border-gray-200 bg-gray-50"}`}>
-              {genLog.map((l, i) => <div key={i} className={l.startsWith("BLAD") ? "text-red-400" : muted}>{l}</div>)}
+              {genLog.map((l, i) => <div key={i} className={l.startsWith("BŁĄD") ? "text-red-400" : muted}>{l}</div>)}
             </div>
           )}
 
           {editSeasonId && editHasResults && (
             <div className={`rounded-xl border p-3 mb-4 text-sm ${darkMode ? "border-red-500/30 bg-red-500/10 text-red-300" : "border-red-200 bg-red-50 text-red-800"}`}>
-              <strong>Uwaga:</strong> Ten sezon ma rozegrane mecze z wynikami. Regenerowanie usunie WSZYSTKIE wyniki i zdarzenia meczowe!
+              <strong>Uwaga:</strong> Ten sezon ma rozegrane mecze z wynikami. Regenerowanie usunie WSZYSTKIE wyniki i zdarzenia meczówe!
             </div>
           )}
 
@@ -1009,7 +1009,7 @@ export default function AdminSeasonWizard({ darkMode }) {
       {step === 7 && (
         <div className={`rounded-2xl border p-6 ${card}`}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Podglad terminarza</h2>
+            <h2 className="text-xl font-bold">Podgląd terminarza</h2>
             <div className="flex gap-2">
               {leagues.map(lg => (
                 <button key={lg.id} onClick={() => { setPreviewLeague(lg.id); setSelectedSwapMatch(null); }}
@@ -1018,7 +1018,7 @@ export default function AdminSeasonWizard({ darkMode }) {
             </div>
           </div>
 
-          {Object.keys(grouped).length === 0 ? <p className={muted}>Brak meczow.</p> : (
+          {Object.keys(grouped).length === 0 ? <p className={muted}>Brak meczów.</p> : (
             <div className="space-y-4 max-h-[600px] overflow-y-auto">
               {Object.entries(grouped).map(([round, matches]) => (
                 <div key={round} className={`rounded-xl border ${darkMode ? "border-white/10" : "border-gray-200"}`}>
@@ -1069,17 +1069,17 @@ export default function AdminSeasonWizard({ darkMode }) {
             <div className="text-4xl mb-3">🏆</div>
             <h3 className="text-lg font-bold mb-2">{seasonForm.name || `Sezon ${seasonForm.year}`}</h3>
             <div className={`text-sm space-y-1 ${muted}`}>
-              {leagues.map(l => <p key={l.id}>{l.name}: {tpl(l.id)} druzyn, {roundsPerRunda(tpl(l.id))} kol/runda × 2 = {roundsForTeams(tpl(l.id))} kol.</p>)}
+              {leagues.map(l => <p key={l.id}>{l.name}: {tpl(l.id)} drużyn, {roundsPerRunda(tpl(l.id))} kol/runda × 2 = {roundsForTeams(tpl(l.id))} kol.</p>)}
               <p className="mt-2">{matchWeekends[0] || "—"} → {matchWeekends[matchWeekends.length-1] || "—"}</p>
             </div>
           </div>
           <div className={`rounded-xl border p-4 mb-6 ${darkMode ? "border-yellow-500/20 bg-yellow-500/5" : "border-yellow-200 bg-yellow-50"}`}>
             <p className={`text-sm ${darkMode ? "text-yellow-300" : "text-yellow-800"}`}>
-              Sezon stanie sie <strong>aktywny</strong> i <strong>biezacy</strong>.
+              Sezon stanie się <strong>aktywny</strong> i <strong>bieżący</strong>.
             </p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => setStep(7)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Podglad</span></button>
+            <button onClick={() => setStep(7)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Podgląd</span></button>
             <button onClick={publish} disabled={publishing}
               className="px-8 py-4 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-black text-lg hover:from-green-400 hover:to-emerald-400 disabled:opacity-40 flex items-center gap-3">
               {publishing ? <><Loader2 size={24} className="animate-spin" /> Publikowanie...</> : <><Rocket size={24} /> PUBLIKUJ SEZON</>}

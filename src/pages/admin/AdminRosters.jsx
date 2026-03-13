@@ -84,18 +84,18 @@ export default function AdminRosters({ darkMode }) {
     if (error) {
       setAlert({ type: "error", message: error.message });
     } else {
-      setAlert({ type: "success", message: "Druzyna dodana do ligi" });
+      setAlert({ type: "success", message: "Drużyna dodana do ligi" });
       loadSeasonTeams();
     }
   }
 
   async function removeTeamFromSeason(stId) {
-    if (!window.confirm("Usunac druzyne z tej ligi?")) return;
+    if (!window.confirm("Usunąć drużynę z tej ligi?")) return;
     const { error } = await supabase.from("season_teams").delete().eq("id", stId);
     if (error) {
       setAlert({ type: "error", message: error.message });
     } else {
-      setAlert({ type: "success", message: "Druzyna usunieta z ligi" });
+      setAlert({ type: "success", message: "Drużyna usunięta z ligi" });
       loadSeasonTeams();
     }
   }
@@ -122,9 +122,9 @@ export default function AdminRosters({ darkMode }) {
   }
 
   async function removeFromRoster(id) {
-    if (!window.confirm("Usunac zawodnika z kadry?")) return;
+    if (!window.confirm("Usunąć zawodnika z kadry?")) return;
     await supabase.from("team_players").update({ left_date: new Date().toISOString().split("T")[0] }).eq("id", id);
-    setAlert({ type: "success", message: "Zawodnik usuniety z kadry" });
+    setAlert({ type: "success", message: "Zawodnik usunięty z kadry" });
     loadRoster();
   }
 
@@ -154,7 +154,7 @@ export default function AdminRosters({ darkMode }) {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Kadry druzyn</h2>
+      <h2 className="text-2xl font-bold">Kadry drużyn</h2>
 
       <AdminAlert type={alert.type} message={alert.message} onClose={() => setAlert({ type: null, message: null })} />
 
@@ -166,7 +166,7 @@ export default function AdminRosters({ darkMode }) {
         <AdminFormField label="Liga" name="league" type="select" value={selectedLeague}
           onChange={e => setSelectedLeague(e.target.value)} darkMode={darkMode}
           options={leagues.map(l => ({ value: l.id, label: l.name }))} />
-        <AdminFormField label="Druzyna" name="team" type="select" value={selectedTeam}
+        <AdminFormField label="Drużyna" name="team" type="select" value={selectedTeam}
           onChange={e => setSelectedTeam(e.target.value)} darkMode={darkMode}
           options={seasonTeams.map(st => ({ value: st.teams?.id, label: st.teams?.name }))} />
       </div>
@@ -174,9 +174,9 @@ export default function AdminRosters({ darkMode }) {
       {/* Teams in season */}
       <div className={`rounded-2xl border p-4 ${card}`}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold flex items-center gap-2"><Shield size={16} /> Druzyny w lidze ({seasonTeams.length})</h3>
+          <h3 className="font-semibold flex items-center gap-2"><Shield size={16} /> Drużyny w lidze ({seasonTeams.length})</h3>
           <button onClick={() => setShowAddTeam(true)} className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300">
-            <Plus size={14} /> Dodaj druzyne do ligi
+            <Plus size={14} /> Dodaj drużynę do ligi
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -185,12 +185,12 @@ export default function AdminRosters({ darkMode }) {
               selectedTeam === st.teams?.id ? "border-yellow-500/50 bg-yellow-500/10" : darkMode ? "border-white/10" : "border-gray-200"
             }`}>
               <button onClick={() => setSelectedTeam(st.teams?.id)} className="font-medium">{st.teams?.name}</button>
-              <button onClick={() => removeTeamFromSeason(st.id)} className="text-red-400 hover:text-red-300 ml-1" title="Usun z ligi">
+              <button onClick={() => removeTeamFromSeason(st.id)} className="text-red-400 hover:text-red-300 ml-1" title="Usuń z ligi">
                 <UserMinus size={14} />
               </button>
             </div>
           ))}
-          {seasonTeams.length === 0 && <p className={`text-sm ${textMuted}`}>Brak druzyn - dodaj je do ligi</p>}
+          {seasonTeams.length === 0 && <p className={`text-sm ${textMuted}`}>Brak drużyn - dodaj je do ligi</p>}
         </div>
       </div>
 
@@ -198,7 +198,7 @@ export default function AdminRosters({ darkMode }) {
       {selectedTeam && (
         <div className={`rounded-2xl border p-4 ${card}`}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Kadra ({roster.length} zawodnikow)</h3>
+            <h3 className="font-semibold">Kadra ({roster.length} zawodników)</h3>
             <button onClick={() => { setPlayerSearch(""); setShowAddPlayer(true); }}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-yellow-500 text-black font-medium text-sm hover:bg-yellow-400">
               <Plus size={14} /> Dodaj zawodnika
@@ -223,13 +223,13 @@ export default function AdminRosters({ darkMode }) {
                 </div>
               </div>
             ))}
-            {roster.length === 0 && <p className={`text-sm text-center py-4 ${textMuted}`}>Brak zawodnikow w kadrze</p>}
+            {roster.length === 0 && <p className={`text-sm text-center py-4 ${textMuted}`}>Brak zawodników w kadrze</p>}
           </div>
         </div>
       )}
 
       {/* Add team modal */}
-      <AdminModal isOpen={showAddTeam} onClose={() => setShowAddTeam(false)} title="Dodaj druzyne do ligi" darkMode={darkMode}>
+      <AdminModal isOpen={showAddTeam} onClose={() => setShowAddTeam(false)} title="Dodaj drużynę do ligi" darkMode={darkMode}>
         <div className="space-y-2 max-h-60 overflow-y-auto">
           {availableTeams.map(t => (
             <button key={t.id} onClick={() => { addTeamToSeason(t.id); setShowAddTeam(false); }}
@@ -237,7 +237,7 @@ export default function AdminRosters({ darkMode }) {
               <span className="font-medium">{t.name}</span> <span className={`text-xs ${textMuted}`}>({t.abbreviation})</span>
             </button>
           ))}
-          {availableTeams.length === 0 && <p className={`text-sm text-center py-4 ${textMuted}`}>Wszystkie druzyny sa juz w lidze</p>}
+          {availableTeams.length === 0 && <p className={`text-sm text-center py-4 ${textMuted}`}>Wszystkie drużyny są już w lidze</p>}
         </div>
       </AdminModal>
 
@@ -265,7 +265,7 @@ export default function AdminRosters({ darkMode }) {
           <div className="grid grid-cols-2 gap-4">
             <AdminFormField label="Numer" name="shirt_number" type="number" value={addForm.shirt_number}
               onChange={e => setAddForm(f => ({ ...f, shirt_number: e.target.value }))} darkMode={darkMode} min={1} max={99} />
-            <AdminFormField label="Data dolaczenia" name="joined_date" type="date" value={addForm.joined_date}
+            <AdminFormField label="Data dołączenia" name="joined_date" type="date" value={addForm.joined_date}
               onChange={e => setAddForm(f => ({ ...f, joined_date: e.target.value }))} darkMode={darkMode} />
           </div>
           <AdminFormField label="Kapitan" name="is_captain" type="checkbox" value={addForm.is_captain}

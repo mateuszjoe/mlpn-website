@@ -43,7 +43,7 @@ export default function AdminTeams({ darkMode }) {
   const [showDeactivate, setShowDeactivate] = useState(null);
   const [form, setForm] = useState({
     name: "", short_name: "", abbreviation: "", logo_url: "",
-    founded_year: "", home_venue: "Narutowicza 10, 05-071 Sulejowek",
+    founded_year: "", home_venue: "Narutowicza 10, 05-071 Sulejówek",
     description: "", district: "", is_active: true,
   });
 
@@ -173,7 +173,7 @@ export default function AdminTeams({ darkMode }) {
   const openMergeFinalizeFromSelection = () => {
     const selected = [...new Set(mergeSelectedTeamIds.filter(Boolean))];
     if (selected.length < 2) {
-      setAlert({ type: "error", message: "Zaznacz co najmniej 2 druzyny do scalenia." });
+      setAlert({ type: "error", message: "Zaznacz co najmniej 2 drużyny do scalenia." });
       return;
     }
 
@@ -244,7 +244,7 @@ export default function AdminTeams({ darkMode }) {
           <div className={`px-3 py-2 text-xs border-b ${darkMode ? "border-white/10 text-gray-400" : "border-gray-200 text-gray-500"}`}>
             {selectedTeam
               ? <>Wybrano: <span className={darkMode ? "text-white" : "text-gray-900"}>{selectedTeam.name}</span>{selectedTeam.is_active ? "" : " (nieaktywna)"}</>
-              : "Wpisz fragment nazwy i kliknij pozycje z listy ponizej"}
+              : "Wpisz fragment nazwy i kliknij pozycję z listy poniżej"}
           </div>
           <div className="max-h-40 overflow-y-auto p-1">
             {visibleOptions.length > 0 ? visibleOptions.map((t) => {
@@ -268,7 +268,7 @@ export default function AdminTeams({ darkMode }) {
                 </button>
               );
             }) : (
-              <div className={`px-2 py-2 text-xs ${textMuted}`}>Brak wynikow dla tej frazy.</div>
+              <div className={`px-2 py-2 text-xs ${textMuted}`}>Brak wyników dla tej frazy.</div>
             )}
           </div>
         </div>
@@ -387,7 +387,7 @@ export default function AdminTeams({ darkMode }) {
       return;
     }
 
-    setAlert({ type: "success", message: editId ? "Druzyna zaktualizowana" : "Druzyna dodana" });
+    setAlert({ type: "success", message: editId ? "Drużyna zaktualizowana" : "Drużyna dodana" });
     setShowForm(false);
     setEditId(null);
     resetForm();
@@ -397,7 +397,7 @@ export default function AdminTeams({ darkMode }) {
   const resetForm = () => {
     setForm({
       name: "", short_name: "", abbreviation: "", logo_url: "",
-      founded_year: "", home_venue: "Narutowicza 10, 05-071 Sulejowek",
+      founded_year: "", home_venue: "Narutowicza 10, 05-071 Sulejówek",
       description: "", district: "", is_active: true,
     });
   };
@@ -442,33 +442,33 @@ export default function AdminTeams({ darkMode }) {
             ["tabela", refs.standings],
             ["statystyki", refs.playerStats],
             ["eventy", refs.matchEvents],
-            ["sklady", refs.matchLineups],
+            ["składy", refs.matchLineups],
             ["mecze", refs.matches],
           ];
           const usedRefs = labels.filter(([, count]) => Number(count) > 0);
           const refsMsg = usedRefs.length
             ? usedRefs.map(([label, count]) => `${label}: ${count}`).join(", ")
-            : "powiazania istnieja, ale nie udalo sie ich policzyc";
+            : "powiązania istnieją, ale nie udało się ich policzyć";
 
           setAlert({
             type: "error",
-            message: `Nie mozna usunac "${target.name}". Druzyna ma powiazane dane (${refsMsg}). Uzyj scalania albo dezaktywacji.`,
+            message: `Nie można usunąć "${target.name}". Drużyna ma powiązane dane (${refsMsg}). Użyj scalania albo dezaktywacji.`,
           });
         } else {
           setAlert({ type: "error", message: error.message });
         }
       } else {
-        setAlert({ type: "success", message: `Druzyna "${target.name}" usunieta trwale.` });
+        setAlert({ type: "success", message: `Drużyna "${target.name}" usunięta trwale.` });
         loadData();
       }
     } catch (err) {
-      setAlert({ type: "error", message: err.message || "Nie udalo sie usunac druzyny." });
+      setAlert({ type: "error", message: err.message || "Nie udało się usunąć drużyny." });
     } finally {
       setDangerTarget(null);
     }
   };
 
-  // â”€â”€ Scalanie druĹĽyn â”€â”€
+  // — Scalanie drużyn —
   const handleMerge = async () => {
     const selectedSourceIds = (mergeSelectedTeamIds || []).filter(
       (id) => String(id) !== String(mergeTarget)
@@ -477,11 +477,11 @@ export default function AdminTeams({ darkMode }) {
       .filter((id) => String(id) !== String(mergeTarget));
 
     if (!sourceIds.length || !mergeTarget) {
-      setAlert({ type: "error", message: "Wybierz dwie rozne druzyny" });
+      setAlert({ type: "error", message: "Wybierz dwie różne drużyny" });
       return;
     }
     if (mergeNameOption === "custom" && !mergeCustomName.trim()) {
-      setAlert({ type: "error", message: "Wpisz nowa nazwe druzyny" });
+      setAlert({ type: "error", message: "Wpisz nową nazwę drużyny" });
       return;
     }
 
@@ -515,7 +515,7 @@ export default function AdminTeams({ darkMode }) {
           "matches away update"
         );
 
-        const srcNameBase = String(srcTeam?.name || "Druzyna").trim() || "Druzyna";
+        const srcNameBase = String(srcTeam?.name || "Drużyna").trim() || "Drużyna";
         const srcSuffix = String(srcTeam?.id || sourceId || "").slice(-6) || "MERGED";
         const archivedSourceName = `${srcNameBase} [MERGED ${srcSuffix}]`;
         throwIfError(
@@ -526,7 +526,7 @@ export default function AdminTeams({ darkMode }) {
         mergedSourceNames.push(srcTeam?.name || String(sourceId));
       }
 
-      let finalName = tgtTeam?.name || "druzyna docelowa";
+      let finalName = tgtTeam?.name || "drużyna docelowa";
       if (mergeNameOption === "selected" && mergeKeepNameTeamId) {
         const keepNameTeam = teams.find((t) => String(t.id) === String(mergeKeepNameTeamId));
         finalName = keepNameTeam?.name || finalName;
@@ -555,8 +555,8 @@ export default function AdminTeams({ darkMode }) {
       setAlert({
         type: "success",
         message: sourceIds.length === 1
-          ? `Scalono "${mergedSourceNames[0]}" -> "${finalName}". Powiazania zostaly przepiete, rekord zrodlowy oznaczony jako MERGED.`
-          : `Scalono ${sourceIds.length} druzyny do "${finalName}". Powiazania zostaly przepiete, rekordy zrodlowe oznaczone jako MERGED.`,
+          ? `Scalono "${mergedSourceNames[0]}" -> "${finalName}". Powiązania zostały przepięte, rekord źródłowy oznaczony jako MERGED.`
+          : `Scalono ${sourceIds.length} drużyny do "${finalName}". Powiązania zostały przepięte, rekordy źródłowe oznaczone jako MERGED.`,
       });
       closeMergeModal();
       setMergeSource("");
@@ -566,13 +566,13 @@ export default function AdminTeams({ darkMode }) {
       setMergeCustomName("");
       loadData();
     } catch (err) {
-      setAlert({ type: "error", message: err.message || "Nie udalo sie scalic druzyn." });
+      setAlert({ type: "error", message: err.message || "Nie udało się scalić drużyn." });
     } finally {
       setMerging(false);
     }
   };
 
-  // â”€â”€ Dezaktywacja druĹĽyny (bez hasĹ‚a) â”€â”€
+  // — Dezaktywacja drużyny (bez hasła) —
   const handleDeactivate = async (team) => {
     const { error } = await supabase.from("teams").update({ is_active: !team.is_active }).eq("id", team.id);
     if (error) {
@@ -589,7 +589,7 @@ export default function AdminTeams({ darkMode }) {
       render: (v) => v ? <img src={v} alt="" className="w-8 h-8 object-contain rounded" /> : <div className="w-8 h-8 rounded bg-gray-700/50" />
     },
     { key: "name", label: "Nazwa", sortable: true },
-    { key: "abbreviation", label: "Skrot", sortable: true },
+    { key: "abbreviation", label: "Skrót", sortable: true },
     { key: "district", label: "Dzielnica", sortable: true },
     {
       key: "is_active", label: "Status",
@@ -600,7 +600,7 @@ export default function AdminTeams({ darkMode }) {
             v ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
               : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
           }`}
-          title={v ? "Kliknij aby dezaktywowac" : "Kliknij aby aktywowac"}
+          title={v ? "Kliknij aby dezaktywować" : "Kliknij aby aktywować"}
         >
           {v ? "Aktywna" : "Nieaktywna"}
         </button>
@@ -641,13 +641,13 @@ export default function AdminTeams({ darkMode }) {
             onClick={() => openMergePicker()}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-medium text-sm transition-colors ${darkMode ? "border-white/10 text-gray-300 hover:bg-white/5" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
           >
-            <GitMerge size={16} /> Wybierz druzyny
+            <GitMerge size={16} /> Wybierz drużyny
           </button>
           <button
             onClick={() => { resetForm(); setEditId(null); setShowLogoCreator(false); setShowForm(true); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition-colors text-sm"
           >
-            <Plus size={16} /> Dodaj druzyne
+            <Plus size={16} /> Dodaj drużynę
           </button>
         </div>
       </div>
@@ -656,9 +656,9 @@ export default function AdminTeams({ darkMode }) {
 
       {duplicateGroups.length > 0 && (
         <div className={`rounded-2xl border p-4 ${card}`}>
-          <div className="font-semibold mb-1">Kandydaci do duplikatow druzyn</div>
+          <div className="font-semibold mb-1">Kandydaci do duplikatów drużyn</div>
           <p className={`text-xs mb-3 ${textMuted}`}>
-            Wykryto {duplicateGroups.length} grup podobnych nazw. Wpisz fragment nazwy, aby zawezic wyniki.
+            Wykryto {duplicateGroups.length} grup podobnych nazw. Wpisz fragment nazwy, aby zawęzić wyniki.
           </p>
           <input
             type="text"
@@ -708,7 +708,7 @@ export default function AdminTeams({ darkMode }) {
             ))}
             {filteredDuplicateGroups.length === 0 && (
               <div className={`text-sm py-3 text-center rounded-xl border ${darkMode ? "border-white/10 text-gray-400" : "border-gray-200 text-gray-500"}`}>
-                Brak wynikow dla frazy "{duplicateQuery}"
+                Brak wyników dla frazy "{duplicateQuery}"
               </div>
             )}
           </div>
@@ -722,32 +722,32 @@ export default function AdminTeams({ darkMode }) {
           darkMode={darkMode}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          emptyMessage="Brak druzyn - dodaj pierwsza!"
+          emptyMessage="Brak drużyn - dodaj pierwszą!"
         />
       </div>
 
-      {/* Danger confirm â€” trwaĹ‚e usuniÄ™cie */}
+      {/* Danger confirm — trwałe usunięcie */}
       <AdminConfirmDanger
         isOpen={!!dangerTarget}
         onClose={() => setDangerTarget(null)}
         onConfirm={executeDelete}
         darkMode={darkMode}
-        title={`Trwale usuniÄ™cie druzyny "${dangerTarget?.name || ""}"`}
-        message="UWAGA: Druzyna zostanie trwale usunieta z bazy danych. Jezeli ma powiazane mecze lub kadry, operacja sie nie powiedzie. W takim przypadku uzyj dezaktywacji (kliknij status)."
+        title={`Trwałe usunięcie drużyny "${dangerTarget?.name || ""}"`}
+        message="UWAGA: Drużyna zostanie trwale usunięta z bazy danych. Jeżeli ma powiązane mecze lub kadry, operacja się nie powiedzie. W takim przypadku użyj dezaktywacji (kliknij status)."
       />
 
-      {/* Merge picker modal (duze okno z checkboxami) */}
-      <AdminModal isOpen={showMergePicker} onClose={closeMergePicker} title="Wybierz druzyny do scalenia" darkMode={darkMode} xwide>
+      {/* Merge picker modal (duże okno z checkboxami) */}
+      <AdminModal isOpen={showMergePicker} onClose={closeMergePicker} title="Wybierz drużyny do scalenia" darkMode={darkMode} xwide>
         <div className="space-y-4">
           <p className={`text-sm ${textMuted}`}>
-            Zaznacz wszystkie warianty tej samej druzyny (np. rozne zapisy nazwy lub sponsor w innych sezonach). Po kliknieciu "Dalej" wybierzesz rekord docelowy i nazwe do zachowania.
+            Zaznacz wszystkie warianty tej samej drużyny (np. różne zapisy nazwy lub sponsor w innych sezonach). Po kliknięciu "Dalej" wybierzesz rekord docelowy i nazwę do zachowania.
           </p>
           <div className="flex flex-col md:flex-row md:items-center gap-3">
             <input
               type="text"
               value={mergePickerQuery}
               onChange={(e) => setMergePickerQuery(e.target.value)}
-              placeholder="Szukaj druzyny"
+              placeholder="Szukaj drużyny"
               className={`w-full md:flex-1 px-3 py-2 rounded-xl border text-sm outline-none ${
                 darkMode
                   ? "bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-white/20"
@@ -794,7 +794,7 @@ export default function AdminTeams({ darkMode }) {
               })}
             </div>
             {mergePickerTeams.length === 0 && (
-              <div className={`text-sm text-center py-4 ${textMuted}`}>Brak wynikow dla tej frazy.</div>
+              <div className={`text-sm text-center py-4 ${textMuted}`}>Brak wyników dla tej frazy.</div>
             )}
           </div>
 
@@ -815,14 +815,14 @@ export default function AdminTeams({ darkMode }) {
       </AdminModal>
 
       {/* Merge finalization modal */}
-      <AdminModal isOpen={showMerge} onClose={closeMergeModal} title="Scal druzyny - finalizacja" darkMode={darkMode} wide>
+      <AdminModal isOpen={showMerge} onClose={closeMergeModal} title="Scal drużyny - finalizacja" darkMode={darkMode} wide>
         <div className="space-y-4">
           <p className={`text-sm ${textMuted}`}>
-            Wybierz, ktory rekord ma zostac glowna druzyna oraz jaka nazwe zachowac po scaleniu. Pozostale rekordy zostana oznaczone jako MERGED i dezaktywowane.
+            Wybierz, który rekord ma zostać główną drużyną oraz jaką nazwę zachować po scaleniu. Pozostałe rekordy zostaną oznaczone jako MERGED i dezaktywowane.
           </p>
 
           <div className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
-            <div className="text-sm font-medium mb-2">Wybrane druzyny ({mergeSelectedTeams.length})</div>
+            <div className="text-sm font-medium mb-2">Wybrane drużyny ({mergeSelectedTeams.length})</div>
             <div className="max-h-32 overflow-y-auto space-y-1">
               {mergeSelectedTeams.map((t) => (
                 <div key={`selected-${t.id}`} className="flex items-center gap-2 text-sm">
@@ -837,7 +837,7 @@ export default function AdminTeams({ darkMode }) {
           </div>
 
           <div className="space-y-2">
-            <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Ktory rekord zostaje jako druzyna docelowa?</label>
+            <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Który rekord zostaje jako drużyna docelowa?</label>
             <div className={`rounded-xl border p-2 space-y-1 max-h-44 overflow-y-auto ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
               {mergeSelectedTeams.map((t) => (
                 <label key={`target-${t.id}`} className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm ${darkMode ? "hover:bg-white/5" : "hover:bg-white"}`}>
@@ -862,7 +862,7 @@ export default function AdminTeams({ darkMode }) {
           </div>
 
           <div className="space-y-2">
-            <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Jaka nazwa ma zostac po scaleniu?</label>
+            <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Jaka nazwa ma zostać po scaleniu?</label>
             <div className={`rounded-xl border p-2 space-y-1 max-h-44 overflow-y-auto ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
               {mergeSelectedTeams.map((t) => (
                 <label key={`keepname-${t.id}`} className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm ${darkMode ? "hover:bg-white/5" : "hover:bg-white"}`}>
@@ -887,7 +887,7 @@ export default function AdminTeams({ darkMode }) {
                   onChange={() => setMergeNameOption("custom")}
                   className="w-4 h-4"
                 />
-                Wlasna nazwa
+                Własna nazwa
               </label>
             </div>
             {mergeNameOption === "custom" && (
@@ -897,7 +897,7 @@ export default function AdminTeams({ darkMode }) {
                 value={mergeCustomName}
                 onChange={(e) => setMergeCustomName(e.target.value)}
                 darkMode={darkMode}
-                placeholder="Wpisz nazwe"
+                placeholder="Wpisz nazwę"
               />
             )}
           </div>
@@ -924,16 +924,16 @@ export default function AdminTeams({ darkMode }) {
         </div>
       </AdminModal>
 
-      <AdminModal isOpen={showForm} onClose={() => setShowForm(false)} title={editId ? "Edytuj druzyne" : "Nowa druzyna"} darkMode={darkMode} wide>
+      <AdminModal isOpen={showForm} onClose={() => setShowForm(false)} title={editId ? "Edytuj drużynę" : "Nowa drużyna"} darkMode={darkMode} wide>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <AdminFormField label="Nazwa" name="name" value={form.name} onChange={handleChange} required darkMode={darkMode} placeholder="np. Starszaki" />
-            <AdminFormField label="Nazwa skrocona" name="short_name" value={form.short_name} onChange={handleChange} darkMode={darkMode} placeholder="np. Starszaki" />
+            <AdminFormField label="Nazwa skrócona" name="short_name" value={form.short_name} onChange={handleChange} darkMode={darkMode} placeholder="np. Starszaki" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <AdminFormField label="Skrot (3 litery)" name="abbreviation" value={form.abbreviation} onChange={handleChange} required darkMode={darkMode} placeholder="STA" />
-            <AdminFormField label="Rok zalozenia" name="founded_year" type="number" value={form.founded_year} onChange={handleChange} darkMode={darkMode} min={1900} max={2030} />
-            <AdminFormField label="Dzielnica" name="district" value={form.district} onChange={handleChange} darkMode={darkMode} placeholder="np. Sulejowek" />
+            <AdminFormField label="Skrót (3 litery)" name="abbreviation" value={form.abbreviation} onChange={handleChange} required darkMode={darkMode} placeholder="STA" />
+            <AdminFormField label="Rok założenia" name="founded_year" type="number" value={form.founded_year} onChange={handleChange} darkMode={darkMode} min={1900} max={2030} />
+            <AdminFormField label="Dzielnica" name="district" value={form.district} onChange={handleChange} darkMode={darkMode} placeholder="np. Sulejówek" />
           </div>
           <AdminFormField label="Boisko domowe" name="home_venue" value={form.home_venue} onChange={handleChange} darkMode={darkMode} />
           <AdminFormField label="Opis" name="description" type="textarea" value={form.description} onChange={handleChange} darkMode={darkMode} />
@@ -943,14 +943,14 @@ export default function AdminTeams({ darkMode }) {
             currentUrl={form.logo_url}
             onUpload={(url) => setForm(f => ({ ...f, logo_url: url }))}
             darkMode={darkMode}
-            label="Logo druzyny"
+            label="Logo drużyny"
           />
           <div className={`rounded-2xl border p-3 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-medium">Kreator logo</div>
                 <div className={`text-xs ${textMuted}`}>
-                  Alternatywa dla uploadu pliku: prosta tarcza + kolory + wzor + inicjaly/napis.
+                  Alternatywa dla uploadu pliku: prosta tarcza + kolory + wzór + inicjały/napis.
                 </div>
               </div>
               <button
@@ -981,7 +981,7 @@ export default function AdminTeams({ darkMode }) {
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowForm(false)} className={`px-4 py-2 rounded-xl text-sm ${textMuted} hover:bg-white/5`}>Anuluj</button>
             <button type="submit" className="px-4 py-2 rounded-xl bg-yellow-500 text-black font-medium text-sm hover:bg-yellow-400">
-              {editId ? "Zapisz" : "Dodaj druzyne"}
+              {editId ? "Zapisz" : "Dodaj drużynę"}
             </button>
           </div>
         </form>

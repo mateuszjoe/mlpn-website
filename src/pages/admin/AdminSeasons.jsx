@@ -136,7 +136,7 @@ export default function AdminSeasons({ darkMode }) {
     if (error) {
       setAlert({ type: "error", message: error.message });
     } else {
-      setAlert({ type: "success", message: "Sezon usuniety" });
+      setAlert({ type: "success", message: "Sezon usunięty" });
       loadData();
     }
     setDangerTarget(null);
@@ -269,13 +269,13 @@ export default function AdminSeasons({ darkMode }) {
                   onChange={(e) => updateSeasonLeague(sl.id, "points_draw", e.target.value)} darkMode={darkMode} />
                 <AdminFormField label="Pkt za przegrana" name="points_loss" type="number" value={sl.points_loss}
                   onChange={(e) => updateSeasonLeague(sl.id, "points_loss", e.target.value)} darkMode={darkMode} />
-                <AdminFormField label="Walkover (bramki zwyciezcy)" name="walkover_goals_winner" type="number" value={sl.walkover_goals_winner}
+                <AdminFormField label="Walkover (bramki zwycięzcy)" name="walkover_goals_winner" type="number" value={sl.walkover_goals_winner}
                   onChange={(e) => updateSeasonLeague(sl.id, "walkover_goals_winner", e.target.value)} darkMode={darkMode} />
                 <AdminFormField label="Awanse" name="promotion_spots" type="number" value={sl.promotion_spots}
                   onChange={(e) => updateSeasonLeague(sl.id, "promotion_spots", e.target.value)} darkMode={darkMode} />
                 <AdminFormField label="Spadki" name="relegation_spots" type="number" value={sl.relegation_spots}
                   onChange={(e) => updateSeasonLeague(sl.id, "relegation_spots", e.target.value)} darkMode={darkMode} />
-                <AdminFormField label="Zolte do pauzy" name="yellow_card_suspension_threshold" type="number" value={sl.yellow_card_suspension_threshold}
+                <AdminFormField label="Żółte do pauzy" name="yellow_card_suspension_threshold" type="number" value={sl.yellow_card_suspension_threshold}
                   onChange={(e) => updateSeasonLeague(sl.id, "yellow_card_suspension_threshold", e.target.value)} darkMode={darkMode} />
               </div>
             </div>

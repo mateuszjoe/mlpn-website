@@ -4,14 +4,14 @@ const SHIELD_PATH =
   "M256 34 C196 34 140 52 100 86 C100 190 116 304 256 470 C396 304 412 190 412 86 C372 52 316 34 256 34 Z";
 
 const PATTERNS = [
-  { id: "split_vertical", label: "Pionowy pol na pol" },
-  { id: "split_horizontal", label: "Poziomy pol na pol" },
+  { id: "split_vertical", label: "Pionowy pół na pół" },
+  { id: "split_horizontal", label: "Poziomy pół na pół" },
   { id: "diagonal", label: "Skos" },
-  { id: "sash", label: "Pas skosny" },
+  { id: "sash", label: "Pas skośny" },
   { id: "stripes_vertical", label: "Pasy pionowe" },
   { id: "stripes_horizontal", label: "Pasy poziome" },
-  { id: "quarters", label: "Cwiartki" },
-  { id: "cross", label: "Krzyz" },
+  { id: "quarters", label: "Ćwiartki" },
+  { id: "cross", label: "Krzyż" },
 ];
 
 function xmlEscape(value) {
@@ -245,7 +245,7 @@ export default function AdminTeamLogoCreator({
         <div>
           <div className="font-semibold text-sm">Prosty kreator logo (SVG)</div>
           <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-            1 ksztalt tarczy + 2 kolory + wzor. Generowane logo zapisze sie jako grafika SVG.
+            1 kształt tarczy + 2 kolory + wzór. Generowane logo zapisze się jako grafika SVG.
           </div>
         </div>
         <button
@@ -253,14 +253,14 @@ export default function AdminTeamLogoCreator({
           onClick={() => onApply(dataUrl)}
           className="px-3 py-2 rounded-xl bg-orange-500 text-black text-sm font-medium hover:bg-orange-400"
         >
-          Uzyj tego logo
+          Użyj tego logo
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4">
         <div className="space-y-3">
           <div className={`rounded-2xl border p-3 flex items-center justify-center ${card}`}>
-            <img src={dataUrl} alt="Podglad logo" className="w-40 h-40 object-contain" />
+            <img src={dataUrl} alt="Podgląd logo" className="w-40 h-40 object-contain" />
           </div>
           {currentUrl && currentUrl !== dataUrl && (
             <div className={`rounded-xl border p-2 ${card}`}>
@@ -282,7 +282,7 @@ export default function AdminTeamLogoCreator({
             }}
             className={`w-full px-3 py-2 rounded-xl border text-sm ${buttonBase}`}
           >
-            Reset ustawien
+            Reset ustawień
           </button>
         </div>
 
@@ -315,7 +315,7 @@ export default function AdminTeamLogoCreator({
           </div>
 
           <div className="space-y-2">
-            <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Wzor kolorow</label>
+            <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Wzór kolorów</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PATTERNS.map((pattern) => {
                 const selected = patternId === pattern.id;
@@ -338,7 +338,7 @@ export default function AdminTeamLogoCreator({
           </div>
 
           <div className="space-y-2">
-            <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Inicjaly na tarczy</label>
+            <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Inicjały na tarczy</label>
             <div className="flex items-center gap-2">
               <label className={`flex items-center gap-2 text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                 <input
@@ -347,14 +347,14 @@ export default function AdminTeamLogoCreator({
                   onChange={(e) => setShowInitials(e.target.checked)}
                   className="w-4 h-4"
                 />
-                Pokaz inicjaly
+                Pokaż inicjały
               </label>
               <button
                 type="button"
                 onClick={() => { const tmp = colorA; setColorA(colorB); setColorB(tmp); }}
                 className={`ml-auto px-3 py-1.5 rounded-lg border text-xs ${buttonBase}`}
               >
-                Zamien kolory
+                Zamień kolory
               </button>
             </div>
             <input
@@ -366,7 +366,7 @@ export default function AdminTeamLogoCreator({
               className={`w-full px-3 py-2 rounded-xl border text-sm ${darkMode ? "bg-white/5 border-white/10 text-white placeholder:text-gray-500" : "bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"} ${!showInitials ? "opacity-60" : ""}`}
             />
             <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-              Zostaw puste, aby uzyc skrotu druzyny lub inicjalow z nazwy.
+              Zostaw puste, aby użyć skrótu drużyny lub inicjałów z nazwy.
             </div>
           </div>
 
@@ -380,7 +380,7 @@ export default function AdminTeamLogoCreator({
                   onChange={(e) => setShowBannerText(e.target.checked)}
                   className="w-4 h-4"
                 />
-                Pokaz napis na belce
+                Pokaż napis na belce
               </label>
               <div className="flex items-center gap-3">
                 <label className={`flex items-center gap-1 text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
@@ -392,7 +392,7 @@ export default function AdminTeamLogoCreator({
                     className="w-3.5 h-3.5"
                     disabled={!showBannerText}
                   />
-                  dol
+                  dół
                 </label>
                 <label className={`flex items-center gap-1 text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                   <input
@@ -403,7 +403,7 @@ export default function AdminTeamLogoCreator({
                     className="w-3.5 h-3.5"
                     disabled={!showBannerText}
                   />
-                  gora
+                  góra
                 </label>
               </div>
             </div>
@@ -411,18 +411,18 @@ export default function AdminTeamLogoCreator({
               type="text"
               value={manualBannerText}
               onChange={(e) => setManualBannerText(e.target.value)}
-              placeholder={`Auto: ${String(teamName || "").trim() || "Nazwa druzyny"}`}
+              placeholder={`Auto: ${String(teamName || "").trim() || "Nazwa drużyny"}`}
               disabled={!showBannerText}
               className={`w-full px-3 py-2 rounded-xl border text-sm ${darkMode ? "bg-white/5 border-white/10 text-white placeholder:text-gray-500" : "bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"} ${!showBannerText ? "opacity-60" : ""}`}
             />
             <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-              Rozmiar czcionki dopasowuje sie automatycznie do dlugosci napisu.
+              Rozmiar czcionki dopasowuje się automatycznie do długości napisu.
             </div>
           </div>
 
           <div className={`rounded-xl border p-3 ${card}`}>
             <div className={`text-xs break-all ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-              Format: SVG (lekki, skalowalny). Mozesz tez dalej uzyc zwyklego uploadu pliku.
+              Format: SVG (lekki, skalowalny). Możesz też dalej użyć zwykłego uploadu pliku.
             </div>
           </div>
         </div>

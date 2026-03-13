@@ -53,7 +53,7 @@ const DEFAULT_PLAYER_MERGE_STAT_STRATEGY = {
 };
 
 const PLAYER_MERGE_STAT_FIELDS = [
-  { key: "appearances", label: "Wystepy" },
+  { key: "appearances", label: "Występy" },
   { key: "goals", label: "Gole" },
   { key: "assists", label: "Asysty" },
   { key: "yellow_cards", label: "Kartki żółte" },
@@ -538,7 +538,7 @@ export default function AdminPlayers({ darkMode }) {
 
       setMergeGroupStats(byPlayer);
     } catch (err) {
-      setAlert({ type: "error", message: `Blad pobierania porownania zawodnikow: ${err.message}` });
+      setAlert({ type: "error", message: `Błąd pobierania porównania zawodników: ${err.message}` });
     } finally {
       setMergeLoadingStats(false);
     }
@@ -649,12 +649,12 @@ export default function AdminPlayers({ darkMode }) {
         type: "success",
         message: sources.length === 1
           ? `Scalono zawodnika do rekordu docelowego: ${target.display_name}.`
-          : `Scalono ${sources.length} rekordy zawodnikow do: ${target.display_name}.`,
+          : `Scalono ${sources.length} rekordy zawodników do: ${target.display_name}.`,
       });
       closePlayerMergeFlow();
       loadData();
     } catch (err) {
-      setAlert({ type: "error", message: err.message || "Nie udalo sie scalic zawodnikow." });
+      setAlert({ type: "error", message: err.message || "Nie udało się scalić zawodników." });
     } finally {
       setMergeBusy(false);
     }
@@ -717,7 +717,7 @@ export default function AdminPlayers({ darkMode }) {
 
     try {
       await savePlayerRecord({ payload: mergedPayload, rodoPayload: mergedRodo, targetId: candidate.id });
-      finishSuccess("Wykryto duplikat. Uzyto istniejacego zawodnika i uzupelniono dane.");
+      finishSuccess("Wykryto duplikat. Użyto istniejącego zawodnika i uzupełniono dane.");
     } catch (err) {
       setAlert({ type: "error", message: err.message });
     }
@@ -761,7 +761,7 @@ export default function AdminPlayers({ darkMode }) {
   };
 
   const handleDelete = async (player) => {
-    if (!window.confirm(`Dezaktywowac zawodnika ${player.display_name}?`)) return;
+    if (!window.confirm(`Dezaktywować zawodnika ${player.display_name}?`)) return;
     const { error } = await supabase.from("players").update({ is_active: false }).eq("id", player.id);
     if (error) {
       setAlert({ type: "error", message: error.message });
@@ -771,7 +771,7 @@ export default function AdminPlayers({ darkMode }) {
     }
   };
 
-  const positionLabels = { BR: "Bramkarz", OBR: "Obronca", POM: "Pomocnik", NAP: "Napastnik" };
+  const positionLabels = { BR: "Bramkarz", OBR: "Obrońca", POM: "Pomocnik", NAP: "Napastnik" };
 
   const columns = [
     {
@@ -779,7 +779,7 @@ export default function AdminPlayers({ darkMode }) {
       render: (v) => v ? <img src={v} alt="" className="w-8 h-8 object-cover rounded-full" /> : <div className="w-8 h-8 rounded-full bg-gray-700/50" />
     },
     { key: "last_name", label: "Nazwisko", sortable: true },
-    { key: "first_name", label: "Imie", sortable: true },
+    { key: "first_name", label: "Imię", sortable: true },
     {
       key: "position", label: "Pozycja", sortable: true,
       render: (v) => positionLabels[v] || v
@@ -860,7 +860,7 @@ export default function AdminPlayers({ darkMode }) {
           darkMode={darkMode}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          emptyMessage="Brak zawodnikow"
+          emptyMessage="Brak zawodników"
         />
       </div>
 
@@ -871,7 +871,7 @@ export default function AdminPlayers({ darkMode }) {
           setShowMergePicker(false);
           setMergeDupSearch("");
         }}
-        title="Scalaj zawodnikow - wykryte duplikaty"
+        title="Scalaj zawodników - wykryte duplikaty"
         darkMode={darkMode}
         xwide
       >
@@ -880,9 +880,9 @@ export default function AdminPlayers({ darkMode }) {
             <div className="flex items-start gap-2">
               <AlertTriangle size={16} className="text-orange-400 mt-0.5 shrink-0" />
               <div>
-                <div className="text-sm font-medium">Kandydaci do duplikatow po imieniu i nazwisku</div>
+                <div className="text-sm font-medium">Kandydaci do duplikatów po imieniu i nazwisku</div>
                 <div className={`text-xs ${textMuted}`}>
-                  Kliknij grupe, aby zobaczyć porownanie rekordow i statystyk sezonowych. To pomaga odroznic duplikat od zbieznosci danych.
+                  Kliknij grupę, aby zobaczyć porównanie rekordów i statystyk sezonowych. To pomaga odróżnić duplikat od zbieżności danych.
                 </div>
               </div>
             </div>
@@ -893,7 +893,7 @@ export default function AdminPlayers({ darkMode }) {
               type="text"
               value={mergeDupSearch}
               onChange={(e) => setMergeDupSearch(e.target.value)}
-              placeholder="Szukaj grup duplikatow (imie / nazwisko / miasto)"
+              placeholder="Szukaj grup duplikatów (imię / nazwisko / miasto)"
               className={`w-full md:flex-1 px-3 py-2 rounded-xl border text-sm outline-none ${
                 darkMode
                   ? "bg-white/5 border-white/10 text-white placeholder:text-gray-500"
@@ -927,12 +927,12 @@ export default function AdminPlayers({ darkMode }) {
                       </div>
                     </div>
                     <span className={`text-xs px-2 py-1 rounded ${darkMode ? "bg-orange-500/10 text-orange-300" : "bg-orange-100 text-orange-700"}`}>
-                      Porownaj
+                      Porównaj
                     </span>
                   </div>
                 </button>
               )) : (
-                <div className={`text-sm text-center py-6 ${textMuted}`}>Brak grup duplikatow dla tej frazy.</div>
+                <div className={`text-sm text-center py-6 ${textMuted}`}>Brak grup duplikatów dla tej frazy.</div>
               )}
             </div>
           </div>
@@ -953,22 +953,22 @@ export default function AdminPlayers({ darkMode }) {
       <AdminModal
         isOpen={showMergeCompare}
         onClose={closePlayerMergeFlow}
-        title="Scalaj zawodnikow - porownanie rekordow"
+        title="Scalaj zawodników - porównanie rekordów"
         darkMode={darkMode}
         xwide
       >
         <div className="space-y-4">
           <div className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
-            <div className="text-sm font-medium mb-1">Jak czytac to porownanie?</div>
+            <div className="text-sm font-medium mb-1">Jak czytać to porównanie?</div>
             <div className={`text-xs ${textMuted}`}>
-              Wybierz rekord docelowy (ten zostaje w bazie), a potem porownaj sezony, kluby i statystyki. Jesli to ta sama osoba, kliknij "Scalaj zawodnikow".
+              Wybierz rekord docelowy (ten zostaje w bazie), a potem porównaj sezony, kluby i statystyki. Jeśli to ta sama osoba, kliknij "Scalaj zawodników".
               Pole "Wzrost" jest pokazane jako pomocnicze, ale obecnie baza nie przechowuje tego parametru.
             </div>
           </div>
 
           {mergeGroup.length > 0 && (
             <div className="space-y-2">
-              <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Ktory rekord zostaje jako zawodnik docelowy?</label>
+              <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Który rekord zostaje jako zawodnik docelowy?</label>
               <div className={`rounded-xl border p-2 max-h-40 overflow-y-auto space-y-1 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
                 {mergeGroup.map((p) => (
                   <label key={`target-player-${p.id}`} className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm ${darkMode ? "hover:bg-white/5" : "hover:bg-white"}`}>
@@ -993,14 +993,14 @@ export default function AdminPlayers({ darkMode }) {
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
               <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                Jak laczyc statystyki sezonowe?
+                Jak łączyć statystyki sezonowe?
               </label>
               <button
                 type="button"
                 onClick={() => setMergeStatStrategy(DEFAULT_PLAYER_MERGE_STAT_STRATEGY)}
                 className={`text-xs px-2 py-1 rounded border ${darkMode ? "border-white/10 text-gray-300 hover:bg-white/5" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
               >
-                Przywroc domyslne (sumuj)
+                Przywróć domyślne (sumuj)
               </button>
             </div>
             <div className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
@@ -1023,13 +1023,13 @@ export default function AdminPlayers({ darkMode }) {
                       }`}
                     >
                       <option value="sum">Sumuj rekordy</option>
-                      <option value="overwrite">Nadpisz wartoscia rekordu docelowego</option>
+                      <option value="overwrite">Nadpisz wartością rekordu docelowego</option>
                     </select>
                   </div>
                 ))}
               </div>
               <div className={`text-xs mt-3 ${textMuted}`}>
-                "Nadpisz" = po scaleniu zostanie wartosc z rekordu docelowego (zachowamy tylko brakujace sezony z pozostalych wpisow).
+                "Nadpisz" = po scaleniu zostanie wartość z rekordu docelowego (zachowamy tylko brakujące sezony z pozostałych wpisów).
               </div>
             </div>
           </div>
@@ -1059,7 +1059,7 @@ export default function AdminPlayers({ darkMode }) {
 
                     <div className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-100 bg-gray-50"}`}>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                        <div>Imie: <span className="font-medium">{p.first_name || "-"}</span></div>
+                        <div>Imię: <span className="font-medium">{p.first_name || "-"}</span></div>
                         <div>Nazwisko: <span className="font-medium">{p.last_name || "-"}</span></div>
                         <div>Wiek: <span className="font-medium">{age ?? "brak"}</span></div>
                         <div>Wzrost: <span className="font-medium">brak pola w bazie</span></div>
@@ -1104,7 +1104,7 @@ export default function AdminPlayers({ darkMode }) {
                           </table>
                         </div>
                       ) : (
-                        <div className={`text-xs ${textMuted}`}>Brak rekordow sezonowych/statystyk dla tego wpisu.</div>
+                        <div className={`text-xs ${textMuted}`}>Brak rekordów sezonowych/statystyk dla tego wpisu.</div>
                       )}
                     </div>
                   </div>
@@ -1134,19 +1134,19 @@ export default function AdminPlayers({ darkMode }) {
               disabled={mergeBusy || !mergeTargetId || mergeGroup.filter((p) => String(p.id) !== String(mergeTargetId)).length === 0}
               className="px-4 py-2 rounded-xl bg-orange-500 text-black font-medium text-sm hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {mergeBusy ? "Scalanie..." : "Scalaj zawodnikow"}
+              {mergeBusy ? "Scalanie..." : "Scalaj zawodników"}
             </button>
           </div>
         </div>
       </AdminModal>
 
       {/* Add-form duplicate prompt */}
-      <AdminModal isOpen={dupPrompt.open} onClose={() => setDupPrompt({ open: false, payload: null, rodoPayload: null, candidates: [] })} title="Mozliwy duplikat zawodnika" darkMode={darkMode} wide>
+      <AdminModal isOpen={dupPrompt.open} onClose={() => setDupPrompt({ open: false, payload: null, rodoPayload: null, candidates: [] })} title="Możliwy duplikat zawodnika" darkMode={darkMode} wide>
         <div className="space-y-4">
           <div className={`rounded-xl border p-3 ${darkMode ? "border-orange-500/30 bg-orange-500/5" : "border-orange-200 bg-orange-50"}`}>
-            <div className="text-sm font-medium mb-1">System wykryl podobny wpis</div>
+            <div className="text-sm font-medium mb-1">System wykrył podobny wpis</div>
             <div className={`text-xs ${textMuted}`}>
-              Jesli to ta sama osoba, kliknij "Scal - to ten sam zawodnik". Nie utworzymy wtedy nowego rekordu.
+              Jeśli to ta sama osoba, kliknij "Scal - to ten sam zawodnik". Nie utworzymy wtedy nowego rekordu.
             </div>
           </div>
 
@@ -1154,7 +1154,7 @@ export default function AdminPlayers({ darkMode }) {
             <div className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
               <div className="text-xs font-semibold text-yellow-400 mb-2">NOWY WPIS (z formularza)</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                <div>Imie i nazwisko: <span className="font-medium">{dupPrompt.payload.first_name} {dupPrompt.payload.last_name}</span></div>
+                <div>Imię i nazwisko: <span className="font-medium">{dupPrompt.payload.first_name} {dupPrompt.payload.last_name}</span></div>
                 <div>Pozycja: <span className="font-medium">{positionLabels[dupPrompt.payload.position] || dupPrompt.payload.position}</span></div>
                 <div>Rocznik: <span className="font-medium">{dupPrompt.payload.birth_year || "brak"}</span></div>
                 <div>Miasto: <span className="font-medium">{dupPrompt.payload.city || "brak"}</span></div>
@@ -1213,14 +1213,14 @@ export default function AdminPlayers({ darkMode }) {
       <AdminModal isOpen={showForm} onClose={() => setShowForm(false)} title={editId ? "Edytuj zawodnika" : "Nowy zawodnik"} darkMode={darkMode} wide>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <AdminFormField label="Imie" name="first_name" value={form.first_name} onChange={handleChange} required darkMode={darkMode} />
+            <AdminFormField label="Imię" name="first_name" value={form.first_name} onChange={handleChange} required darkMode={darkMode} />
             <AdminFormField label="Nazwisko" name="last_name" value={form.last_name} onChange={handleChange} required darkMode={darkMode} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <AdminFormField label="Pozycja" name="position" type="select" value={form.position} onChange={handleChange} required darkMode={darkMode}
               options={[
                 { value: "BR", label: "Bramkarz" },
-                { value: "OBR", label: "Obronca" },
+                { value: "OBR", label: "Obrońca" },
                 { value: "POM", label: "Pomocnik" },
                 { value: "NAP", label: "Napastnik" },
               ]}
@@ -1241,7 +1241,7 @@ export default function AdminPlayers({ darkMode }) {
             currentUrl={form.photo_url}
             onUpload={(url) => setForm(f => ({ ...f, photo_url: url }))}
             darkMode={darkMode}
-            label="Zdjecie zawodnika"
+            label="Zdjęcie zawodnika"
           />
           <AdminFormField label="Aktywny" name="is_active" type="checkbox" value={form.is_active} onChange={handleChange} darkMode={darkMode} />
 
@@ -1251,7 +1251,7 @@ export default function AdminPlayers({ darkMode }) {
               className="flex items-center gap-2 font-medium text-sm text-red-400 w-full"
             >
               <Lock size={14} />
-              Dane RODO (chronione) {showRodo ? "Ă˘â€“Äľ" : "Ă˘â€“Â¸"}
+              Dane RODO (chronione) {showRodo ? "\u25B2" : "\u25BC"}
             </button>
             {showRodo && (
               <div className="mt-4 space-y-4">
@@ -1267,9 +1267,9 @@ export default function AdminPlayers({ darkMode }) {
                   <AdminFormField label="Data zgody RODO" name="rodo_consent_date" type="date" value={rodoForm.rodo_consent_date} onChange={handleRodoChange} darkMode={darkMode} />
                   <AdminFormField label="Typ zgody" name="rodo_consent_type" type="select" value={rodoForm.rodo_consent_type} onChange={handleRodoChange} darkMode={darkMode}
                     options={[
-                      { value: "full", label: "Pelna zgoda" },
+                      { value: "full", label: "Pełna zgoda" },
                       { value: "stats_only", label: "Tylko statystyki" },
-                      { value: "withdrawn", label: "Cofnieta" },
+                      { value: "withdrawn", label: "Cofnięta" },
                     ]}
                   />
                 </div>

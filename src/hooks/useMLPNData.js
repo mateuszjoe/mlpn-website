@@ -15,6 +15,7 @@ import {
   fetchFreeAgents,
   fetchTournaments,
   fetchSeasonSummary,
+  fetchSeasonMatchGalleries,
 } from '../services/supabaseQueries';
 
 export function useMLPNData() {
@@ -38,6 +39,7 @@ export function useMLPNData() {
   const [matches, setMatches] = useState([]);
   const [currentLeagues, setCurrentLeagues] = useState([]);
   const [seasonSummary, setSeasonSummary] = useState(null);
+  const [matchGalleries, setMatchGalleries] = useState([]);
 
   // Statystyki zawodników
   const [topScorers, setTopScorers] = useState([]);
@@ -55,6 +57,7 @@ export function useMLPNData() {
   // Cache sezonów
   const cache = useRef({});
   const seasonsRef = useRef([]); // pełne dane sezonów (z polem status)
+  const [defaultSeason, setDefaultSeason] = useState(null); // sezon z is_current=true
 
   // Fikcyjni gracze (puste - brak w bazie na razie)
   const [players, setPlayers] = useState([]);
@@ -78,6 +81,7 @@ export function useMLPNData() {
         if (current) {
           setCurrentSeason(current.year);
           setSeasonStatus(current.status);
+          setDefaultSeason(current.year);
         } else {
           setLoading(false);
         }
@@ -115,6 +119,40 @@ export function useMLPNData() {
     return () => { cancelled = true; };
   }, [currentSeason, currentRound]);
 
+  useEffect(() => {
+    if (!currentSeason) return undefined;
+
+    let cancelled = false;
+
+    async function refreshMatchGalleries() {
+      try {
+        const galleries = await fetchSeasonMatchGalleries(currentSeason);
+        if (cancelled) return;
+        setMatchGalleries(galleries);
+        if (cache.current[currentSeason]) {
+          cache.current[currentSeason] = {
+            ...cache.current[currentSeason],
+            matchGalleries: galleries,
+          };
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.warn('Błąd odświeżania galerii meczowych:', err);
+        }
+      }
+    }
+
+    function handleGalleryRefresh() {
+      refreshMatchGalleries();
+    }
+
+    window.addEventListener('mlpn:match-galleries-updated', handleGalleryRefresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('mlpn:match-galleries-updated', handleGalleryRefresh);
+    };
+  }, [currentSeason]);
+
   // 2. Załaduj dane sezonu gdy zmieni się currentSeason
   useEffect(() => {
     if (!currentSeason) return;
@@ -147,6 +185,7 @@ export function useMLPNData() {
           yellow,
           red,
           summary,
+          galleries,
         ] = await Promise.all([
           fetchSeasonConfig(year),
           fetchStandings(year),
@@ -157,6 +196,7 @@ export function useMLPNData() {
           fetchTopYellow(year),
           fetchTopRed(year),
           fetchSeasonSummary(year),
+          fetchSeasonMatchGalleries(year),
         ]);
 
         if (cancelled) return;
@@ -176,6 +216,7 @@ export function useMLPNData() {
           topYellow: yellow,
           topRed: red,
           seasonSummary: summary,
+          matchGalleries: galleries,
         };
 
         if (!isInProgress) {
@@ -207,6 +248,7 @@ export function useMLPNData() {
       setTopYellow(data.topYellow);
       setTopRed(data.topRed);
       setSeasonSummary(data.seasonSummary);
+      setMatchGalleries(data.matchGalleries || []);
     }
 
     loadSeason(currentSeason);
@@ -284,6 +326,8 @@ export function useMLPNData() {
     tournaments,
     typerConfig,
     seasonSummary,
+    matchGalleries,
+    defaultSeason,
   };
 }
 

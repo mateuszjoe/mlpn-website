@@ -33,7 +33,7 @@ export default function AdminDashboard({ darkMode, setAdminSection }) {
         unreadMessages: messages.count || 0,
       });
     } catch (err) {
-      console.error("Blad ladowania statystyk:", err);
+      console.error("Błąd ładowania statystyk:", err);
     } finally {
       setLoading(false);
     }

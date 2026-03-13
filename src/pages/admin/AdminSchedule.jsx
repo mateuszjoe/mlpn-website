@@ -52,11 +52,11 @@ export default function AdminSchedule({ darkMode }) {
 
   async function handleGenerate() {
     if (!startDate) {
-      setAlert({ type: "error", message: "Wybierz date startu" });
+      setAlert({ type: "error", message: "Wybierz datę startu" });
       return;
     }
     if (matches.length > 0) {
-      if (!window.confirm("Terminarz juz istnieje! Wygenerowac od nowa? (stary zostanie usuniety)")) return;
+      if (!window.confirm("Terminarz już istnieje! Wygenerować od nowa? (stary zostanie usunięty)")) return;
       await supabase.from("matches").delete()
         .eq("season_id", selectedSeason)
         .eq("league_id", selectedLeague);
@@ -70,7 +70,7 @@ export default function AdminSchedule({ darkMode }) {
     });
 
     if (error) {
-      setAlert({ type: "error", message: "Blad generowania: " + error.message });
+      setAlert({ type: "error", message: "Błąd generowania: " + error.message });
       setGenerating(false);
       return;
     }

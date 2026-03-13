@@ -10,8 +10,9 @@ import AdminSchedule from "./AdminSchedule";
 import AdminMatchResults from "./AdminMatchResults";
 import AdminSeasonWizard from "./AdminSeasonWizard";
 import AdminControlCenter from "./AdminControlCenter";
+import AdminUsers from "./AdminUsers";
 import {
-  LayoutDashboard, Calendar, Shield, Users, UserCog,
+  LayoutDashboard, Calendar, Shield, Users, UserCog, UserPlus,
   ListChecks, Trophy, LogOut, ArrowLeft, Menu, X, Wand2, SlidersHorizontal
 } from "lucide-react";
 
@@ -64,6 +65,7 @@ export default function AdminPanel({ darkMode, goHome }) {
     { id: "schedule", label: "Terminarz", icon: <ListChecks size={18} /> },
     { id: "results", label: "Wyniki", icon: <Trophy size={18} /> },
     { id: "control-center", label: "Ustawienia", icon: <SlidersHorizontal size={18} /> },
+    { id: "users", label: "Konta", icon: <UserPlus size={18} /> },
   ];
 
   const renderContent = () => {
@@ -76,6 +78,7 @@ export default function AdminPanel({ darkMode, goHome }) {
       case "schedule": return <AdminSchedule darkMode={darkMode} />;
       case "results": return <AdminMatchResults darkMode={darkMode} />;
       case "control-center": return <AdminControlCenter darkMode={darkMode} />;
+      case "users": return <AdminUsers darkMode={darkMode} />;
       default: return <AdminDashboard darkMode={darkMode} setAdminSection={setAdminSection} />;
     }
   };

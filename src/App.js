@@ -31,6 +31,7 @@ import AdminPanel from "./pages/admin/AdminPanel";
 import { useMLPNData } from "./hooks/useMLPNData";
 import {
   fetchMatchDetails,
+  fetchMatchGallery,
   fetchTeamProfile,
   fetchTeamRoster,
   fetchTeamHistory,
@@ -143,42 +144,43 @@ function getLeaguesForSeason(season, baseLeagues) {
 /* =========================================
    MAPA HERBÓW (public/)
    ========================================= */
+const PU = process.env.PUBLIC_URL || "";
 const logoByTeam = {
   // I liga
-  Starszaki: "/starszaki.png",
-  Rebelianci: "/Rebelianci.png",
-  "Al Mar Wołomin": "/almar wolomin.png",
-  "Oldrembham Forest": "/oldrembham forest.png",
-  "Elo Melo": "/elo melo.png",
-  Legioholicy: "/legioholicy.png",
-  Fanatycy: "/fanatycy.png",
-  "Sportowe Zakapiory": "/Sportowe Zakapiory.png",
-  "Tiger Wołomin": "/tiger wolomin.png",
-  "Tęcza Pustelnik": "/tecza pustelnik.png",
+  Starszaki: `${PU}/starszaki.png`,
+  Rebelianci: `${PU}/Rebelianci.png`,
+  "Al Mar Wołomin": `${PU}/almar wolomin.png`,
+  "Oldrembham Forest": `${PU}/oldrembham forest.png`,
+  "Elo Melo": `${PU}/elo melo.png`,
+  Legioholicy: `${PU}/legioholicy.png`,
+  Fanatycy: `${PU}/fanatycy.png`,
+  "Sportowe Zakapiory": `${PU}/Sportowe Zakapiory.png`,
+  "Tiger Wołomin": `${PU}/tiger wolomin.png`,
+  "Tęcza Pustelnik": `${PU}/tecza pustelnik.png`,
 
   // II liga
-  "FC Zieloni": "/fc zieloni.png",
-  "1 Warszawska Brygada Pancerna": "/1 Warszawska Brygada Pancerna.png",
-  "Tidy Team": "/tidy team.png",
-  Gosuansa: "/gosuansa.png",
-  Lider: "/lider.png",
-  Detox: "/detox.png",
-  PJM: "/pjm.png",
-  "Joga Finito": "/joga finito.png",
-  "SC Halinów": "/sc halinow.png",
-  Nankatsu: "/nankatsu.png",
+  "FC Zieloni": `${PU}/fc zieloni.png`,
+  "1 Warszawska Brygada Pancerna": `${PU}/1 Warszawska Brygada Pancerna.png`,
+  "Tidy Team": `${PU}/tidy team.png`,
+  Gosuansa: `${PU}/gosuansa.png`,
+  Lider: `${PU}/lider.png`,
+  Detox: `${PU}/detox.png`,
+  PJM: `${PU}/pjm.png`,
+  "Joga Finito": `${PU}/joga finito.png`,
+  "SC Halinów": `${PU}/sc halinow.png`,
+  Nankatsu: `${PU}/nankatsu.png`,
 
   // III liga
-  "STM FC": "/STM FC.png",
-  Faludża: "/faludza.png",
-  "FC Faworyt": "/fc faworyt.png",
-  "Alchemia Futbolu": "/alchemia futbolu.png",
-  "Chaos Team": "/chaos team.png",
-  "FC KSS": "/fc kss.png",
-  "AL-Komat": "/Al-Komat.png",
-  "Hard Impet Team": "/hard impet team.png",
-  Huragan: "/huragan.png",
-  "ES Chobot Meat": "/ES CHOBOT MEAT.png",
+  "STM FC": `${PU}/STM FC.png`,
+  Faludża: `${PU}/faludza.png`,
+  "FC Faworyt": `${PU}/fc faworyt.png`,
+  "Alchemia Futbolu": `${PU}/alchemia futbolu.png`,
+  "Chaos Team": `${PU}/chaos team.png`,
+  "FC KSS": `${PU}/fc kss.png`,
+  "AL-Komat": `${PU}/Al-Komat.png`,
+  "Hard Impet Team": `${PU}/hard impet team.png`,
+  Huragan: `${PU}/huragan.png`,
+  "ES Chobot Meat": `${PU}/ES CHOBOT MEAT.png`,
 };
 
 /* =========================================
@@ -1570,14 +1572,14 @@ function ScorePill({ homeGoals, awayGoals, darkMode, onClick, date, time, status
         )}>
           Walkower
         </div>
-      ) : date && time ? (
+      ) : (date || time) ? (
         <div
           className={classNames(
             "text-[10px] font-normal mt-0.5",
             darkMode ? "text-gray-400" : "text-gray-600"
           )}
         >
-          {date} • {time}
+          {date && time ? `${date} • ${time}` : (time || date)}
         </div>
       ) : null}
     </button>
@@ -1595,14 +1597,53 @@ function fixtureCenterLabel(f) {
   return "Zaplanowany";
 }
 
+function fixtureCenterTimeLabel(f) {
+  const statusKey = String(f?.status || "").toLowerCase();
+  if (statusKey === "unplayed") return "Nierozegrany";
+  if (statusKey === "postponed") return "Przełożony";
+  if (statusKey === "cancelled") return "Odwołany";
+  if (f?.time) return f.time;
+  return "Godzina TBD";
+}
+
+function fixtureDateHeaderParts(dateStr) {
+  if (!dateStr) {
+    return {
+      weekday: "Termin do ustalenia",
+      date: "",
+    };
+  }
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  if (!y || !m || !d) {
+    return {
+      weekday: "Termin",
+      date: String(dateStr),
+    };
+  }
+  const dt = new Date(y, m - 1, d);
+  const weekday = dt.toLocaleDateString("pl-PL", { weekday: "long" });
+  const datePart = dt.toLocaleDateString("pl-PL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return {
+    weekday: `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}`,
+    date: datePart,
+  };
+}
+
 function MediaIcons({
   darkMode,
   videoUrl,
   galleryUrl,
+  onOpenGallery,
+  galleryCount = 0,
   size = 18,
   className = "",
 }) {
-  if (!videoUrl && !galleryUrl) return null;
+  const hasGallery = !!onOpenGallery || !!galleryUrl;
+  if (!videoUrl && !hasGallery) return null;
   const baseBtn = classNames(
     "p-2 rounded-xl border inline-flex items-center justify-center e3d-btn",
     darkMode
@@ -1622,22 +1663,42 @@ function MediaIcons({
           <Video size={size} className="e3d-ico" />
         </a>
       )}
-      {galleryUrl && (
-        <a
-          href={galleryUrl}
-          target="_blank"
-          rel="noreferrer"
-          className={baseBtn}
-          title="Galeria"
-        >
-          <Images size={size} className="e3d-ico" />
-        </a>
+      {hasGallery && (
+        onOpenGallery ? (
+          <button
+            type="button"
+            onClick={onOpenGallery}
+            className={baseBtn}
+            title={galleryCount ? `Galeria zdjęć (${galleryCount})` : "Galeria zdjęć"}
+          >
+            <Images size={size} className="e3d-ico" />
+          </button>
+        ) : (
+          <a
+            href={galleryUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={baseBtn}
+            title="Galeria zdjęć"
+          >
+            <Images size={size} className="e3d-ico" />
+          </a>
+        )
       )}
     </div>
   );
 }
 
-function VideoIcon({ darkMode, videoUrl, played = false, size = 16 }) {
+function VideoIcon({
+  darkMode,
+  videoUrl,
+  played = false,
+  size = 16,
+  galleryUrl,
+  hasGallery = false,
+  galleryCount = 0,
+  onOpenGallery,
+}) {
   // Ikona kamery zawsze widoczna
   // Jeśli mecz rozegrany (played=true) i jest link - aktywna
   // Jeśli mecz rozegrany i brak linku - szara nieaktywna
@@ -1645,6 +1706,7 @@ function VideoIcon({ darkMode, videoUrl, played = false, size = 16 }) {
 
   const hasVideo = !!videoUrl;
   const isActive = played && hasVideo;
+  const galleryActive = hasGallery || !!galleryUrl || !!onOpenGallery;
 
   const baseBtn = classNames(
     "p-1.5 rounded-lg border inline-flex items-center justify-center",
@@ -1657,26 +1719,58 @@ function VideoIcon({ darkMode, videoUrl, played = false, size = 16 }) {
       : "bg-black/5 border-black/10 opacity-30 cursor-not-allowed"
   );
 
-  if (isActive) {
-    return (
-      <a
-        href={videoUrl}
-        target="_blank"
-        rel="noreferrer"
-        className={baseBtn}
-        title="Nagranie wideo"
-      >
-        <Video size={size} />
-      </a>
-    );
-  }
-
   return (
-    <div
-      className={baseBtn}
-      title={played ? "Brak nagrania" : "Mecz nierozegrany"}
-    >
-      <Video size={size} />
+    <div className="flex items-center gap-1">
+      {isActive ? (
+        <a
+          href={videoUrl}
+          target="_blank"
+          rel="noreferrer"
+          className={baseBtn}
+          title="Nagranie wideo"
+        >
+          <Video size={size} />
+        </a>
+      ) : (
+        <div
+          className={baseBtn}
+          title={played ? "Brak nagrania" : "Mecz nierozegrany"}
+        >
+          <Video size={size} />
+        </div>
+      )}
+
+      {galleryActive &&
+        (onOpenGallery ? (
+          <button
+            type="button"
+            onClick={onOpenGallery}
+            className={classNames(
+              "p-1.5 rounded-lg border inline-flex items-center justify-center",
+              darkMode
+                ? "bg-white/5 border-white/10 hover:bg-white/10"
+                : "bg-black/5 border-black/10 hover:bg-black/10"
+            )}
+            title={galleryCount ? `Galeria zdjęć (${galleryCount})` : "Galeria zdjęć"}
+          >
+            <Images size={size} />
+          </button>
+        ) : (
+          <a
+            href={galleryUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={classNames(
+              "p-1.5 rounded-lg border inline-flex items-center justify-center",
+              darkMode
+                ? "bg-white/5 border-white/10 hover:bg-white/10"
+                : "bg-black/5 border-black/10 hover:bg-black/10"
+            )}
+            title="Galeria zdjęć"
+          >
+            <Images size={size} />
+          </a>
+        ))}
     </div>
   );
 }
@@ -2843,73 +2937,13 @@ function ContactPage({ darkMode }) {
 }
 
 /* =========================================
-   SPONSOR BAR - statyczny pasek na topbarze
-   ========================================= */
-function SponsorSlider({ darkMode }) {
-  const sponsors = [
-    {
-      name: "Jadłostacja",
-      logo: "/jadlostacja.png",
-      url: "https://www.facebook.com/p/Jadłostacja-Sulejówek-100039844490108/?locale=pl_PL",
-    },
-    {
-      name: "Osłony do Okien",
-      logo: "/oslonydookien.png",
-      url: "https://oslonydookien.pl",
-    },
-    {
-      name: "Pa-El",
-      logo: "/paelfasady.png",
-      url: "https://www.facebook.com/profile.php?id=100063629406941",
-    },
-    {
-      name: "RoboExpert",
-      logo: "/roboexpert.png",
-      url: "https://www.roboexpert.pl",
-    },
-    {
-      name: "SzwagierKop",
-      logo: "/szwagierkop.png",
-      url: "https://szwagierkop.pl",
-    },
-    {
-      name: "Nasze Stroje",
-      logo: "/naszestroje.png",
-      url: "https://naszestroje.pl",
-    },
-  ];
-
-  return (
-    <div className="flex-1 mx-8 flex items-center justify-start gap-4 overflow-hidden min-w-0">
-      {sponsors.map((sponsor, idx) => (
-        <a
-          key={sponsor.name}
-          href={sponsor.url}
-          target="_blank"
-          rel="noreferrer"
-          className="transition-all hover:scale-110 hover:opacity-80 flex-shrink-0"
-          title={sponsor.name}
-        >
-          <img
-            src={sponsor.logo}
-            alt={sponsor.name}
-            className="h-10 w-auto object-contain"
-            style={{ maxWidth: "100px" }}
-          />
-        </a>
-      ))}
-    </div>
-  );
-}
-
-/* =========================================
    APP
    ========================================= */
 export default function App() {
   const { user, isAdmin, signOut } = useAuth();
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('mlpn-darkMode');
-    return saved !== null ? saved === 'true' : true;
+    return saved !== null ? saved === 'true' : false;
   });
   const [activeContext, setActiveContext] = useState("home"); // home | 1st | 2nd | 3rd | tournaments | info | admin
   const [activeSection, setActiveSection] = useState("home"); // home/news/typer/polls/free | table/calendar/teams/players
@@ -2933,8 +2967,8 @@ export default function App() {
     totalRoundsByLeague,
     playedRoundsByLeague,
     currentLeagues,
-    fixtures,
-    matches,
+    fixtures: rawFixtures,
+    matches: rawMatches,
     stats,
     players,
     playersByTeam,
@@ -2944,6 +2978,8 @@ export default function App() {
     tournaments,
     typerConfig,
     seasonSummary,
+    matchGalleries,
+    defaultSeason,
   } = useMLPNData();
 
   const [round, setRound] = useState(1);
@@ -2967,6 +3003,61 @@ export default function App() {
 
   // Mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [galleryOverlay, setGalleryOverlay] = useState({
+    open: false,
+    loading: false,
+    album: null,
+    currentIndex: 0,
+  });
+
+  useEffect(() => {
+    if (!galleryOverlay.open) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [galleryOverlay.open]);
+
+  const matchGalleriesByMatchId = useMemo(() => {
+    const map = {};
+    for (const album of matchGalleries || []) {
+      if (album?.matchId) {
+        map[album.matchId] = album;
+      }
+    }
+    return map;
+  }, [matchGalleries]);
+
+  const fixtures = useMemo(
+    () =>
+      (rawFixtures || []).map((fixture) => {
+        const galleryAlbum = matchGalleriesByMatchId[fixture.id] || null;
+        return {
+          ...fixture,
+          galleryAlbum,
+          hasGallery: !!galleryAlbum || !!fixture.galleryUrl,
+          galleryCount: galleryAlbum?.photoCount || 0,
+          galleryCoverUrl: galleryAlbum?.coverUrl || "",
+        };
+      }),
+    [rawFixtures, matchGalleriesByMatchId]
+  );
+
+  const matches = useMemo(
+    () =>
+      (rawMatches || []).map((match) => {
+        const galleryAlbum = matchGalleriesByMatchId[match.id] || null;
+        return {
+          ...match,
+          galleryAlbum,
+          hasGallery: !!galleryAlbum || !!match.galleryUrl,
+          galleryCount: galleryAlbum?.photoCount || 0,
+          galleryCoverUrl: galleryAlbum?.coverUrl || "",
+        };
+      }),
+    [rawMatches, matchGalleriesByMatchId]
+  );
 
   const teamAbbrMap = useMemo(() => makeUniqueAbbrMap(currentLeagues), [currentLeagues]);
 
@@ -3005,6 +3096,100 @@ export default function App() {
     return m;
   }, [matches]);
 
+  const matchMetaById = useMemo(() => {
+    const map = {};
+    for (const fixture of fixtures) {
+      map[fixture.id] = fixture;
+    }
+    for (const match of matches) {
+      map[match.id] = { ...(map[match.id] || {}), ...match };
+    }
+    return map;
+  }, [fixtures, matches]);
+
+  const closeGalleryOverlay = () => {
+    setGalleryOverlay({
+      open: false,
+      loading: false,
+      album: null,
+      currentIndex: 0,
+    });
+  };
+
+  const openGalleryCarousel = (album, initialIndex = 0) => {
+    if (!album?.photos?.length) return;
+    const safeIndex = Math.min(
+      Math.max(initialIndex, 0),
+      Math.max(album.photos.length - 1, 0)
+    );
+    setGalleryOverlay({
+      open: true,
+      loading: false,
+      album,
+      currentIndex: safeIndex,
+    });
+  };
+
+  const openMatchGallery = async (matchRef, initialIndex = 0) => {
+    const matchId = typeof matchRef === "string" ? matchRef : matchRef?.id;
+    if (!matchId) return;
+
+    const summary = matchGalleriesByMatchId[matchId];
+    const legacyUrl = typeof matchRef === "object" ? matchRef?.galleryUrl : null;
+
+    if (!summary && legacyUrl) {
+      window.open(legacyUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (!summary) return;
+
+    const matchMeta = matchMetaById[matchId] || {};
+    setGalleryOverlay({
+      open: true,
+      loading: true,
+      album: {
+        ...summary,
+        home: matchMeta.home,
+        away: matchMeta.away,
+        league: matchMeta.league,
+        date: matchMeta.date,
+        score:
+          matchMeta.homeGoals != null && matchMeta.awayGoals != null
+            ? `${matchMeta.homeGoals}:${matchMeta.awayGoals}`
+            : null,
+      },
+      currentIndex: Math.max(initialIndex, 0),
+    });
+
+    try {
+      const fullAlbum = await fetchMatchGallery(matchId);
+      if (!fullAlbum?.photos?.length) {
+        closeGalleryOverlay();
+        return;
+      }
+
+      openGalleryCarousel(
+        {
+          ...summary,
+          ...fullAlbum,
+          home: matchMeta.home,
+          away: matchMeta.away,
+          league: matchMeta.league,
+          date: matchMeta.date,
+          score:
+            matchMeta.homeGoals != null && matchMeta.awayGoals != null
+              ? `${matchMeta.homeGoals}:${matchMeta.awayGoals}`
+              : null,
+        },
+        initialIndex
+      );
+    } catch (err) {
+      console.error("Nie udało się otworzyć galerii meczu:", err);
+      closeGalleryOverlay();
+    }
+  };
+
   // menu
   const homeMenu = [
     {
@@ -3029,12 +3214,12 @@ export default function App() {
     },
     {
       id: "teams-db",
-      label: "Baza druzyn",
+      label: "Baza drużyn",
       icon: <Users size={18} className="e3d-ico" />,
     },
     {
       id: "players-db",
-      label: "Baza zawodnikow",
+      label: "Baza zawodników",
       icon: <BarChart3 size={18} className="e3d-ico" />,
     },
   ];
@@ -3054,6 +3239,11 @@ export default function App() {
       id: "calendar",
       label: "Kalendarz",
       icon: <Calendar size={18} className="e3d-ico" />,
+    },
+    {
+      id: "gallery",
+      label: "Galerie",
+      icon: <Images size={18} className="e3d-ico" />,
     },
     {
       id: "teams",
@@ -3153,6 +3343,10 @@ export default function App() {
     setSelectedMatchId(null);
     setSelectedPlayerId(null);
     setNavigationHistory([]); // Czyść historię przy powrocie do domu
+    // Przywróć bieżący sezon - strona główna zawsze pokazuje aktualne dane
+    if (defaultSeason && currentSeason !== defaultSeason) {
+      setCurrentSeason(defaultSeason);
+    }
   };
 
   const openTeam = (team) => {
@@ -3240,6 +3434,30 @@ export default function App() {
     );
   }, [fixtures, activeContext, round]);
 
+  const activeLeagueGalleries = useMemo(() => {
+    if (!["1st", "2nd", "3rd"].includes(activeContext)) return [];
+
+    return (matchGalleries || [])
+      .map((gallery) => {
+        const meta = matchMetaById[gallery.matchId];
+        if (!meta || meta.league !== activeContext) return null;
+        return {
+          ...gallery,
+          home: meta.home,
+          away: meta.away,
+          league: meta.league,
+          date: meta.date,
+          time: meta.time,
+          score:
+            meta.homeGoals != null && meta.awayGoals != null
+              ? `${meta.homeGoals}:${meta.awayGoals}`
+              : null,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => String(b.publishedAt || b.date || "").localeCompare(String(a.publishedAt || a.date || "")));
+  }, [activeContext, matchGalleries, matchMetaById]);
+
   // For "match card": if played -> show score from matches
   function getPlayedMatch(fix) {
     return matchById[fix.id] || null;
@@ -3274,6 +3492,7 @@ export default function App() {
               match={played}
               openTeam={openTeam}
               goToLeague={goToLeague}
+              openGallery={openMatchGallery}
             />
           </div>
         );
@@ -3415,6 +3634,7 @@ export default function App() {
               typerMatches={typerMatches}
               openTeam={openTeam}
               openMatch={openMatchInline}
+              openGallery={openMatchGallery}
               expandedMatchId={selectedMatchId}
               playersByTeam={playersByTeam}
               openPlayer={openPlayer}
@@ -3444,6 +3664,7 @@ export default function App() {
             fixtures={fixtures}
             openTeam={openTeam}
             openMatch={openMatchInline}
+            openGallery={openMatchGallery}
             expandedMatchId={selectedMatchId}
             matchById={matchById}
             playersByTeam={playersByTeam}
@@ -3486,6 +3707,7 @@ export default function App() {
             getPlayedMatch={getPlayedMatch}
             openTeam={openTeam}
             openMatch={openMatchInline}
+            openGallery={openMatchGallery}
             expandedMatchId={selectedMatchId}
             stats={stats}
             matches={matches}
@@ -3495,6 +3717,19 @@ export default function App() {
             currentSeason={currentSeason}
             availableSeasons={availableSeasons}
             onSeasonChange={setCurrentSeason}
+          />
+        );
+      case "gallery":
+        return (
+          <LeagueGalleryPage
+            darkMode={darkMode}
+            leagueId={activeContext}
+            leagueName={leagueName(activeContext)}
+            galleries={activeLeagueGalleries}
+            currentSeason={currentSeason}
+            availableSeasons={availableSeasons}
+            onSeasonChange={setCurrentSeason}
+            onOpenCarousel={openGalleryCarousel}
           />
         );
       case "teams":
@@ -3537,6 +3772,7 @@ export default function App() {
             fixtures={fixtures}
             openTeam={openTeam}
             openMatch={openMatchInline}
+            openGallery={openMatchGallery}
             expandedMatchId={selectedMatchId}
             matchById={matchById}
             playersByTeam={playersByTeam}
@@ -3598,7 +3834,7 @@ export default function App() {
   return (
     <div
       className={classNames(
-        "min-h-screen mlpn-shell",
+        "min-h-screen flex flex-col mlpn-shell",
         darkMode
           ? "mlpn-dark bg-[#0a0e1a] text-white"
           : "mlpn-light bg-gray-50 text-gray-900"
@@ -3637,7 +3873,7 @@ export default function App() {
           className="flex items-center gap-2 md:gap-3 group"
         >
           <img
-            src={darkMode ? "/logo2.png" : "/logo1.png"}
+            src={darkMode ? `${PU}/logo2.png` : `${PU}/logo1.png`}
             alt="MLPN"
             className="h-8 md:h-10 w-auto e3d-logo"
           />
@@ -3656,11 +3892,6 @@ export default function App() {
             </div>
           </div>
         </button>
-
-        {/* Slider logo sponsorów (tylko desktop) */}
-        <div className="hidden lg:block">
-          <SponsorSlider darkMode={darkMode} />
-        </div>
 
         {/* Desktop menu + Dark toggle */}
         <div className="flex items-center gap-2">
@@ -3958,7 +4189,7 @@ export default function App() {
       )}
 
       {/* LAYOUT */}
-      <div className="flex pt-[64px] md:pt-[72px]">
+      <div className="flex flex-1 pt-[64px] md:pt-[72px]">
         {/* SIDEBAR - ukryty w trybie admin */}
         {activeContext !== "admin" && <aside
           className={classNames(
@@ -4013,14 +4244,14 @@ export default function App() {
                 className="block hover:opacity-80 transition-opacity"
               >
                 <img
-                  src="/isola.png"
+                  src={`${PU}/isola.png`}
                   alt="Isola Ristorante"
                   className="w-full h-auto object-contain"
                 />
               </a>
               <div className="flex justify-center">
                 <img
-                  src={darkMode ? "/logo2big.webp" : "/logo1big.webp"}
+                  src={darkMode ? `${PU}/logo2big.webp` : `${PU}/logo1big.webp`}
                   alt="MLPN"
                   className="w-40 h-auto object-contain opacity-80"
                 />
@@ -4073,6 +4304,15 @@ export default function App() {
           {renderPage()}
         </main>
       </div>
+
+      <MatchGalleryOverlay
+        darkMode={darkMode}
+        overlay={galleryOverlay}
+        onClose={closeGalleryOverlay}
+        onIndexChange={(nextIndex) =>
+          setGalleryOverlay((prev) => ({ ...prev, currentIndex: nextIndex }))
+        }
+      />
 
       {/* FOOTER */}
       <Footer
@@ -4268,7 +4508,7 @@ function Footer({ darkMode, setActiveContext, setActiveSection }) {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <img
-                src={darkMode ? "/logo2.png" : "/logo1.png"}
+                src={darkMode ? `${PU}/logo2.png` : `${PU}/logo1.png`}
                 alt="MLPN"
                 className="h-12 w-auto"
               />
@@ -4368,6 +4608,7 @@ function LeagueHomePage({
   fixtures,
   openTeam,
   openMatch,
+  openGallery,
   expandedMatchId,
   matchById,
   playersByTeam,
@@ -4385,7 +4626,6 @@ function LeagueHomePage({
   playedRoundsByLeague,
 }) {
   const isArchived = seasonStatus === 'completed';
-  const isLive = seasonStatus === 'in_progress' || seasonStatus === 'active';
   const isExcludedFromUpcoming = (status) =>
     status === "cancelled" || status === "unplayed" || status === "postponed";
   const leagueTotalRounds = totalRoundsByLeague?.[leagueId] || totalRounds;
@@ -4926,22 +5166,19 @@ function LeagueHomePage({
         </div>
       )}
 
-      {/* Kafel meczu trwającego/nadchodzącego */}
+      {/* Kafel najbliższego spotkania */}
       {upcomingMatch && (
         <>
           <Card
             darkMode={darkMode}
-            className={classNames(
-              "p-4",
-              isLive && "border-red-500 border-2 animate-pulse"
-            )}
+            className="p-4"
           >
-            {isLive && (
-              <div className="text-red-500 font-black text-sm mb-2 animate-pulse flex items-center gap-2">
-                <span className="w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
-                TERAZ GRAJĄ
-              </div>
-            )}
+            <div className={classNames(
+              "font-black text-sm mb-2",
+              darkMode ? "text-blue-300" : "text-blue-700"
+            )}>
+              NAJBLIŻSZE SPOTKANIE
+            </div>
 
             <div className="grid grid-cols-[60px_minmax(0,1fr)_auto_minmax(0,1fr)_60px] gap-3 items-center">
               <TeamLogo
@@ -4966,6 +5203,14 @@ function LeagueHomePage({
                     upcomingPlayedMatch?.videoUrl || upcomingMatch.videoUrl
                   }
                   played={!!upcomingPlayedMatch}
+                  galleryUrl={upcomingPlayedMatch?.galleryUrl || upcomingMatch.galleryUrl}
+                  hasGallery={!!(upcomingPlayedMatch?.hasGallery || upcomingMatch.hasGallery)}
+                  galleryCount={upcomingPlayedMatch?.galleryCount || upcomingMatch.galleryCount || 0}
+                  onOpenGallery={
+                    upcomingPlayedMatch?.hasGallery || upcomingMatch.hasGallery
+                      ? () => openGallery?.(upcomingPlayedMatch || upcomingMatch)
+                      : undefined
+                  }
                   size={18}
                 />
                 <button
@@ -4978,7 +5223,7 @@ function LeagueHomePage({
                   )}
                   title="Kliknij aby rozwinąć szczegóły"
                 >
-                  {isLive ? "2:1" : (upcomingMatch.date || "Termin do ustalenia")}
+                  {upcomingMatch.date || "Termin do ustalenia"}
                 </button>
               </div>
 
@@ -5017,14 +5262,7 @@ function LeagueHomePage({
                   match={upcomingPlayedMatch}
                   openTeam={openTeam}
                   openPlayer={openPlayer}
-                />
-              ) : isLive ? (
-                <LiveMatchDetails
-                  darkMode={darkMode}
-                  fixture={upcomingMatch}
-                  playersByTeam={playersByTeam}
-                  openTeam={openTeam}
-                  openPlayer={openPlayer}
+                  openGallery={openGallery}
                 />
               ) : (
                 <UpcomingMatchDetailsInline
@@ -5144,15 +5382,17 @@ function LeagueHomePage({
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-[32px_minmax(0,1fr)_32px] items-center gap-2 min-w-0">
-                        <div className="justify-self-end">
-                          <VideoIcon
-                            darkMode={darkMode}
-                            videoUrl={m.videoUrl}
-                            played={true}
-                            size={14}
-                          />
-                        </div>
+                      <div className="flex items-center justify-center gap-2 min-w-0">
+                        <VideoIcon
+                          darkMode={darkMode}
+                          videoUrl={m.videoUrl}
+                          played={true}
+                          galleryUrl={m.galleryUrl}
+                          hasGallery={m.hasGallery}
+                          galleryCount={m.galleryCount}
+                          onOpenGallery={m.hasGallery ? () => openGallery?.(m) : undefined}
+                          size={14}
+                        />
                         <div className="justify-self-center">
                           <ScorePill
                             homeGoals={m.homeGoals}
@@ -5164,7 +5404,6 @@ function LeagueHomePage({
                             status={m.status}
                           />
                         </div>
-                        <div aria-hidden className="w-8 h-8" />
                       </div>
 
                       <div className="flex items-center gap-2 justify-end min-w-0">
@@ -5191,6 +5430,7 @@ function LeagueHomePage({
                         match={m}
                         openTeam={openTeam}
                         openPlayer={openPlayer}
+                        openGallery={openGallery}
                       />
                     </div>
                   )}
@@ -5393,6 +5633,7 @@ function CalendarPage({
   getPlayedMatch,
   openTeam,
   openMatch,
+  openGallery,
   expandedMatchId,
   stats,
   matches,
@@ -5403,6 +5644,31 @@ function CalendarPage({
   availableSeasons,
   onSeasonChange,
 }) {
+  const groupedFixtures = useMemo(() => {
+    const groups = [];
+    let currentKey = null;
+    let currentItems = [];
+
+    fixtures.forEach((f) => {
+      const key = f?.date || "__no_date__";
+      if (key !== currentKey) {
+        if (currentItems.length) {
+          groups.push({ key: currentKey, date: currentKey === "__no_date__" ? null : currentKey, items: currentItems });
+        }
+        currentKey = key;
+        currentItems = [f];
+      } else {
+        currentItems.push(f);
+      }
+    });
+
+    if (currentItems.length) {
+      groups.push({ key: currentKey, date: currentKey === "__no_date__" ? null : currentKey, items: currentItems });
+    }
+
+    return groups;
+  }, [fixtures]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -5432,121 +5698,578 @@ function CalendarPage({
       </div>
 
       <div className="grid gap-3">
-        {fixtures.map((f) => {
-          const m = getPlayedMatch(f);
-          const played = !!m;
-          const isExpanded = expandedMatchId === f.id;
+        {groupedFixtures.map((group) => {
+          const header = fixtureDateHeaderParts(group.date);
           return (
-            <React.Fragment key={f.id}>
-              <Card
-                darkMode={darkMode}
-                className={classNames(
-                  "p-3",
-                  darkMode ? "bg-black/10" : "bg-white"
-                )}
-              >
-                <div className="grid grid-cols-[44px_minmax(0,1fr)_20px_auto_20px_minmax(0,1fr)_44px] gap-2 items-center">
-                  <TeamLogo
-                    team={f.home}
-                    darkMode={darkMode}
-                    size={44}
-                    onClick={() => openTeam(f.home)}
-                  />
-
-                  <TeamLink
-                    team={f.home}
-                    onClick={() => openTeam(f.home)}
-                    className="e3d-link font-extrabold truncate"
-                  />
-
-                  <VideoIcon
-                    darkMode={darkMode}
-                    videoUrl={m?.videoUrl || f.videoUrl}
-                    played={played}
-                    size={20}
-                  />
-
-                  {played ? (
-                    <ScorePill
-                      homeGoals={m.homeGoals}
-                      awayGoals={m.awayGoals}
-                      darkMode={darkMode}
-                      onClick={() => openMatch(m.id)}
-                      date={f.date}
-                      time={f.time}
-                      status={m.status}
-                    />
-                  ) : (
-                    <button
-                      onClick={() => openMatch(f.id)}
-                      className={classNames(
-                        "px-4 py-2 rounded-xl border text-sm font-bold e3d-pill whitespace-nowrap",
-                        darkMode
-                          ? "bg-white/5 border-white/10"
-                          : "bg-black/5 border-black/10"
-                      )}
-                      title="Szczegóły meczu"
-                    >
-                      {fixtureCenterLabel(f)}
-                    </button>
-                  )}
-
-                  <div className="w-5"></div>
-
-                  <TeamLink
-                    team={f.away}
-                    onClick={() => openTeam(f.away)}
-                    className="e3d-link font-extrabold text-right truncate"
-                  />
-
-                  <TeamLogo
-                    team={f.away}
-                    darkMode={darkMode}
-                    size={44}
-                    onClick={() => openTeam(f.away)}
-                  />
-                </div>
-
+          <div key={group.key} className="space-y-2">
+            <div
+              className={classNames(
+                "px-3 py-2.5 rounded-xl border shadow-sm",
+                darkMode
+                  ? "bg-gradient-to-r from-blue-500/20 via-cyan-400/8 to-transparent border-blue-300/20"
+                  : "bg-gradient-to-r from-blue-50 via-cyan-50 to-white border-blue-200"
+              )}
+            >
+              <div className="flex items-center gap-3">
                 <div
                   className={classNames(
-                    "mt-2 flex items-center gap-2 text-xs",
-                    darkMode ? "text-gray-400" : "text-gray-600"
+                    "w-1.5 self-stretch rounded-full",
+                    darkMode ? "bg-cyan-300/80" : "bg-blue-500"
                   )}
-                >
-                  <MapPin size={14} className="e3d-ico" />
-                  <span className="font-semibold">{f.venue}</span>
-                  <span>•</span>
-                  <span className="font-semibold">{leagueName}</span>
+                />
+                <div className="min-w-0">
+                  <div
+                    className={classNames(
+                      "text-[11px] font-black uppercase tracking-[0.14em]",
+                      darkMode ? "text-cyan-200" : "text-blue-700"
+                    )}
+                  >
+                    {header.weekday}
+                  </div>
+                  {header.date ? (
+                    <div
+                      className={classNames(
+                        "text-base sm:text-lg font-black leading-tight",
+                        darkMode ? "text-white" : "text-gray-900"
+                      )}
+                    >
+                      {header.date}
+                    </div>
+                  ) : null}
                 </div>
-              </Card>
+              </div>
+            </div>
 
-              {isExpanded && m && (
-                <div id={`details-${f.id}`}>
-                  <MatchDetailsInline
-                    darkMode={darkMode}
-                    match={m}
-                    openTeam={openTeam}
-                    openPlayer={openPlayer}
+            <div className="space-y-3">
+              {group.items.map((f) => {
+                const m = getPlayedMatch(f);
+                const played = !!m;
+                const isExpanded = expandedMatchId === f.id;
+                return (
+                  <React.Fragment key={f.id}>
+                    <Card
+                      darkMode={darkMode}
+                      className={classNames(
+                        "p-3",
+                        darkMode ? "bg-black/10" : "bg-white"
+                      )}
+                    >
+                      <div className="grid grid-cols-[44px_minmax(0,1fr)_auto_auto_20px_minmax(0,1fr)_44px] gap-2 items-center">
+                        <TeamLogo
+                          team={f.home}
+                          darkMode={darkMode}
+                          size={44}
+                          onClick={() => openTeam(f.home)}
+                        />
+
+                        <TeamLink
+                          team={f.home}
+                          onClick={() => openTeam(f.home)}
+                          className="e3d-link font-extrabold truncate"
+                        />
+
+                        <VideoIcon
+                          darkMode={darkMode}
+                          videoUrl={m?.videoUrl || f.videoUrl}
+                          played={played}
+                          galleryUrl={m?.galleryUrl || f.galleryUrl}
+                          hasGallery={!!(m?.hasGallery || f.hasGallery)}
+                          galleryCount={m?.galleryCount || f.galleryCount || 0}
+                          onOpenGallery={
+                            m?.hasGallery || f.hasGallery
+                              ? () => openGallery?.(m || f)
+                              : undefined
+                          }
+                          size={20}
+                        />
+
+                        {played ? (
+                          <ScorePill
+                            homeGoals={m.homeGoals}
+                            awayGoals={m.awayGoals}
+                            darkMode={darkMode}
+                            onClick={() => openMatch(m.id)}
+                            time={f.time || m.time}
+                            status={m.status}
+                          />
+                        ) : (
+                          <button
+                            onClick={() => openMatch(f.id)}
+                            className={classNames(
+                              "px-4 py-2 rounded-xl border text-sm font-bold e3d-pill whitespace-nowrap",
+                              darkMode
+                                ? "bg-white/5 border-white/10"
+                                : "bg-black/5 border-black/10"
+                            )}
+                            title="Szczegóły meczu"
+                          >
+                            {fixtureCenterTimeLabel(f)}
+                          </button>
+                        )}
+
+                        <div className="w-5"></div>
+
+                        <TeamLink
+                          team={f.away}
+                          onClick={() => openTeam(f.away)}
+                          className="e3d-link font-extrabold text-right truncate"
+                        />
+
+                        <TeamLogo
+                          team={f.away}
+                          darkMode={darkMode}
+                          size={44}
+                          onClick={() => openTeam(f.away)}
+                        />
+                      </div>
+
+                      <div
+                        className={classNames(
+                          "mt-2 flex items-center gap-2 text-xs",
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        )}
+                      >
+                        <MapPin size={14} className="e3d-ico" />
+                        <span className="font-semibold">{f.venue}</span>
+                        <span>•</span>
+                        <span className="font-semibold">{leagueName}</span>
+                      </div>
+                    </Card>
+
+                    {isExpanded && m && (
+                      <div id={`details-${f.id}`}>
+                        <MatchDetailsInline
+                          darkMode={darkMode}
+                          match={m}
+                          openTeam={openTeam}
+                          openPlayer={openPlayer}
+                          openGallery={openGallery}
+                        />
+                      </div>
+                    )}
+
+                    {isExpanded && !m && (
+                      <div id={`details-${f.id}`}>
+                        <UpcomingMatchDetailsInline
+                          darkMode={darkMode}
+                          fixture={f}
+                          stats={stats}
+                          matches={matches}
+                          playersByTeam={playersByTeam}
+                          openTeam={openTeam}
+                          openPlayer={openPlayer}
+                        />
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+        )})}
+      </div>
+    </div>
+  );
+}
+
+function formatGalleryDate(dateStr) {
+  if (!dateStr) return "Termin nieznany";
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  if (!y || !m || !d) return String(dateStr);
+  return new Date(y, m - 1, d).toLocaleDateString("pl-PL", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function LeagueGalleryPage({
+  darkMode,
+  leagueId,
+  leagueName,
+  galleries,
+  currentSeason,
+  availableSeasons,
+  onSeasonChange,
+  onOpenCarousel,
+}) {
+  const [selectedGallery, setSelectedGallery] = useState(null);
+  const [loadingGalleryId, setLoadingGalleryId] = useState(null);
+  const [galleryError, setGalleryError] = useState(null);
+
+  useEffect(() => {
+    setSelectedGallery(null);
+    setLoadingGalleryId(null);
+    setGalleryError(null);
+  }, [leagueId, currentSeason, galleries]);
+
+  async function openGalleryTiles(gallerySummary) {
+    if (!gallerySummary?.matchId) return;
+    setLoadingGalleryId(gallerySummary.id);
+    setGalleryError(null);
+
+    try {
+      const fullAlbum = await fetchMatchGallery(gallerySummary.matchId);
+      if (!fullAlbum?.photos?.length) {
+        setGalleryError("Ta galeria nie zawiera jeszcze zdjęć.");
+        return;
+      }
+
+      setSelectedGallery({
+        ...gallerySummary,
+        ...fullAlbum,
+      });
+    } catch (err) {
+      console.error("Nie udało się załadować galerii ligi:", err);
+      setGalleryError("Nie udało się załadować zdjęć tej galerii.");
+    } finally {
+      setLoadingGalleryId(null);
+    }
+  }
+
+  if (selectedGallery) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedGallery(null)}
+              className={classNames(
+                "px-3 py-2 rounded e3d-btn",
+                darkMode ? "bg-white/5 hover:bg-white/10" : "bg-black/5 hover:bg-black/10"
+              )}
+            >
+              <ArrowLeft size={18} className="e3d-ico" />
+            </button>
+            <div>
+              <div className="text-2xl font-extrabold">
+                {displayTeamName(selectedGallery.home)} - {displayTeamName(selectedGallery.away)}
+              </div>
+              <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+                {leagueName} • {formatGalleryDate(selectedGallery.date)} •{" "}
+                {selectedGallery.score || "bez podanego wyniku"} • {selectedGallery.photoCount} zdjęć
+              </div>
+            </div>
+          </div>
+
+          <SeasonNavigation
+            currentSeason={currentSeason}
+            availableSeasons={availableSeasons}
+            onSeasonChange={onSeasonChange}
+            darkMode={darkMode}
+          />
+        </div>
+
+        <Card darkMode={darkMode}>
+          <div className="font-extrabold mb-3">Zdjęcia z meczu</div>
+          <div className={classNames("text-sm mb-4", darkMode ? "text-gray-400" : "text-gray-600")}>
+            Kliknij dowolne zdjęcie, aby otworzyć karuzelę z powiększeniem i miniaturkami.
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {selectedGallery.photos.map((photo, index) => (
+              <button
+                type="button"
+                key={photo.id || `${selectedGallery.id}-${index}`}
+                onClick={() => onOpenCarousel(selectedGallery, index)}
+                className={classNames(
+                  "group overflow-hidden rounded-2xl border text-left",
+                  darkMode
+                    ? "border-white/10 bg-black/10 hover:bg-white/5"
+                    : "border-gray-200 bg-gray-50 hover:bg-white"
+                )}
+              >
+                <div className="aspect-[4/3] overflow-hidden bg-black/10">
+                  <img
+                    src={photo.url}
+                    alt={photo.caption || `${selectedGallery.title || "Galeria"} #${index + 1}`}
+                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
                   />
                 </div>
-              )}
+                <div className="px-3 py-2">
+                  <div className="font-bold text-sm">Zdjęcie {index + 1}</div>
+                  <div className={classNames("text-xs truncate", darkMode ? "text-gray-400" : "text-gray-600")}>
+                    {photo.caption || "Otwórz w karuzeli"}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
-              {isExpanded && !m && (
-                <div id={`details-${f.id}`}>
-                  <UpcomingMatchDetailsInline
-                    darkMode={darkMode}
-                    fixture={f}
-                    stats={stats}
-                    matches={matches}
-                    playersByTeam={playersByTeam}
-                    openTeam={openTeam}
-                    openPlayer={openPlayer}
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <div className="text-2xl font-extrabold">{leagueName}</div>
+          <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+            Galerie meczowe • sezon {currentSeason}
+          </div>
+        </div>
+
+        <SeasonNavigation
+          currentSeason={currentSeason}
+          availableSeasons={availableSeasons}
+          onSeasonChange={onSeasonChange}
+          darkMode={darkMode}
+        />
+      </div>
+
+      {galleryError && (
+        <Card darkMode={darkMode}>
+          <div className={darkMode ? "text-rose-300" : "text-rose-700"}>
+            {galleryError}
+          </div>
+        </Card>
+      )}
+
+      {galleries.length === 0 ? (
+        <Card darkMode={darkMode}>
+          <div className={classNames("text-center py-6", darkMode ? "text-gray-400" : "text-gray-600")}>
+            Brak opublikowanych galerii meczowych w tej lidze.
+          </div>
+        </Card>
+      ) : (
+        <div className="grid xl:grid-cols-2 gap-4">
+          {galleries.map((gallery) => {
+            const isLoading = loadingGalleryId === gallery.id;
+            return (
+              <button
+                type="button"
+                key={gallery.id}
+                onClick={() => openGalleryTiles(gallery)}
+                className={classNames(
+                  "overflow-hidden rounded-2xl border text-left transition-transform hover:-translate-y-0.5",
+                  darkMode
+                    ? "border-white/10 bg-black/10 hover:bg-white/5"
+                    : "border-gray-200 bg-white hover:bg-gray-50"
+                )}
+              >
+                <div className="grid md:grid-cols-[220px_minmax(0,1fr)]">
+                  <div className="aspect-[4/3] md:aspect-auto bg-black/10">
+                    {gallery.coverUrl ? (
+                      <img
+                        src={gallery.coverUrl}
+                        alt={gallery.title || ""}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className={classNames(
+                        "w-full h-full flex items-center justify-center",
+                        darkMode ? "text-gray-500" : "text-gray-400"
+                      )}>
+                        <Images size={28} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-4 space-y-3 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={classNames(
+                        "px-2.5 py-1 rounded-full text-[11px] font-black border",
+                        darkMode
+                          ? "bg-cyan-500/10 border-cyan-400/20 text-cyan-200"
+                          : "bg-cyan-50 border-cyan-200 text-cyan-700"
+                      )}>
+                        {leagueName}
+                      </span>
+                      <span className={classNames(
+                        "px-2.5 py-1 rounded-full text-[11px] font-bold border",
+                        darkMode
+                          ? "bg-white/5 border-white/10 text-gray-300"
+                          : "bg-gray-50 border-gray-200 text-gray-700"
+                      )}>
+                        {gallery.photoCount} zdjęć
+                      </span>
+                    </div>
+
+                    <div>
+                      <div className="text-xl font-extrabold leading-tight">
+                        {displayTeamName(gallery.home)} - {displayTeamName(gallery.away)}
+                      </div>
+                      <div className={classNames("text-sm mt-1", darkMode ? "text-gray-400" : "text-gray-600")}>
+                        {formatGalleryDate(gallery.date)}
+                        {gallery.score ? ` • wynik ${gallery.score}` : ""}
+                      </div>
+                    </div>
+
+                    <div className={classNames("text-sm", darkMode ? "text-gray-300" : "text-gray-700")}>
+                      {gallery.title || "Galeria meczowa"}
+                    </div>
+
+                    <div className={classNames("text-xs", darkMode ? "text-gray-500" : "text-gray-500")}>
+                      {isLoading ? "Ładowanie zdjęć..." : "Otwórz galerię w układzie kafelków"}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MatchGalleryOverlay({ darkMode, overlay, onClose, onIndexChange }) {
+  const album = overlay?.album || null;
+  const photos = album?.photos || [];
+  const currentIndex = Math.min(
+    Math.max(overlay?.currentIndex || 0, 0),
+    Math.max(photos.length - 1, 0)
+  );
+  const currentPhoto = photos[currentIndex] || null;
+
+  useEffect(() => {
+    if (!overlay?.open) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      } else if (event.key === "ArrowLeft" && photos.length > 1) {
+        event.preventDefault();
+        onIndexChange((currentIndex - 1 + photos.length) % photos.length);
+      } else if (event.key === "ArrowRight" && photos.length > 1) {
+        event.preventDefault();
+        onIndexChange((currentIndex + 1) % photos.length);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentIndex, onClose, onIndexChange, overlay?.open, photos.length]);
+
+  if (!overlay?.open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[10020] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5"
+      onClick={onClose}
+    >
+      <div
+        className={classNames(
+          "w-full max-w-6xl rounded-[28px] border overflow-hidden",
+          darkMode ? "bg-[#0b111a] border-white/10" : "bg-white border-gray-200"
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className={classNames(
+            "px-4 py-3 border-b flex items-start justify-between gap-4",
+            darkMode ? "border-white/10" : "border-gray-200"
+          )}
+        >
+          <div className="min-w-0">
+            <div className="text-lg font-extrabold truncate">
+              {album?.home && album?.away
+                ? `${displayTeamName(album.home)} - ${displayTeamName(album.away)}`
+                : album?.title || "Galeria meczowa"}
+            </div>
+            <div className={classNames("text-sm mt-1", darkMode ? "text-gray-400" : "text-gray-600")}>
+              {album?.date ? formatGalleryDate(album.date) : ""}
+              {album?.score ? ` • wynik ${album.score}` : ""}
+              {photos.length ? ` • ${currentIndex + 1}/${photos.length}` : ""}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className={classNames(
+              "p-2 rounded-xl border",
+              darkMode
+                ? "bg-white/5 border-white/10 hover:bg-white/10"
+                : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+            )}
+            title="Zamknij galerię"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-3 sm:p-4">
+          {overlay.loading ? (
+            <div className="h-[60vh] flex items-center justify-center">
+              <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+                Ładowanie galerii...
+              </div>
+            </div>
+          ) : currentPhoto ? (
+            <div className="space-y-4">
+              <div className="relative rounded-2xl overflow-hidden bg-black">
+                <div className="h-[58vh] sm:h-[68vh] flex items-center justify-center">
+                  <img
+                    src={currentPhoto.url}
+                    alt={currentPhoto.caption || `${album?.title || "Galeria"} ${currentIndex + 1}`}
+                    className="max-w-full max-h-full object-contain"
                   />
                 </div>
+
+                {photos.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onIndexChange((currentIndex - 1 + photos.length) % photos.length)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-white/15 bg-black/45 text-white flex items-center justify-center hover:bg-black/60"
+                      title="Poprzednie zdjęcie"
+                    >
+                      <ChevronLeft size={22} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onIndexChange((currentIndex + 1) % photos.length)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-white/15 bg-black/45 text-white flex items-center justify-center hover:bg-black/60"
+                      title="Następne zdjęcie"
+                    >
+                      <ChevronRight size={22} />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className={classNames("text-sm min-h-[20px]", darkMode ? "text-gray-300" : "text-gray-700")}>
+                {currentPhoto.caption || ""}
+              </div>
+
+              {photos.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {photos.map((photo, index) => (
+                    <button
+                      type="button"
+                      key={photo.id || `thumb-${index}`}
+                      onClick={() => onIndexChange(index)}
+                      className={classNames(
+                        "shrink-0 rounded-xl overflow-hidden border-2 transition-colors",
+                        index === currentIndex
+                          ? darkMode
+                            ? "border-cyan-300"
+                            : "border-blue-500"
+                          : darkMode
+                          ? "border-white/10"
+                          : "border-gray-200"
+                      )}
+                      title={`Przejdź do zdjęcia ${index + 1}`}
+                    >
+                      <img
+                        src={photo.url}
+                        alt={photo.caption || `Miniatura ${index + 1}`}
+                        className="w-20 h-14 sm:w-24 sm:h-16 object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
               )}
-            </React.Fragment>
-          );
-        })}
+            </div>
+          ) : (
+            <div className={classNames("h-[40vh] flex items-center justify-center", darkMode ? "text-gray-400" : "text-gray-600")}>
+              Brak zdjęć do wyświetlenia.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -5578,7 +6301,7 @@ function HomeTeamsDatabasePage({ darkMode, openTeam }) {
         if (!cancelled) setRows(data);
       } catch (err) {
         if (!cancelled) {
-          console.error("Blad ladowania bazy druzyn:", err);
+          console.error("Błąd ładowania bazy drużyn:", err);
           setError("Nie udalo sie zaladowac bazy druzyn.");
         }
       } finally {
@@ -5606,7 +6329,7 @@ function HomeTeamsDatabasePage({ darkMode, openTeam }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-2xl font-extrabold">Baza druzyn</div>
+          <div className="text-2xl font-extrabold">Baza drużyn</div>
           <div
             className={classNames(
               "text-sm",
@@ -5633,7 +6356,7 @@ function HomeTeamsDatabasePage({ darkMode, openTeam }) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Szukaj druzyny (nazwa, skrot, dzielnica)"
+            placeholder="Szukaj drużyny (nazwa, skrót, dzielnica)"
             className={classNames(
               "w-full md:flex-1 rounded-xl border px-3 py-2 outline-none",
               darkMode
@@ -5660,7 +6383,7 @@ function HomeTeamsDatabasePage({ darkMode, openTeam }) {
       <Card darkMode={darkMode}>
         {loading ? (
           <div className={classNames("py-8 text-center", darkMode ? "text-gray-400" : "text-gray-500")}>
-            Ladowanie bazy druzyn...
+            Ładowanie bazy drużyn...
           </div>
         ) : error ? (
           <div className="py-8 text-center text-rose-400 font-semibold">{error}</div>
@@ -5726,8 +6449,8 @@ function HomePlayersDatabasePage({ darkMode, openPlayer }) {
         if (!cancelled) setRows(data);
       } catch (err) {
         if (!cancelled) {
-          console.error("Blad ladowania bazy zawodnikow:", err);
-          setError("Nie udalo sie zaladowac bazy zawodnikow.");
+          console.error("Błąd ładowania bazy zawodników:", err);
+          setError("Nie udało się załadować bazy zawodników.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -5754,7 +6477,7 @@ function HomePlayersDatabasePage({ darkMode, openPlayer }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-2xl font-extrabold">Baza zawodnikow</div>
+          <div className="text-2xl font-extrabold">Baza zawodników</div>
           <div
             className={classNames(
               "text-sm",
@@ -5781,7 +6504,7 @@ function HomePlayersDatabasePage({ darkMode, openPlayer }) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Szukaj zawodnika (imie, nazwisko, pozycja, miasto)"
+            placeholder="Szukaj zawodnika (imię, nazwisko, pozycja, miasto)"
             className={classNames(
               "w-full md:flex-1 rounded-xl border px-3 py-2 outline-none",
               darkMode
@@ -5808,7 +6531,7 @@ function HomePlayersDatabasePage({ darkMode, openPlayer }) {
       <Card darkMode={darkMode}>
         {loading ? (
           <div className={classNames("py-8 text-center", darkMode ? "text-gray-400" : "text-gray-500")}>
-            Ladowanie bazy zawodnikow...
+            Ładowanie bazy zawodników...
           </div>
         ) : error ? (
           <div className="py-8 text-center text-rose-400 font-semibold">{error}</div>
@@ -6468,75 +7191,145 @@ function LiveMatchDetails({
   );
 }
 
-function MatchDetailsInline({ darkMode, match, openTeam, openPlayer }) {
-  const [events, setEvents] = useState(match.events || []);
-  const [eventsLoading, setEventsLoading] = useState(!match.events || match.events.length === 0);
-
-  useEffect(() => {
-    if (match.events && match.events.length > 0) return;
-    let cancelled = false;
-    fetchMatchDetails(match.id).then(details => {
-      if (!cancelled) {
-        setEvents(details.events);
-        setEventsLoading(false);
-      }
-    }).catch(() => { if (!cancelled) setEventsLoading(false); });
-    return () => { cancelled = true; };
-  }, [match.id]);
-
-  const leagueName =
-    ({ "1st": "I Liga", "2nd": "II Liga", "3rd": "III Liga" }[match.league] || match.league);
-
-  // Grupowanie zdarzeń per zawodnik per drużyna
-  const getEventsPerPlayer = (teamEvents) => {
-    const playerEvents = {};
-    teamEvents.forEach((e) => {
-      if (!playerEvents[e.playerName]) {
-        playerEvents[e.playerName] = {
-          playerName: e.playerName,
-          playerId: e.playerId,
-          goals: 0,
-          assists: 0,
-          yellows: 0,
-          reds: 0,
-        };
-      }
-      if (e.type === "GOAL") {
-        playerEvents[e.playerName].goals++;
-      } else if (e.type === "YELLOW") {
-        playerEvents[e.playerName].yellows++;
-      } else if (e.type === "RED") {
-        playerEvents[e.playerName].reds++;
-      }
+function sortMatchParticipantRows(rows) {
+  return (rows || [])
+    .slice()
+    .sort((a, b) => {
+      const numberA = a.number ?? Number.MAX_SAFE_INTEGER;
+      const numberB = b.number ?? Number.MAX_SAFE_INTEGER;
+      if (numberA !== numberB) return numberA - numberB;
+      return String(a.playerName || "").localeCompare(String(b.playerName || ""), "pl");
     });
-    return Object.values(playerEvents);
+}
+
+function buildMatchParticipants(match, lineups, events) {
+  const buckets = {
+    home: new Map(),
+    away: new Map(),
   };
 
-  const homeEvents = events.filter((e) => e.team === match.home);
-  const awayEvents = events.filter((e) => e.team === match.away);
+  const resolveTeamKey = (teamName, teamId) => {
+    if (teamName && teamName === match.home) return "home";
+    if (teamName && teamName === match.away) return "away";
+    if (teamId && teamId === match.homeTeamId) return "home";
+    if (teamId && teamId === match.awayTeamId) return "away";
+    return null;
+  };
 
-  const homePlayerEvents = getEventsPerPlayer(homeEvents);
-  const awayPlayerEvents = getEventsPerPlayer(awayEvents);
+  const ensurePlayer = (teamKey, playerData) => {
+    if (!teamKey || !playerData?.playerId) return null;
+    if (!buckets[teamKey].has(playerData.playerId)) {
+      buckets[teamKey].set(playerData.playerId, {
+        playerId: playerData.playerId,
+        playerName: playerData.playerName || "Bez nazwy",
+        pos: playerData.pos || "",
+        number: playerData.number ?? null,
+        goals: 0,
+        assists: 0,
+        yellows: 0,
+        reds: 0,
+      });
+    }
 
-  const EventIcons = ({ player }) => (
-    <div className="flex items-center gap-1">
+    const current = buckets[teamKey].get(playerData.playerId);
+    if (!current.playerName && playerData.playerName) current.playerName = playerData.playerName;
+    if (!current.pos && playerData.pos) current.pos = playerData.pos;
+    if (current.number == null && playerData.number != null) current.number = playerData.number;
+    return current;
+  };
+
+  for (const lineup of lineups || []) {
+    const teamKey = resolveTeamKey(lineup.team, lineup.teamId);
+    ensurePlayer(teamKey, {
+      playerId: lineup.id,
+      playerName: lineup.name,
+      pos: lineup.pos,
+      number: lineup.number,
+    });
+  }
+
+  for (const event of events || []) {
+    const teamKey = resolveTeamKey(event.team, event.teamId);
+    const player = ensurePlayer(teamKey, {
+      playerId: event.playerId,
+      playerName: event.playerName,
+    });
+    if (!player) continue;
+
+    if (event.type === "GOAL") player.goals += 1;
+    if (event.type === "YELLOW") player.yellows += 1;
+    if (event.type === "RED") player.reds += 1;
+
+    if (event.type === "GOAL" && event.assistId) {
+      const assistPlayer = ensurePlayer(teamKey, {
+        playerId: event.assistId,
+        playerName: event.assistName,
+      });
+      if (assistPlayer) assistPlayer.assists += 1;
+    }
+  }
+
+  return {
+    home: sortMatchParticipantRows(Array.from(buckets.home.values())),
+    away: sortMatchParticipantRows(Array.from(buckets.away.values())),
+  };
+}
+
+function MatchPlayerEventIcons({ player }) {
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap justify-end">
       {player.goals > 0 && (
         <span className="text-sm">
           ⚽{player.goals > 1 ? `×${player.goals}` : ""}
         </span>
       )}
-      {player.yellows > 0 && player.reds > 0 && (
-        <span className="text-sm">🟨🟥</span>
+      {player.assists > 0 && (
+        <span className="text-sm">
+          👟{player.assists > 1 ? `×${player.assists}` : ""}
+        </span>
       )}
-      {player.reds > 0 && player.yellows === 0 && (
-        <span className="text-sm">🟥</span>
-      )}
-      {player.yellows > 0 && player.reds === 0 && (
+      {player.yellows > 0 && (
         <span className="text-sm">
           🟨{player.yellows > 1 ? `×${player.yellows}` : ""}
         </span>
       )}
+      {player.reds > 0 && (
+        <span className="text-sm">
+          🟥{player.reds > 1 ? `×${player.reds}` : ""}
+        </span>
+      )}
     </div>
+  );
+}
+
+function MatchDetailsInline({ darkMode, match, openTeam, openPlayer, openGallery }) {
+  const [details, setDetails] = useState({
+    events: match.events || [],
+    lineups: [...(match.homeLineup || []), ...(match.awayLineup || [])],
+  });
+  const [detailsLoading, setDetailsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchMatchDetails(match.id).then(details => {
+      if (!cancelled) {
+        setDetails({
+          events: details.events || [],
+          lineups: details.lineups || [],
+        });
+        setDetailsLoading(false);
+      }
+    }).catch(() => {
+      if (!cancelled) setDetailsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [match.id]);
+
+  const leagueName =
+    ({ "1st": "I Liga", "2nd": "II Liga", "3rd": "III Liga" }[match.league] || match.league);
+  const participants = useMemo(
+    () => buildMatchParticipants(match, details.lineups, details.events),
+    [match, details]
   );
 
   const SectionTitle = ({ children }) => (
@@ -6561,7 +7354,7 @@ function MatchDetailsInline({ darkMode, match, openTeam, openPlayer }) {
     </div>
   );
 
-  if (eventsLoading) {
+  if (detailsLoading) {
     return (
       <Card darkMode={darkMode} className="mt-2">
         <div className={classNames("text-sm text-center py-4", darkMode ? "text-gray-400" : "text-gray-500")}>
@@ -6590,19 +7383,29 @@ function MatchDetailsInline({ darkMode, match, openTeam, openPlayer }) {
         </span>
         <span> • </span>
         <span className="font-semibold">{match.venue}</span>
+        <MediaIcons
+          darkMode={darkMode}
+          videoUrl={match.videoUrl}
+          galleryUrl={match.galleryUrl}
+          galleryCount={match.galleryCount}
+          onOpenGallery={
+            match.hasGallery ? () => openGallery?.(match) : undefined
+          }
+          className="ml-2"
+        />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-3">
         {/* Lewa kolumna - drużyna gospodarzy */}
         <div className="space-y-3">
           <SectionTitle>{displayTeamName(match.home)}</SectionTitle>
-          {homePlayerEvents.length === 0 ? (
-            <Empty>Brak zdarzeń.</Empty>
+          {participants.home.length === 0 ? (
+            <Empty>Brak skladu meczu.</Empty>
           ) : (
             <div className="space-y-1.5">
-              {homePlayerEvents.map((player, idx) => (
+              {participants.home.map((player) => (
                 <div
-                  key={idx}
+                  key={player.playerId}
                   className={classNames(
                     "p-2 rounded-lg border flex items-center justify-between gap-2",
                     darkMode
@@ -6614,9 +7417,9 @@ function MatchDetailsInline({ darkMode, match, openTeam, openPlayer }) {
                     onClick={() => openPlayer && openPlayer(player.playerId)}
                     className="font-bold text-sm hover:underline"
                   >
-                    {player.playerName}
+                    {player.number != null ? `${player.number}. ` : ""}{player.playerName}
                   </button>
-                  <EventIcons player={player} />
+                  <MatchPlayerEventIcons player={player} />
                 </div>
               ))}
             </div>
@@ -6626,13 +7429,13 @@ function MatchDetailsInline({ darkMode, match, openTeam, openPlayer }) {
         {/* Prawa kolumna - drużyna gości */}
         <div className="space-y-3">
           <SectionTitle>{displayTeamName(match.away)}</SectionTitle>
-          {awayPlayerEvents.length === 0 ? (
-            <Empty>Brak zdarzeń.</Empty>
+          {participants.away.length === 0 ? (
+            <Empty>Brak skladu meczu.</Empty>
           ) : (
             <div className="space-y-1.5">
-              {awayPlayerEvents.map((player, idx) => (
+              {participants.away.map((player) => (
                 <div
-                  key={idx}
+                  key={player.playerId}
                   className={classNames(
                     "p-2 rounded-lg border flex items-center justify-between gap-2",
                     darkMode
@@ -6644,9 +7447,9 @@ function MatchDetailsInline({ darkMode, match, openTeam, openPlayer }) {
                     onClick={() => openPlayer && openPlayer(player.playerId)}
                     className="font-bold text-sm hover:underline"
                   >
-                    {player.playerName}
+                    {player.number != null ? `${player.number}. ` : ""}{player.playerName}
                   </button>
-                  <EventIcons player={player} />
+                  <MatchPlayerEventIcons player={player} />
                 </div>
               ))}
             </div>
@@ -6666,14 +7469,16 @@ function MatchDetailsInline({ darkMode, match, openTeam, openPlayer }) {
           )}>
             ⭐ MVP
           </div>
-          <TeamLogo
-            team={match.mvp.team}
-            darkMode={darkMode}
-            size={24}
-            onClick={() => openTeam(match.mvp.team)}
-          />
+          {match.mvp.team && (
+            <TeamLogo
+              team={match.mvp.team}
+              darkMode={darkMode}
+              size={24}
+              onClick={() => openTeam(match.mvp.team)}
+            />
+          )}
           <button
-            onClick={() => openPlayer && openPlayer(match.mvp.playerId)}
+            onClick={() => match.mvp.playerId && openPlayer && openPlayer(match.mvp.playerId)}
             className="font-bold text-sm hover:underline"
           >
             {match.mvp.playerName}
@@ -6684,27 +7489,39 @@ function MatchDetailsInline({ darkMode, match, openTeam, openPlayer }) {
   );
 }
 
-function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague }) {
-  const [events, setEvents] = useState(match.events || []);
-  const [eventsLoading, setEventsLoading] = useState(!match.events || match.events.length === 0);
+function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGallery }) {
+  const [details, setDetails] = useState({
+    events: match.events || [],
+    lineups: [...(match.homeLineup || []), ...(match.awayLineup || [])],
+  });
+  const [detailsLoading, setDetailsLoading] = useState(true);
 
   useEffect(() => {
-    if (match.events && match.events.length > 0) return;
     let cancelled = false;
     fetchMatchDetails(match.id).then(details => {
       if (!cancelled) {
-        setEvents(details.events);
-        setEventsLoading(false);
+        setDetails({
+          events: details.events || [],
+          lineups: details.lineups || [],
+        });
+        setDetailsLoading(false);
       }
-    }).catch(() => { if (!cancelled) setEventsLoading(false); });
+    }).catch(() => {
+      if (!cancelled) setDetailsLoading(false);
+    });
     return () => { cancelled = true; };
   }, [match.id]);
 
   const leagueName =
     ({ "1st": "I Liga", "2nd": "II Liga", "3rd": "III Liga" }[match.league] || match.league);
 
-  const goals = events.filter((e) => e.type === "GOAL");
-  const cards = events.filter(
+  const participants = useMemo(
+    () => buildMatchParticipants(match, details.lineups, details.events),
+    [match, details]
+  );
+
+  const goals = details.events.filter((e) => e.type === "GOAL");
+  const cards = details.events.filter(
     (e) => e.type === "YELLOW" || e.type === "RED"
   );
 
@@ -6787,18 +7604,11 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague }) {
           darkMode={darkMode}
           videoUrl={match.videoUrl}
           galleryUrl={match.galleryUrl}
+          galleryCount={match.galleryCount}
+          onOpenGallery={
+            match.hasGallery ? () => openGallery?.(match) : undefined
+          }
         />
-        {match.videoUrl && match.galleryUrl && <span>•</span>}
-        {match.galleryUrl && (
-          <a
-            href={match.galleryUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="underline font-bold"
-          >
-            Galeria
-          </a>
-        )}
       </div>
     </Card>
   );
@@ -6870,7 +7680,7 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague }) {
     </div>
   );
 
-  if (eventsLoading) {
+  if (detailsLoading) {
     return (
       <div className="space-y-4">
         <Header />
@@ -6964,6 +7774,10 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague }) {
             darkMode={darkMode}
             videoUrl={match.videoUrl}
             galleryUrl={match.galleryUrl}
+            galleryCount={match.galleryCount}
+            onOpenGallery={
+              match.hasGallery ? () => openGallery?.(match) : undefined
+            }
             className="ml-2"
           />
         </div>
@@ -7037,79 +7851,91 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague }) {
               ⭐ MVP MECZU
             </div>
             <div className="flex items-center gap-3">
-              <TeamLogo
-                team={match.mvp.team}
-                darkMode={darkMode}
-                size={40}
-                onClick={() => openTeam(match.mvp.team)}
-              />
+              {match.mvp.team && (
+                <TeamLogo
+                  team={match.mvp.team}
+                  darkMode={darkMode}
+                  size={40}
+                  onClick={() => openTeam(match.mvp.team)}
+                />
+              )}
               <div>
                 <div className="font-extrabold text-lg">{match.mvp.playerName}</div>
-                <div className={classNames(
-                  "text-sm",
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                )}>
-                  <TeamLink
-                    team={displayTeamName(match.mvp.team)}
-                    onClick={() => openTeam(match.mvp.team)}
-                    className="e3d-link"
-                  />
-                </div>
+                {match.mvp.team && (
+                  <div className={classNames(
+                    "text-sm",
+                    darkMode ? "text-gray-400" : "text-gray-600"
+                  )}>
+                    <TeamLink
+                      team={displayTeamName(match.mvp.team)}
+                      onClick={() => openTeam(match.mvp.team)}
+                      className="e3d-link"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </Card>
       )}
 
-      {/* Składy */}
-      {(match.homeLineup || match.awayLineup) && (
+      {/* Uczestnicy meczu */}
+      {(participants.home.length > 0 || participants.away.length > 0) && (
         <div className="grid lg:grid-cols-2 gap-3">
-          {/* Skład gospodarzy */}
-          {match.homeLineup && match.homeLineup.length > 0 && (
+          {participants.home.length > 0 && (
             <Card darkMode={darkMode}>
-              <SectionTitle>Skład – {displayTeamName(match.home)}</SectionTitle>
+              <SectionTitle>Uczestnicy – {displayTeamName(match.home)}</SectionTitle>
               <div className="space-y-1.5">
-                {match.homeLineup.map((player, idx) => (
+                {participants.home.map((player) => (
                   <div
-                    key={idx}
+                    key={player.playerId}
                     className={classNames(
-                      "p-2 rounded-lg border flex items-center justify-between",
+                      "p-2 rounded-lg border flex items-center justify-between gap-3",
                       darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"
                     )}
                   >
-                    <div className="font-bold text-sm">{player.name}</div>
-                    <div className={classNames(
-                      "text-xs px-2 py-0.5 rounded border",
-                      darkMode ? "border-white/20" : "border-gray-300"
-                    )}>
-                      {player.pos}
+                    <div>
+                      <div className="font-bold text-sm">
+                        {player.number != null ? `${player.number}. ` : ""}{player.playerName}
+                      </div>
+                      <div className={classNames(
+                        "text-xs",
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      )}>
+                        {player.pos || "Bez pozycji"}
+                      </div>
                     </div>
+                    <MatchPlayerEventIcons player={player} />
                   </div>
                 ))}
               </div>
             </Card>
           )}
-          
-          {/* Skład gości */}
-          {match.awayLineup && match.awayLineup.length > 0 && (
+
+          {participants.away.length > 0 && (
             <Card darkMode={darkMode}>
-              <SectionTitle>Skład – {displayTeamName(match.away)}</SectionTitle>
+              <SectionTitle>Uczestnicy – {displayTeamName(match.away)}</SectionTitle>
               <div className="space-y-1.5">
-                {match.awayLineup.map((player, idx) => (
+                {participants.away.map((player) => (
                   <div
-                    key={idx}
+                    key={player.playerId}
                     className={classNames(
-                      "p-2 rounded-lg border flex items-center justify-between",
+                      "p-2 rounded-lg border flex items-center justify-between gap-3",
                       darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"
                     )}
                   >
-                    <div className="font-bold text-sm">{player.name}</div>
-                    <div className={classNames(
-                      "text-xs px-2 py-0.5 rounded border",
-                      darkMode ? "border-white/20" : "border-gray-300"
-                    )}>
-                      {player.pos}
+                    <div>
+                      <div className="font-bold text-sm">
+                        {player.number != null ? `${player.number}. ` : ""}{player.playerName}
+                      </div>
+                      <div className={classNames(
+                        "text-xs",
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      )}>
+                        {player.pos || "Bez pozycji"}
+                      </div>
                     </div>
+                    <MatchPlayerEventIcons player={player} />
                   </div>
                 ))}
               </div>
@@ -8316,6 +9142,7 @@ function HomeDashboard({
   typerMatches = [],
   openTeam,
   openMatch,
+  openGallery,
   expandedMatchId,
   playersByTeam,
   openPlayer,
@@ -9234,6 +10061,14 @@ function HomeDashboard({
                             darkMode={darkMode}
                             videoUrl={playedMatch?.videoUrl || f.videoUrl}
                             played={!!playedMatch}
+                            galleryUrl={playedMatch?.galleryUrl || f.galleryUrl}
+                            hasGallery={!!(playedMatch?.hasGallery || f.hasGallery)}
+                            galleryCount={playedMatch?.galleryCount || f.galleryCount || 0}
+                            onOpenGallery={
+                              playedMatch?.hasGallery || f.hasGallery
+                                ? () => openGallery?.(playedMatch || f)
+                                : undefined
+                            }
                             size={16}
                           />
                           <button
@@ -9271,6 +10106,7 @@ function HomeDashboard({
                           match={playedMatch}
                           openTeam={openTeam}
                           openPlayer={openPlayer}
+                          openGallery={openGallery}
                         />
                       </div>
                     )}
@@ -9331,15 +10167,17 @@ function HomeDashboard({
                           className="font-bold e3d-link truncate"
                         />
 
-                        <div className="grid grid-cols-[36px_minmax(0,1fr)_36px] items-center gap-2 min-w-0">
-                          <div className="justify-self-end">
-                            <VideoIcon
-                              darkMode={darkMode}
-                              videoUrl={m.videoUrl}
-                              played={true}
-                              size={16}
-                            />
-                          </div>
+                        <div className="flex items-center justify-center gap-2 min-w-0">
+                          <VideoIcon
+                            darkMode={darkMode}
+                            videoUrl={m.videoUrl}
+                            played={true}
+                            galleryUrl={m.galleryUrl}
+                            hasGallery={m.hasGallery}
+                            galleryCount={m.galleryCount}
+                            onOpenGallery={m.hasGallery ? () => openGallery?.(m) : undefined}
+                            size={16}
+                          />
                           <div className="justify-self-center">
                             <ScorePill
                               homeGoals={m.homeGoals}
@@ -9351,7 +10189,6 @@ function HomeDashboard({
                               status={m.status}
                             />
                           </div>
-                          <div aria-hidden className="w-9 h-9" />
                         </div>
 
                         <TeamLink
@@ -9375,6 +10212,7 @@ function HomeDashboard({
                           match={m}
                           openTeam={openTeam}
                           openPlayer={openPlayer}
+                          openGallery={openGallery}
                         />
                       </div>
                     )}
@@ -10139,7 +10977,7 @@ function PollsPage({ darkMode, polls }) {
   const [counts, setCounts] = useState(() => {
     const obj = {};
     for (const p of polls)
-      obj[p.id] = p.options.map(() => 5 + Math.floor(Math.random() * 35));
+      obj[p.id] = p.votes || p.options.map(() => 0);
     return obj;
   });
   const [collapsingPolls, setCollapsingPolls] = useState(new Set()); // animacja zwijania
