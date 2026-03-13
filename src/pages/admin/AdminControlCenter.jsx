@@ -7,6 +7,13 @@ import {
   KeyRound,
   ShieldCheck,
   UserPlus,
+  Users,
+  Plus,
+  Pencil,
+  Trash2,
+  Undo2,
+  Loader2,
+  X,
   Mail,
   Info,
   RefreshCw,
@@ -61,6 +68,10 @@ function toLocalDatetimeValue(dateObj) {
   if (Number.isNaN(d.getTime())) return "";
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function normalizeRefereeName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
 }
 
 function TeamLogoThumb({ src, name, darkMode }) {
@@ -143,6 +154,15 @@ export default function AdminControlCenter({ darkMode }) {
   const [loadedConfigId, setLoadedConfigId] = useState(null);
   const [typerConfigTableMissing, setTyperConfigTableMissing] = useState(false);
 
+  const [referees, setReferees] = useState([]);
+  const [refereesLoading, setRefereesLoading] = useState(false);
+  const [refereesTableMissing, setRefereesTableMissing] = useState(false);
+  const [refereeName, setRefereeName] = useState("");
+  const [creatingReferee, setCreatingReferee] = useState(false);
+  const [editingRefereeId, setEditingRefereeId] = useState("");
+  const [editingRefereeName, setEditingRefereeName] = useState("");
+  const [busyRefereeId, setBusyRefereeId] = useState("");
+
   const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
   const softBox = darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50";
   const inputCls = darkMode
@@ -153,11 +173,18 @@ export default function AdminControlCenter({ darkMode }) {
   const btnGhost = darkMode
     ? "px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-gray-200 hover:bg-white/10"
     : "px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50";
+  const btnSmall = darkMode
+    ? "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-gray-200 hover:bg-white/10 disabled:opacity-50"
+    : "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50";
+  const btnDangerSmall = darkMode
+    ? "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-400/20 bg-red-500/10 text-sm text-red-200 hover:bg-red-500/15 disabled:opacity-50"
+    : "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-sm text-red-700 hover:bg-red-100 disabled:opacity-50";
 
   const tabs = useMemo(
     () => [
       { id: "polls", label: "Ankiety", icon: <Vote size={16} /> },
       { id: "typer", label: "Typer na kolejkÄ™", icon: <Target size={16} /> },
+      { id: "referees", label: "Sedziowie", icon: <Users size={16} /> },
       { id: "password", label: "Zmiana hasĹ‚a", icon: <KeyRound size={16} /> },
       { id: "permissions", label: "Uprawnienia", icon: <ShieldCheck size={16} /> },
       { id: "admins", label: "Podadmini / zaproszenia", icon: <UserPlus size={16} /> },
@@ -201,6 +228,35 @@ export default function AdminControlCenter({ darkMode }) {
   useEffect(() => {
     loadMeta();
   }, [loadMeta]);
+
+  const loadReferees = useCallback(async () => {
+    setRefereesLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("referees")
+        .select("id, full_name, is_active, updated_at")
+        .order("is_active", { ascending: false })
+        .order("full_name");
+
+      if (error) throw error;
+
+      setReferees(data || []);
+      setRefereesTableMissing(false);
+    } catch (err) {
+      const message = String(err?.message || "");
+      setReferees([]);
+      setRefereesTableMissing(message.toLowerCase().includes("referees"));
+      if (!message.toLowerCase().includes("referees")) {
+        setAlert({ type: "error", message: message || "Nie udalo sie zaladowac listy sedziow." });
+      }
+    } finally {
+      setRefereesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadReferees();
+  }, [loadReferees]);
 
   const loadTyperMatches = useCallback(async () => {
     if (!typerForm.season_id || !typerForm.round) {
@@ -404,6 +460,113 @@ export default function AdminControlCenter({ darkMode }) {
     setTyperSelectedIds([]);
   }
 
+  function resetRefereeEditor() {
+    setEditingRefereeId("");
+    setEditingRefereeName("");
+  }
+
+  function notifyRefereesChanged() {
+    window.dispatchEvent(new CustomEvent("mlpn:referees-updated"));
+  }
+
+  async function handleCreateReferee() {
+    const fullName = normalizeRefereeName(refereeName);
+    if (!fullName) {
+      setAlert({ type: "error", message: "Wpisz imie i nazwisko sedziego." });
+      return;
+    }
+
+    const duplicate = referees.find(
+      (referee) => referee.full_name.localeCompare(fullName, "pl", { sensitivity: "base" }) === 0
+    );
+    if (duplicate) {
+      setAlert({ type: "error", message: "Taki sedzia jest juz na liscie." });
+      return;
+    }
+
+    setCreatingReferee(true);
+    try {
+      const { error } = await supabase
+        .from("referees")
+        .insert({ full_name: fullName, is_active: true });
+
+      if (error) throw error;
+
+      setRefereeName("");
+      await loadReferees();
+      notifyRefereesChanged();
+      setAlert({ type: "success", message: "Sedzia zostal dodany do listy." });
+    } catch (err) {
+      setAlert({ type: "error", message: err?.message || "Nie udalo sie dodac sedziego." });
+    } finally {
+      setCreatingReferee(false);
+    }
+  }
+
+  async function handleSaveReferee(refereeId) {
+    const fullName = normalizeRefereeName(editingRefereeName);
+    if (!fullName) {
+      setAlert({ type: "error", message: "Wpisz poprawne imie i nazwisko sedziego." });
+      return;
+    }
+
+    const duplicate = referees.find(
+      (referee) =>
+        referee.id !== refereeId &&
+        referee.full_name.localeCompare(fullName, "pl", { sensitivity: "base" }) === 0
+    );
+    if (duplicate) {
+      setAlert({ type: "error", message: "Na liscie jest juz sedzia o takiej nazwie." });
+      return;
+    }
+
+    setBusyRefereeId(refereeId);
+    try {
+      const { error } = await supabase
+        .from("referees")
+        .update({ full_name: fullName })
+        .eq("id", refereeId);
+
+      if (error) throw error;
+
+      resetRefereeEditor();
+      await loadReferees();
+      notifyRefereesChanged();
+      setAlert({ type: "success", message: "Dane sedziego zostaly zaktualizowane." });
+    } catch (err) {
+      setAlert({ type: "error", message: err?.message || "Nie udalo sie zapisac zmian sedziego." });
+    } finally {
+      setBusyRefereeId("");
+    }
+  }
+
+  async function handleSetRefereeActive(refereeId, isActive) {
+    setBusyRefereeId(refereeId);
+    try {
+      const { error } = await supabase
+        .from("referees")
+        .update({ is_active: isActive })
+        .eq("id", refereeId);
+
+      if (error) throw error;
+
+      if (!isActive && editingRefereeId === refereeId) resetRefereeEditor();
+
+      await loadReferees();
+      notifyRefereesChanged();
+      setAlert({
+        type: "success",
+        message: isActive
+          ? "Sedzia wrocil na liste dostepnych osob."
+          : "Sedzia zostal ukryty z listy nowych wyborow.",
+      });
+    } catch (err) {
+      setAlert({ type: "error", message: err?.message || "Nie udalo sie zaktualizowac statusu sedziego." });
+    } finally {
+      setBusyRefereeId("");
+    }
+  }
+
   async function handleSaveTyperConfig() {
     if (!typerForm.season_id) {
       setAlert({ type: "error", message: "Wybierz sezon." });
@@ -521,6 +684,14 @@ export default function AdminControlCenter({ darkMode }) {
   const leagueOptions = useMemo(
     () => [{ id: "all", name: "Wszystkie ligi" }, ...(leagues || [])],
     [leagues]
+  );
+  const activeReferees = useMemo(
+    () => (referees || []).filter((referee) => referee.is_active),
+    [referees]
+  );
+  const inactiveReferees = useMemo(
+    () => (referees || []).filter((referee) => !referee.is_active),
+    [referees]
   );
 
   return (
@@ -797,6 +968,177 @@ export default function AdminControlCenter({ darkMode }) {
             <button type="button" className={btnPrimary} onClick={handleSaveTyperConfig} disabled={typerSaving || metaLoading}>
               {typerSaving ? "Zapisywanie..." : "Zapisz konfiguracjÄ™ typera"}
             </button>
+          </div>
+        </SectionCard>
+      )}
+
+      {tab === "referees" && (
+        <SectionCard
+          darkMode={darkMode}
+          icon={<Users size={18} />}
+          title="Lista sedziow"
+          subtitle="Dodajesz, poprawiasz i ukrywasz sedziow bez psucia historii rozegranych meczow."
+        >
+          <div className="grid lg:grid-cols-[minmax(0,340px)_1fr] gap-4">
+            <div className={`rounded-2xl border p-4 ${softBox}`}>
+              <div className="font-semibold mb-2">Dodaj nowego sedziego</div>
+              <p className={`text-sm mb-3 ${textMuted}`}>
+                Ukrycie z listy nie usuwa sedziego ze starych meczow. Edycja nazwy aktualizuje stare spotkania automatycznie.
+              </p>
+              <div className="space-y-3">
+                <input
+                  className={inputCls}
+                  value={refereeName}
+                  onChange={(e) => setRefereeName(e.target.value)}
+                  placeholder="Imie i nazwisko"
+                />
+                <button
+                  type="button"
+                  className={`${btnPrimary} inline-flex items-center gap-2`}
+                  onClick={handleCreateReferee}
+                  disabled={creatingReferee || refereesTableMissing}
+                >
+                  {creatingReferee ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                  Dodaj sedziego
+                </button>
+              </div>
+
+              {refereesTableMissing && (
+                <div className={`mt-4 rounded-xl border p-3 text-sm ${darkMode ? "border-amber-400/30 bg-amber-500/10 text-amber-200" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+                  Brakuje tabeli sedziow w bazie. W Supabase uruchom plik:{" "}
+                  <code className="font-mono">supabase/migrations/015_referees.sql</code>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className={`rounded-2xl border p-4 ${softBox}`}>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <div className="font-semibold">Aktywni sedziowie</div>
+                    <div className={`text-sm ${textMuted}`}>Ta lista jest widoczna przy wpisywaniu nowych wynikow.</div>
+                  </div>
+                  {refereesLoading && <Loader2 size={16} className="animate-spin" />}
+                </div>
+
+                <div className="space-y-3">
+                  {activeReferees.length === 0 ? (
+                    <div className={`text-sm ${textMuted}`}>Brak aktywnych sedziow na liscie.</div>
+                  ) : (
+                    activeReferees.map((referee) => {
+                      const isEditing = editingRefereeId === referee.id;
+                      const isBusy = busyRefereeId === referee.id;
+
+                      return (
+                        <div
+                          key={referee.id}
+                          className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-white"}`}
+                        >
+                          {isEditing ? (
+                            <div className="flex flex-col sm:flex-row gap-3">
+                              <input
+                                className={inputCls}
+                                value={editingRefereeName}
+                                onChange={(e) => setEditingRefereeName(e.target.value)}
+                                placeholder="Imie i nazwisko"
+                                disabled={isBusy}
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  className={btnSmall}
+                                  onClick={() => handleSaveReferee(referee.id)}
+                                  disabled={isBusy}
+                                >
+                                  {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Pencil size={14} />}
+                                  Zapisz
+                                </button>
+                                <button
+                                  type="button"
+                                  className={btnGhost}
+                                  onClick={resetRefereeEditor}
+                                  disabled={isBusy}
+                                >
+                                  <span className="inline-flex items-center gap-2">
+                                    <X size={14} />
+                                    Anuluj
+                                  </span>
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                              <div>
+                                <div className="font-semibold">{referee.full_name}</div>
+                                <div className={`text-xs mt-1 ${textMuted}`}>Dostepny przy kolejnych meczach.</div>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  className={btnSmall}
+                                  onClick={() => {
+                                    setEditingRefereeId(referee.id);
+                                    setEditingRefereeName(referee.full_name);
+                                  }}
+                                  disabled={isBusy}
+                                >
+                                  <Pencil size={14} />
+                                  Edytuj
+                                </button>
+                                <button
+                                  type="button"
+                                  className={btnDangerSmall}
+                                  onClick={() => handleSetRefereeActive(referee.id, false)}
+                                  disabled={isBusy}
+                                >
+                                  {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                  Ukryj z listy
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className={`rounded-2xl border p-4 ${softBox}`}>
+                <div className="font-semibold mb-1">Ukryci sedziowie</div>
+                <div className={`text-sm mb-3 ${textMuted}`}>Nie pojawiaja sie przy nowych meczach, ale stare spotkania dalej ich pokazuja.</div>
+
+                <div className="space-y-3">
+                  {inactiveReferees.length === 0 ? (
+                    <div className={`text-sm ${textMuted}`}>Brak ukrytych sedziow.</div>
+                  ) : (
+                    inactiveReferees.map((referee) => {
+                      const isBusy = busyRefereeId === referee.id;
+                      return (
+                        <div
+                          key={referee.id}
+                          className={`rounded-xl border p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-white"}`}
+                        >
+                          <div>
+                            <div className="font-semibold">{referee.full_name}</div>
+                            <div className={`text-xs mt-1 ${textMuted}`}>Historia meczow zostaje zachowana.</div>
+                          </div>
+                          <button
+                            type="button"
+                            className={btnSmall}
+                            onClick={() => handleSetRefereeActive(referee.id, true)}
+                            disabled={isBusy}
+                          >
+                            {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Undo2 size={14} />}
+                            Przywroc na liste
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </SectionCard>
       )}

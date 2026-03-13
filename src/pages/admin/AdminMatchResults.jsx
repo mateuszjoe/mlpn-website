@@ -541,6 +541,7 @@ function ParticipantStatsTable({
 export default function AdminMatchResults({ darkMode }) {
   const [seasons, setSeasons] = useState([]);
   const [leagues, setLeagues] = useState([]);
+  const [referees, setReferees] = useState([]);
   const [matches, setMatches] = useState([]);
   const [availableRounds, setAvailableRounds] = useState([]);
   const [selectedSeason, setSelectedSeason] = useState("");
@@ -560,6 +561,7 @@ export default function AdminMatchResults({ darkMode }) {
   const [loading, setLoading] = useState(true);
   const [loadingExpandedMatch, setLoadingExpandedMatch] = useState(false);
   const [savingMatchData, setSavingMatchData] = useState(false);
+  const [refereesTableMissing, setRefereesTableMissing] = useState(false);
   const [alert, setAlert] = useState({ type: null, message: null });
 
   const card = darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-200";
@@ -575,6 +577,28 @@ export default function AdminMatchResults({ darkMode }) {
     setPickerOpen(null);
     setPlayerStatsForm({});
     setMvpPlayerId("");
+  }, []);
+
+  const loadReferees = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("referees")
+        .select("id, full_name, is_active")
+        .order("is_active", { ascending: false })
+        .order("full_name");
+
+      if (error) throw error;
+
+      setReferees(data || []);
+      setRefereesTableMissing(false);
+    } catch (error) {
+      const message = String(error?.message || "");
+      setReferees([]);
+      setRefereesTableMissing(message.toLowerCase().includes("referees"));
+      if (!message.toLowerCase().includes("referees")) {
+        setAlert({ type: "error", message: message || "Nie udalo sie zaladowac listy sedziow." });
+      }
+    }
   }, []);
 
   const loadBase = useCallback(async () => {
@@ -634,10 +658,30 @@ export default function AdminMatchResults({ darkMode }) {
     () => availableRounds.map((round) => ({ value: round, label: `Kolejka ${round}` })),
     [availableRounds]
   );
+  const refereeOptions = useMemo(
+    () =>
+      (referees || [])
+        .filter((referee) => referee.is_active || referee.id === scoreForm.referee_id)
+        .map((referee) => ({
+          value: referee.id,
+          label: referee.is_active ? referee.full_name : `${referee.full_name} (archiwalny)`,
+        })),
+    [referees, scoreForm.referee_id]
+  );
 
   useEffect(() => {
     loadBase();
-  }, [loadBase]);
+    loadReferees();
+  }, [loadBase, loadReferees]);
+
+  useEffect(() => {
+    function handleRefereesRefresh() {
+      loadReferees();
+    }
+
+    window.addEventListener("mlpn:referees-updated", handleRefereesRefresh);
+    return () => window.removeEventListener("mlpn:referees-updated", handleRefereesRefresh);
+  }, [loadReferees]);
 
   useEffect(() => {
     if (!selectedSeason || !selectedLeague) return;
@@ -677,7 +721,7 @@ export default function AdminMatchResults({ darkMode }) {
       away_goals: match.away_goals ?? "",
       status: isWalkover ? "walkover" : rawStatus,
       walkover_winner: rawStatus === "walkover_away" ? "away" : "home",
-      referee: match.referee || "",
+      referee_id: match.referee_id || "",
       video_url: match.video_url || "",
     });
 
@@ -913,10 +957,14 @@ export default function AdminMatchResults({ darkMode }) {
         home_goals: homeGoals,
         away_goals: awayGoals,
         status: resolvedStatus,
-        referee: scoreForm.referee || null,
         video_url: scoreForm.video_url || null,
         mvp_player_id: nextMvpPlayerId,
       };
+
+      if (!refereesTableMissing) {
+        updatePayload.referee_id = scoreForm.referee_id || null;
+        updatePayload.referee = referees.find((referee) => referee.id === scoreForm.referee_id)?.full_name || null;
+      }
 
       const { error: updateError } = await supabase
         .from("matches")
@@ -1022,6 +1070,12 @@ export default function AdminMatchResults({ darkMode }) {
       {!isEditable && selectedSeasonObj && (
         <div className={`rounded-xl border p-3 text-sm ${darkMode ? "border-orange-500/30 bg-orange-500/10 text-orange-300" : "border-orange-200 bg-orange-50 text-orange-800"}`}>
           Sezon "{selectedSeasonObj.name}" ma status <strong>{selectedSeasonObj.status}</strong> - edycja wynikow i skladu jest zablokowana. Mozesz jednak podejrzec dane meczu i zarzadzac galeria.
+        </div>
+      )}
+
+      {refereesTableMissing && (
+        <div className={`rounded-xl border p-3 text-sm ${darkMode ? "border-amber-400/30 bg-amber-500/10 text-amber-200" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+          Brakuje tabeli sedziow w bazie. W Supabase uruchom plik <code className="font-mono">supabase/migrations/015_referees.sql</code>, zeby wybierac sedziow z listy.
         </div>
       )}
 
@@ -1156,10 +1210,12 @@ export default function AdminMatchResults({ darkMode }) {
                             )}
                             <AdminFormField
                               label="Sedzia"
-                              name="referee"
-                              value={scoreForm.referee}
-                              onChange={(e) => setScoreForm((prev) => ({ ...prev, referee: e.target.value }))}
+                              name="referee_id"
+                              type="select"
+                              value={scoreForm.referee_id || ""}
+                              onChange={(e) => setScoreForm((prev) => ({ ...prev, referee_id: e.target.value }))}
                               darkMode={darkMode}
+                              options={refereeOptions}
                             />
                             <button
                               type="button"
