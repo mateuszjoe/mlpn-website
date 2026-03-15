@@ -1,7 +1,24 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
+
+async function fetchProfile(userId) {
+  if (!userId) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('Profile fetch:', error.message);
+    return null;
+  }
+
+  return data || null;
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -11,14 +28,15 @@ export function AuthProvider({ children }) {
   const initialized = useRef(false);
 
   useEffect(() => {
-    // Timeout bezpieczeństwa
     loadingTimeout.current = setTimeout(() => {
       setLoading(false);
     }, 6000);
 
     async function initAuth() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
         if (!session?.user) {
           clearTimeout(loadingTimeout.current);
@@ -27,25 +45,11 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        // Wymuś odświeżenie tokenu JWT
         const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
-        const activeSession = (!refreshErr && refreshed?.session) ? refreshed.session : session;
+        const activeSession = !refreshErr && refreshed?.session ? refreshed.session : session;
 
         setUser(activeSession.user);
-
-        // Pobierz profil z odświeżonym tokenem
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', activeSession.user.id)
-          .single();
-
-        if (!error && data) {
-          setProfile(data);
-        } else {
-          console.warn('Profil init:', error?.message);
-          setProfile(null);
-        }
+        setProfile(await fetchProfile(activeSession.user.id));
       } catch (err) {
         console.error('Auth init error:', err);
       } finally {
@@ -57,26 +61,22 @@ export function AuthProvider({ children }) {
 
     initAuth();
 
-    // Nasłuchuj PRZYSZŁYCH zmian auth (logowanie, wylogowanie)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Ignoruj zdarzenia przed zakończeniem inicjalizacji — zapobiega race condition
-        if (!initialized.current) return;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!initialized.current) return;
 
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          setProfile(data || null);
-        } else {
-          setProfile(null);
-        }
-        setLoading(false);
+      setLoading(true);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        setProfile(await fetchProfile(session.user.id));
+      } else {
+        setProfile(null);
       }
-    );
+
+      setLoading(false);
+    });
 
     return () => {
       clearTimeout(loadingTimeout.current);
@@ -85,19 +85,34 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function signIn(email, password) {
+    setLoading(true);
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) {
+      setLoading(false);
+      throw error;
+    }
+
+    const activeUser = data?.user || data?.session?.user || null;
+    if (activeUser) {
+      setUser(activeUser);
+      setProfile(await fetchProfile(activeUser.id));
+    }
+
+    setLoading(false);
     return data;
   }
 
   async function signOut() {
     try {
       await supabase.auth.signOut();
-    } catch (e) {
-      console.error('signOut error:', e);
+    } catch (err) {
+      console.error('signOut error:', err);
     }
+
     setUser(null);
     setProfile(null);
+    setLoading(false);
   }
 
   const isAdmin = profile?.role === 'admin';
@@ -105,21 +120,23 @@ export function AuthProvider({ children }) {
   const isEditorOrAdmin = isAdmin || isEditor;
 
   const value = {
-    user, profile, loading, signIn, signOut,
-    isAdmin, isEditor, isEditorOrAdmin,
+    user,
+    profile,
+    loading,
+    signIn,
+    signOut,
+    isAdmin,
+    isEditor,
+    isEditorOrAdmin,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth musi być używany wewnątrz AuthProvider');
+    throw new Error('useAuth must be used inside AuthProvider');
   }
   return context;
 }

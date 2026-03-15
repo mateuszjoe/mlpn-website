@@ -22,6 +22,19 @@ export default function AdminPanel({ darkMode, goHome }) {
   const [adminSection, setAdminSection] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] px-4">
+        <div className={`max-w-sm text-center p-8 rounded-2xl border ${darkMode ? "bg-[#141828] border-white/10" : "bg-white border-gray-200"}`}>
+          <div className="w-8 h-8 mx-auto border-2 border-yellow-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+            Sprawdzam logowanie i uprawnienia...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return <AdminLogin darkMode={darkMode} />;
   }

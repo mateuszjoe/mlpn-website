@@ -17,7 +17,7 @@ export default function AdminLogin({ darkMode }) {
     try {
       await signIn(email, password);
     } catch (err) {
-      setError("Bledny email lub haslo");
+      setError(err?.message || "Nie udalo sie zalogowac.");
     } finally {
       setLoading(false);
     }
