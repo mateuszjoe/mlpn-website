@@ -3,7 +3,7 @@
 -- Konfigurowalna lista sedziow + powiazanie z meczami
 -- ============================================================
 
-CREATE TABLE referees (
+CREATE TABLE IF NOT EXISTS referees (
     id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     full_name       TEXT NOT NULL UNIQUE,
     is_active       BOOLEAN NOT NULL DEFAULT true,
@@ -11,12 +11,12 @@ CREATE TABLE referees (
     updated_at      TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
-CREATE INDEX idx_referees_active_name ON referees (is_active, full_name);
+CREATE INDEX IF NOT EXISTS idx_referees_active_name ON referees (is_active, full_name);
 
 ALTER TABLE matches
-    ADD COLUMN referee_id UUID REFERENCES referees(id) ON DELETE SET NULL;
+    ADD COLUMN IF NOT EXISTS referee_id UUID REFERENCES referees(id) ON DELETE SET NULL;
 
-CREATE INDEX idx_matches_referee_id ON matches (referee_id) WHERE referee_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_matches_referee_id ON matches (referee_id) WHERE referee_id IS NOT NULL;
 
 INSERT INTO referees (full_name)
 VALUES
@@ -46,14 +46,21 @@ WHERE m.referee_id IS NULL
 
 ALTER TABLE referees ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "referees_public_read" ON referees;
 CREATE POLICY "referees_public_read" ON referees
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "referees_editor_insert" ON referees;
 CREATE POLICY "referees_editor_insert" ON referees
     FOR INSERT WITH CHECK (is_editor_or_admin());
 
+DROP POLICY IF EXISTS "referees_editor_update" ON referees;
 CREATE POLICY "referees_editor_update" ON referees
     FOR UPDATE USING (is_editor_or_admin());
+
+DROP POLICY IF EXISTS "referees_editor_delete" ON referees;
+CREATE POLICY "referees_editor_delete" ON referees
+    FOR DELETE USING (is_editor_or_admin());
 
 CREATE OR REPLACE FUNCTION set_referees_updated_at()
 RETURNS TRIGGER AS $$
@@ -63,6 +70,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_referees_updated_at ON referees;
 CREATE TRIGGER trg_referees_updated_at
     BEFORE UPDATE ON referees
     FOR EACH ROW
