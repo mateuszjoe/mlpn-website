@@ -10370,7 +10370,9 @@ function HomeDashboard({
                               darkMode ? "text-gray-400" : "text-gray-600"
                             )}
                           >
-                            {upcomingDate.date || f.date || "Termin do ustalenia"}
+                            {upcomingDate.weekday
+                              ? `${upcomingDate.weekday}, ${upcomingDate.date || f.date || "Termin do ustalenia"}`
+                              : (upcomingDate.date || f.date || "Termin do ustalenia")}
                           </div>
                           <div className="shrink-0">
                             <VideoIcon
@@ -10584,7 +10586,9 @@ function HomeDashboard({
                               darkMode ? "text-gray-400" : "text-gray-600"
                             )}
                           >
-                            {resultDate.date || m.date || ""}
+                            {resultDate.weekday
+                              ? `${resultDate.weekday}, ${resultDate.date || m.date || ""}`
+                              : (resultDate.date || m.date || "")}
                             {m.time ? ` • ${m.time}` : ""}
                           </div>
                           <div className="shrink-0">
