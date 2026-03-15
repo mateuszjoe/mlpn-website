@@ -8,6 +8,7 @@
 
 # Build
 /build
+.codex-localhost.log
 
 # IDE
 .vscode/
