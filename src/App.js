@@ -4046,13 +4046,37 @@ export default function App() {
         >
           <div
             className={classNames(
-              "w-64 h-full overflow-y-auto",
+              "w-[86vw] max-w-[340px] h-full overflow-y-auto shadow-2xl",
               darkMode
                 ? "bg-[#0d1117]"
                 : "bg-gradient-to-b from-[#10203e] via-[#1b315c] to-[#1f3f7a]"
             )}
             onClick={(e) => e.stopPropagation()}
           >
+            <div
+              className="px-4 py-4 border-b flex items-center justify-between gap-3"
+              style={{
+                borderColor: darkMode
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(255,255,255,0.12)",
+              }}
+            >
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.18em] text-white/65 font-bold">
+                  MLPN
+                </div>
+                <div className="font-bold text-white">Menu</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-11 h-11 rounded-2xl bg-white/10 text-white flex items-center justify-center"
+                aria-label="Zamknij menu"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
             {/* Mobile main menu */}
             <div
               className="p-4 border-b"
@@ -4092,7 +4116,7 @@ export default function App() {
                       setMobileMenuOpen(false);
                     }}
                     className={classNames(
-                      "w-full text-left px-3 py-2 rounded mb-1",
+                      "w-full text-left px-3 py-3 rounded-xl mb-1",
                       isDisabled
                         ? (darkMode ? "text-gray-600 opacity-40 cursor-not-allowed" : "text-white/40 opacity-70 cursor-not-allowed")
                         : activeContext === b.ctx
@@ -4117,7 +4141,7 @@ export default function App() {
                     setMobileMenuOpen(false);
                   }}
                   className={classNames(
-                    "w-full text-left px-3 py-2 rounded mb-1 flex items-center gap-2",
+                    "w-full text-left px-3 py-3 rounded-xl mb-1 flex items-center gap-2",
                     activeContext === "admin"
                       ? "bg-yellow-500/10 text-yellow-400 font-bold"
                       : "text-yellow-500/70 hover:bg-yellow-500/10"
@@ -4130,7 +4154,7 @@ export default function App() {
               {user ? (
                 <button
                   onClick={handleUserSignOut}
-                  className="w-full text-left px-3 py-2 rounded mb-1 flex items-center gap-2 text-red-400/70 hover:bg-red-500/10"
+                  className="w-full text-left px-3 py-3 rounded-xl mb-1 flex items-center gap-2 text-red-400/70 hover:bg-red-500/10"
                 >
                   <LogOut size={14} />
                   Wyloguj się
@@ -4146,7 +4170,7 @@ export default function App() {
                     setMobileMenuOpen(false);
                   }}
                   className={classNames(
-                    "w-full text-left px-3 py-2 rounded mb-1 flex items-center gap-2",
+                    "w-full text-left px-3 py-3 rounded-xl mb-1 flex items-center gap-2",
                     activeContext === "admin"
                       ? "bg-yellow-500/10 text-yellow-400 font-bold"
                       : "text-yellow-500/70 hover:bg-yellow-500/10"
@@ -4182,7 +4206,7 @@ export default function App() {
                       setMobileMenuOpen(false);
                     }}
                     className={classNames(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded mb-1",
+                      "w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1",
                       activeSection === item.id
                         ? "bg-green-500/10 text-green-400"
                         : darkMode
@@ -4273,7 +4297,7 @@ export default function App() {
         </aside>}
 
         {/* CONTENT */}
-        <main className={`flex-1 ${activeContext !== "admin" ? "md:ml-56" : ""} p-4 md:p-6 max-w-[1600px] mx-auto`}>
+        <main className={`flex-1 ${activeContext !== "admin" ? "md:ml-56" : ""} p-3 sm:p-4 md:p-6 max-w-[1600px] mx-auto`}>
           {/* round jump only on calendar and league context */}
           {activeContext !== "home" &&
             activeSection === "calendar" &&
@@ -9416,7 +9440,7 @@ function HomeDashboard({
     <div className="space-y-4">
       <div className="grid xl:grid-cols-[1.35fr_0.95fr] gap-3">
         <Card darkMode={darkMode} className="mlpn-home-hero p-0 overflow-hidden">
-          <div className="relative p-4 lg:p-6 h-[600px] lg:h-[600px]">
+          <div className="relative p-4 lg:p-6 min-h-[540px] h-auto lg:h-[600px]">
             <div className="grid gap-2 items-start">
               <div className="grid lg:grid-cols-[1fr_360px] gap-3 items-start">
                 <div>
@@ -9470,7 +9494,7 @@ function HomeDashboard({
                 )}
               </div>
 
-                <div className="h-[440px] grid grid-rows-[1fr_auto] gap-2">
+                <div className="min-h-[380px] h-auto lg:h-[440px] grid grid-rows-[1fr_auto] gap-2">
                   {activeHeroSlide ? (
                     <>
                       <div className="min-h-0 overflow-hidden">

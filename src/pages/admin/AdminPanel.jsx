@@ -151,6 +151,7 @@ export default function AdminPanel({ darkMode, goHome }) {
   const menuItemInactive = darkMode
     ? "text-gray-400 hover:text-white hover:bg-white/5"
     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100";
+  const currentAdminLabel = adminMenu.find((item) => item.id === adminSection)?.label || "Pulpit";
 
   const handleSignOut = async () => {
     setMobileMenuOpen(false);
@@ -164,37 +165,47 @@ export default function AdminPanel({ darkMode, goHome }) {
 
   return (
     <div className="flex min-h-[80vh]">
-      <div className="md:hidden fixed bottom-4 right-4 z-40">
-        <button
-          onClick={() => setMobileMenuOpen((value) => !value)}
-          className="w-12 h-12 rounded-full bg-yellow-500 text-black flex items-center justify-center shadow-lg"
-        >
-          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
-      </div>
-
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-30 bg-black/60" onClick={() => setMobileMenuOpen(false)}>
+        <div className="md:hidden fixed inset-0 z-40 bg-black/60" onClick={() => setMobileMenuOpen(false)}>
           <div
             onClick={(event) => event.stopPropagation()}
-            className={`absolute bottom-20 right-4 w-56 rounded-2xl border p-3 shadow-xl ${darkMode ? "bg-[#141828] border-white/10" : "bg-white border-gray-200"}`}
+            className={`absolute inset-y-0 left-0 w-[86vw] max-w-[320px] border-r p-4 shadow-2xl flex flex-col ${sidebarBg}`}
           >
-            {adminMenu.map((item) => (
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <div className={`text-[11px] uppercase tracking-[0.16em] ${darkMode ? "text-gray-500" : "text-gray-500"}`}>
+                  Panel admina
+                </div>
+                <div className="font-semibold text-base">{currentAdminLabel}</div>
+              </div>
               <button
-                key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className={`${menuItemBase} ${adminSection === item.id ? menuItemActive : menuItemInactive}`}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center ${darkMode ? "bg-white/5 text-white" : "bg-white text-gray-700"}`}
               >
-                {item.icon} {item.label}
+                <X size={20} />
               </button>
-            ))}
-            <hr className={`my-2 ${darkMode ? "border-white/10" : "border-gray-200"}`} />
-            <button onClick={goHome} className={`${menuItemBase} ${menuItemInactive}`}>
-              <ArrowLeft size={18} /> Wroc do strony
-            </button>
-            <button onClick={handleSignOut} className={`${menuItemBase} text-red-400 hover:bg-red-500/10`}>
-              <LogOut size={18} /> Wyloguj
-            </button>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto space-y-1">
+              {adminMenu.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavClick(item.id)}
+                  className={`${menuItemBase} ${adminSection === item.id ? menuItemActive : menuItemInactive}`}
+                >
+                  {item.icon} {item.label}
+                </button>
+              ))}
+            </nav>
+
+            <div className={`pt-4 mt-4 border-t space-y-1 ${darkMode ? "border-white/10" : "border-gray-200"}`}>
+              <button onClick={goHome} className={`${menuItemBase} ${menuItemInactive}`}>
+                <ArrowLeft size={18} /> Wroc do strony
+              </button>
+              <button onClick={handleSignOut} className={`${menuItemBase} text-red-400 hover:bg-red-500/10`}>
+                <LogOut size={18} /> Wyloguj
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -225,7 +236,34 @@ export default function AdminPanel({ darkMode, goHome }) {
         </button>
       </div>
 
-      <div className="flex-1 p-4 md:p-6 min-w-0">
+      <div className="flex-1 p-3 md:p-6 min-w-0">
+        <div className="md:hidden sticky top-[76px] z-20 mb-4">
+          <div className={`rounded-2xl border px-3 py-3 flex items-center gap-3 shadow-sm ${sidebarBg}`}>
+            <button
+              onClick={goHome}
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center ${darkMode ? "bg-white/5 text-white" : "bg-white text-gray-700"}`}
+              title="Wroc do strony"
+            >
+              <ArrowLeft size={18} />
+            </button>
+
+            <div className="min-w-0 flex-1">
+              <div className={`text-[11px] uppercase tracking-[0.16em] ${darkMode ? "text-gray-500" : "text-gray-500"}`}>
+                Panel admina
+              </div>
+              <div className="font-semibold truncate">{currentAdminLabel}</div>
+            </div>
+
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="w-11 h-11 rounded-2xl bg-yellow-500 text-black flex items-center justify-center shadow-sm"
+              title="Menu panelu"
+            >
+              <Menu size={20} />
+            </button>
+          </div>
+        </div>
+
         {renderContent()}
       </div>
     </div>

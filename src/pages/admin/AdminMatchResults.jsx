@@ -408,6 +408,41 @@ function ParticipantSelector({
   );
 }
 
+function StatNumberField({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  disabled,
+  inputClass,
+  compact = false,
+  textMuted,
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className={compact ? "sr-only" : `block text-[11px] font-semibold uppercase tracking-[0.14em] ${textMuted}`}>
+        {label}
+      </span>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        step="1"
+        value={value}
+        disabled={disabled}
+        onChange={onChange}
+        className={
+          compact
+            ? `w-16 px-2 py-1 rounded-lg border text-center ${inputClass}`
+            : `w-full h-11 px-3 rounded-xl border text-center font-semibold ${inputClass}`
+        }
+      />
+    </label>
+  );
+}
+
 function ParticipantStatsTable({
   title,
   players,
@@ -438,7 +473,101 @@ function ParticipantStatsTable({
         {title}
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="lg:hidden p-3 space-y-3">
+        {players.map((player) => {
+          const stats = playerStatsForm[player.id] || createEmptyPlayerStats();
+          const yellowCount = parseCount(stats.yellow);
+          const redLocked = yellowCount === 2;
+          const mvpChecked = mvpPlayerId === player.id;
+          const mvpDisabled = disabled || (!!mvpPlayerId && mvpPlayerId !== player.id);
+
+          return (
+            <div
+              key={player.id}
+              className={`rounded-2xl border p-3 space-y-3 ${
+                darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-white"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-semibold leading-tight">
+                    {player.shirtNumber ? `${player.shirtNumber}. ` : ""}
+                    {player.isCaptain ? "(C) " : ""}
+                    {player.name}
+                  </div>
+                  <div className={`text-xs mt-1 ${textMuted}`}>{player.pos || "Bez pozycji"}</div>
+                </div>
+
+                <label
+                  className={`shrink-0 inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${
+                    darkMode ? "border-white/10 bg-black/20" : "border-gray-200 bg-gray-50"
+                  } ${mvpDisabled && !mvpChecked ? "opacity-50" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={mvpChecked}
+                    disabled={mvpDisabled}
+                    onChange={() => onToggleMvp(player.id)}
+                    className="w-4 h-4"
+                  />
+                  MVP
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <StatNumberField
+                  label="Gole"
+                  value={stats.goals}
+                  disabled={disabled}
+                  min="0"
+                  max="20"
+                  onChange={(e) => onStatChange(player.id, "goals", e.target.value)}
+                  inputClass={inputClass}
+                  textMuted={textMuted}
+                />
+                <StatNumberField
+                  label="Asysty"
+                  value={stats.assists}
+                  disabled={disabled}
+                  min="0"
+                  max="20"
+                  onChange={(e) => onStatChange(player.id, "assists", e.target.value)}
+                  inputClass={inputClass}
+                  textMuted={textMuted}
+                />
+                <StatNumberField
+                  label="ZK"
+                  value={stats.yellow}
+                  disabled={disabled}
+                  min="0"
+                  max="2"
+                  onChange={(e) => onStatChange(player.id, "yellow", e.target.value)}
+                  inputClass={inputClass}
+                  textMuted={textMuted}
+                />
+                <StatNumberField
+                  label="CZK"
+                  value={stats.red}
+                  disabled={disabled || redLocked}
+                  min="0"
+                  max="1"
+                  onChange={(e) => onStatChange(player.id, "red", e.target.value)}
+                  inputClass={inputClass}
+                  textMuted={textMuted}
+                />
+              </div>
+
+              {redLocked && (
+                <div className={`text-xs ${textMuted}`}>
+                  2 zolte kartki automatycznie wpisuja 1 czerwona.
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className={darkMode ? "text-gray-300" : "text-gray-600"}>
@@ -481,51 +610,55 @@ function ParticipantStatsTable({
                     />
                   </td>
                   <td className="px-2 py-3 text-center">
-                    <input
-                      type="number"
-                      min="0"
-                      max="20"
-                      step="1"
+                    <StatNumberField
+                      label="Gole"
                       value={stats.goals}
                       disabled={disabled}
-                      onChange={(e) => onStatChange(player.id, "goals", e.target.value)}
-                      className={`w-16 px-2 py-1 rounded-lg border text-center ${inputClass}`}
-                    />
-                  </td>
-                  <td className="px-2 py-3 text-center">
-                    <input
-                      type="number"
                       min="0"
                       max="20"
-                      step="1"
+                      onChange={(e) => onStatChange(player.id, "goals", e.target.value)}
+                      inputClass={inputClass}
+                      compact
+                      textMuted={textMuted}
+                    />
+                  </td>
+                  <td className="px-2 py-3 text-center">
+                    <StatNumberField
+                      label="Asysty"
                       value={stats.assists}
                       disabled={disabled}
+                      min="0"
+                      max="20"
                       onChange={(e) => onStatChange(player.id, "assists", e.target.value)}
-                      className={`w-16 px-2 py-1 rounded-lg border text-center ${inputClass}`}
+                      inputClass={inputClass}
+                      compact
+                      textMuted={textMuted}
                     />
                   </td>
                   <td className="px-2 py-3 text-center">
-                    <input
-                      type="number"
-                      min="0"
-                      max="2"
-                      step="1"
+                    <StatNumberField
+                      label="ZK"
                       value={stats.yellow}
                       disabled={disabled}
+                      min="0"
+                      max="2"
                       onChange={(e) => onStatChange(player.id, "yellow", e.target.value)}
-                      className={`w-16 px-2 py-1 rounded-lg border text-center ${inputClass}`}
+                      inputClass={inputClass}
+                      compact
+                      textMuted={textMuted}
                     />
                   </td>
                   <td className="px-2 py-3 text-center">
-                    <input
-                      type="number"
-                      min="0"
-                      max="1"
-                      step="1"
+                    <StatNumberField
+                      label="CZK"
                       value={stats.red}
                       disabled={disabled || redLocked}
+                      min="0"
+                      max="1"
                       onChange={(e) => onStatChange(player.id, "red", e.target.value)}
-                      className={`w-16 px-2 py-1 rounded-lg border text-center ${inputClass}`}
+                      inputClass={inputClass}
+                      compact
+                      textMuted={textMuted}
                     />
                   </td>
                 </tr>
@@ -1096,7 +1229,7 @@ export default function AdminMatchResults({ darkMode }) {
                   onClick={() => openMatchEditor(match)}
                   className="w-full px-4 py-3 flex items-center justify-between gap-3 hover:bg-white/5 transition-colors"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="hidden md:flex items-center gap-3 min-w-0">
                     <span className={`text-xs ${textMuted} w-8 flex-shrink-0`}>K{match.round}</span>
                     <span className="font-medium truncate">{match.home_team_name}</span>
                     {match.status === "completed" || String(match.status || "").startsWith("walkover") ? (
@@ -1109,7 +1242,7 @@ export default function AdminMatchResults({ darkMode }) {
                     <span className="font-medium truncate">{match.away_team_name}</span>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="hidden md:flex items-center gap-2 flex-shrink-0">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                       match.status === "completed" ? "bg-green-500/20 text-green-400" :
                       String(match.status || "").startsWith("walkover") ? "bg-orange-500/20 text-orange-400" :
@@ -1123,6 +1256,43 @@ export default function AdminMatchResults({ darkMode }) {
                     <span className={`text-xs ${textMuted}`}>{match.match_date || "—"}</span>
                     {expandedMatch === match.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </div>
+
+                  <div className="md:hidden w-full space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-xs ${textMuted}`}>Kolejka {match.round}</span>
+                      <span className={`text-xs ${textMuted}`}>{match.match_date || "-"}</span>
+                    </div>
+
+                    <div className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2">
+                      <span className="text-sm font-medium leading-tight text-left break-words">
+                        {match.home_team_name}
+                      </span>
+                      {match.status === "completed" || String(match.status || "").startsWith("walkover") ? (
+                        <span className="font-bold text-lg px-2 whitespace-nowrap">
+                          {match.home_goals} : {match.away_goals}
+                        </span>
+                      ) : (
+                        <span className={`px-2 text-sm ${textMuted}`}>vs</span>
+                      )}
+                      <span className="text-sm font-medium leading-tight text-right break-words">
+                        {match.away_team_name}
+                      </span>
+                      {expandedMatch === match.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        match.status === "completed" ? "bg-green-500/20 text-green-400" :
+                        String(match.status || "").startsWith("walkover") ? "bg-orange-500/20 text-orange-400" :
+                        match.status === "postponed" ? "bg-blue-500/20 text-blue-400" :
+                        match.status === "cancelled" ? "bg-red-500/20 text-red-400" :
+                        match.status === "unplayed" ? "bg-slate-500/20 text-slate-300" :
+                        darkMode ? "bg-white/10 text-gray-400" : "bg-gray-100 text-gray-500"
+                      }`}>
+                        {statusLabel(match.status)}
+                      </span>
+                    </div>
+                  </div>
                 </button>
 
                 {expandedMatch === match.id && (
@@ -1135,7 +1305,7 @@ export default function AdminMatchResults({ darkMode }) {
                     ) : (
                       <>
                         {isEditable ? (
-                          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
                             <AdminFormField
                               label={`Bramki ${match.home_team_abbr || match.home_team_name}`}
                               name="home_goals"
@@ -1221,7 +1391,7 @@ export default function AdminMatchResults({ darkMode }) {
                               type="button"
                               onClick={() => saveMatch(match)}
                               disabled={savingMatchData}
-                              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-green-500 text-black font-medium text-sm hover:bg-green-400 h-[42px] disabled:opacity-60"
+                              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-green-500 text-black font-medium text-sm hover:bg-green-400 min-h-[48px] sm:col-span-2 xl:col-span-1 disabled:opacity-60"
                             >
                               {savingMatchData ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                               Zapisz mecz
@@ -1253,7 +1423,7 @@ export default function AdminMatchResults({ darkMode }) {
                             </div>
                           )}
 
-                          <div className="mt-4 grid xl:grid-cols-2 gap-4">
+                          <div className="mt-4 grid lg:grid-cols-2 gap-4">
                             <ParticipantSelector
                               title="Uczestnicy gospodarzy"
                               teamKey="home"
@@ -1323,6 +1493,18 @@ export default function AdminMatchResults({ darkMode }) {
                               Aktualny zapis: {matchEvents.length} zdarzen, {matchLineups.length} pozycji w skladzie.
                             </span>
                           </div>
+
+                          {isEditable && (
+                            <button
+                              type="button"
+                              onClick={() => saveMatch(match)}
+                              disabled={savingMatchData}
+                              className="md:hidden mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-green-500 text-black font-semibold hover:bg-green-400 min-h-[50px] disabled:opacity-60"
+                            >
+                              {savingMatchData ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                              Zapisz mecz
+                            </button>
+                          )}
                         </div>
 
                         <AdminMatchGalleryManager
