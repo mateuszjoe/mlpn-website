@@ -1456,8 +1456,8 @@ function TeamLogo({
   darkMode,
   size = 40,
   onClick,
-  framed = true,
-  imgScale = 0.78,
+  framed = false,
+  imgScale = 0.96,
 }) {
   const src = logoByTeam[team];
   return (
