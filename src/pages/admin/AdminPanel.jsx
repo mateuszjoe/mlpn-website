@@ -55,10 +55,7 @@ export default function AdminPanel({ darkMode, goHome }) {
               Wróć na stronę główną
             </button>
             <button
-              onClick={() => {
-                Object.keys(localStorage).filter(k => k.startsWith("sb-")).forEach(k => localStorage.removeItem(k));
-                window.location.reload();
-              }}
+              onClick={signOut}
               className={`px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${darkMode ? "border-white/10 text-gray-400 hover:text-white hover:bg-white/5" : "border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}
             >
               Wyloguj się
@@ -110,9 +107,9 @@ export default function AdminPanel({ darkMode, goHome }) {
     ? "text-gray-400 hover:text-white hover:bg-white/5"
     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100";
 
-  const handleSignOut = () => {
-    Object.keys(localStorage).filter(k => k.startsWith("sb-")).forEach(k => localStorage.removeItem(k));
-    window.location.reload();
+  const handleSignOut = async () => {
+    setMobileMenuOpen(false);
+    await signOut();
   };
 
   const handleNavClick = (id) => {

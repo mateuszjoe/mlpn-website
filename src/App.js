@@ -3359,6 +3359,12 @@ export default function App() {
     }
   };
 
+  const handleUserSignOut = async () => {
+    setMobileMenuOpen(false);
+    await signOut();
+    goHome();
+  };
+
   const openTeam = (team) => {
     saveToHistory();
     setSelectedMatchId(null);
@@ -3977,10 +3983,7 @@ export default function App() {
             )}
             {user ? (
               <button
-                onClick={() => {
-                  Object.keys(localStorage).filter(k => k.startsWith("sb-")).forEach(k => localStorage.removeItem(k));
-                  window.location.reload();
-                }}
+                onClick={handleUserSignOut}
                 className={classNames(
                   "p-2 rounded e3d-tab",
                   darkMode
@@ -4126,10 +4129,7 @@ export default function App() {
               )}
               {user ? (
                 <button
-                  onClick={() => {
-                    Object.keys(localStorage).filter(k => k.startsWith("sb-")).forEach(k => localStorage.removeItem(k));
-                    window.location.reload();
-                  }}
+                  onClick={handleUserSignOut}
                   className="w-full text-left px-3 py-2 rounded mb-1 flex items-center gap-2 text-red-400/70 hover:bg-red-500/10"
                 >
                   <LogOut size={14} />

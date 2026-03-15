@@ -3,6 +3,18 @@ import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
+function clearStoredAuth() {
+  const shouldRemove = (key) => key === 'mlpn-auth' || key.startsWith('sb-');
+
+  Object.keys(localStorage)
+    .filter(shouldRemove)
+    .forEach((key) => localStorage.removeItem(key));
+
+  Object.keys(sessionStorage)
+    .filter(shouldRemove)
+    .forEach((key) => sessionStorage.removeItem(key));
+}
+
 async function fetchProfile(userId) {
   if (!userId) return null;
 
@@ -104,15 +116,21 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
+    setLoading(true);
+
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
     } catch (err) {
       console.error('signOut error:', err);
+    } finally {
+      clearStoredAuth();
+      setUser(null);
+      setProfile(null);
+      setLoading(false);
     }
-
-    setUser(null);
-    setProfile(null);
-    setLoading(false);
   }
 
   const isAdmin = profile?.role === 'admin';
