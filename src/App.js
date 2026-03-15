@@ -1451,16 +1451,23 @@ function classNames(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
-function TeamLogo({ team, darkMode, size = 40, onClick }) {
+function TeamLogo({
+  team,
+  darkMode,
+  size = 40,
+  onClick,
+  framed = true,
+  imgScale = 0.78,
+}) {
   const src = logoByTeam[team];
-  const bg = "bg-white border-gray-200"; // jaśne tło niezależnie od motywu
   return (
     <button
       onClick={onClick}
       className={classNames(
-        "relative grid place-items-center rounded-2xl border overflow-hidden",
-        "e3d-card hover:scale-[1.02] active:scale-[0.98]",
-        bg
+        "relative grid place-items-center hover:scale-[1.02] active:scale-[0.98]",
+        framed
+          ? "rounded-2xl border overflow-hidden e3d-card bg-white border-gray-200"
+          : "rounded-none border-0 bg-transparent overflow-visible shadow-none"
       )}
       style={{ width: size, height: size }}
       title={team}
@@ -1469,11 +1476,23 @@ function TeamLogo({ team, darkMode, size = 40, onClick }) {
         <img
           src={encodeURI(src)}
           alt={team}
-          className="w-[78%] h-[78%] object-contain e3d-logo"
+          className={classNames(
+            "object-contain e3d-logo",
+            framed ? "" : "drop-shadow-[0_6px_12px_rgba(0,0,0,0.35)]"
+          )}
+          style={{ width: `${imgScale * 100}%`, height: `${imgScale * 100}%` }}
           onError={(e) => (e.currentTarget.style.display = "none")}
         />
       ) : (
-        <svg viewBox="0 0 24 24" className="w-[60%] h-[60%] opacity-50" fill="#6b7280">
+        <svg
+          viewBox="0 0 24 24"
+          className={classNames(framed ? "opacity-50" : "opacity-70")}
+          style={{
+            width: framed ? "60%" : "88%",
+            height: framed ? "60%" : "88%",
+          }}
+          fill="#6b7280"
+        >
           <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
         </svg>
       )}
@@ -9571,7 +9590,14 @@ function HomeDashboard({
                               className="rounded-2xl border border-white/10 bg-white/5 p-3"
                             >
                               <div className="flex items-start gap-3 min-w-0">
-                                <TeamLogo team={m.home} darkMode={true} size={42} onClick={() => openTeam?.(m.home)} />
+                                <TeamLogo
+                                  team={m.home}
+                                  darkMode={true}
+                                  size={54}
+                                  framed={false}
+                                  imgScale={0.98}
+                                  onClick={() => openTeam?.(m.home)}
+                                />
                                 <button
                                   type="button"
                                   onClick={() => openTeam?.(m.home)}
@@ -9607,7 +9633,14 @@ function HomeDashboard({
                                 >
                                   {displayTeamName(m.away)}
                                 </button>
-                                <TeamLogo team={m.away} darkMode={true} size={42} onClick={() => openTeam?.(m.away)} />
+                                <TeamLogo
+                                  team={m.away}
+                                  darkMode={true}
+                                  size={54}
+                                  framed={false}
+                                  imgScale={0.98}
+                                  onClick={() => openTeam?.(m.away)}
+                                />
                               </div>
                             </div>
                           ))}
