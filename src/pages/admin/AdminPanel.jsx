@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { ADMIN_SECTION_PERMISSIONS } from "../../lib/adminPermissions";
 import AdminLogin from "./AdminLogin";
 import AdminDashboard from "./AdminDashboard";
 import AdminSeasons from "./AdminSeasons";
@@ -13,14 +14,54 @@ import AdminControlCenter from "./AdminControlCenter";
 import AdminUsers from "./AdminUsers";
 import AdminReferees from "./AdminReferees";
 import {
-  LayoutDashboard, Calendar, Shield, Users, UserCog, UserPlus,
-  ListChecks, Trophy, LogOut, ArrowLeft, Menu, X, Wand2, SlidersHorizontal, Scale
+  LayoutDashboard,
+  Calendar,
+  Shield,
+  Users,
+  UserCog,
+  UserPlus,
+  ListChecks,
+  Trophy,
+  LogOut,
+  ArrowLeft,
+  Menu,
+  X,
+  Wand2,
+  SlidersHorizontal,
+  Scale,
 } from "lucide-react";
 
+const ADMIN_MENU_ITEMS = [
+  { id: "dashboard", label: "Pulpit", icon: <LayoutDashboard size={18} /> },
+  { id: "wizard", label: "Generator", icon: <Wand2 size={18} /> },
+  { id: "seasons", label: "Sezony", icon: <Calendar size={18} /> },
+  { id: "teams", label: "Druzyny", icon: <Shield size={18} /> },
+  { id: "players", label: "Zawodnicy", icon: <Users size={18} /> },
+  { id: "rosters", label: "Kadry", icon: <UserCog size={18} /> },
+  { id: "schedule", label: "Terminarz", icon: <ListChecks size={18} /> },
+  { id: "results", label: "Wyniki", icon: <Trophy size={18} /> },
+  { id: "referees", label: "Sedziowie", icon: <Scale size={18} /> },
+  { id: "control-center", label: "Ustawienia", icon: <SlidersHorizontal size={18} /> },
+  { id: "users", label: "Konta", icon: <UserPlus size={18} /> },
+];
+
 export default function AdminPanel({ darkMode, goHome }) {
-  const { user, isAdmin, signOut, loading } = useAuth();
+  const { user, isAdmin, hasAdminAccess, accountStatus, canAny, signOut, loading } = useAuth();
   const [adminSection, setAdminSection] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const adminMenu = ADMIN_MENU_ITEMS.filter((item) => {
+    if (item.id === "dashboard") return true;
+    return isAdmin || canAny(ADMIN_SECTION_PERMISSIONS[item.id] || []);
+  });
+
+  useEffect(() => {
+    if (!adminMenu.length) return;
+    const isCurrentSectionAvailable = adminMenu.some((item) => item.id === adminSection);
+    if (!isCurrentSectionAvailable) {
+      setAdminSection(adminMenu[0].id);
+    }
+  }, [adminMenu, adminSection]);
 
   if (!user) {
     return <AdminLogin darkMode={darkMode} />;
@@ -39,26 +80,33 @@ export default function AdminPanel({ darkMode, goHome }) {
     );
   }
 
-  if (!isAdmin) {
+  if (!hasAdminAccess) {
+    const blockedMessage =
+      accountStatus === "suspended"
+        ? "To konto jest zawieszone. Przywroc dostep w ustawieniach uzytkownikow."
+        : accountStatus === "banned"
+        ? "To konto jest zablokowane i nie moze korzystac z panelu."
+        : "To konto nie ma przydzielonych uprawnien do panelu.";
+
     return (
       <div className="flex items-center justify-center min-h-[60vh] px-4">
         <div className={`max-w-sm text-center p-8 rounded-2xl border ${darkMode ? "bg-[#141828] border-white/10" : "bg-white border-gray-200"}`}>
-          <h2 className="text-xl font-bold mb-2">Brak dostępu</h2>
+          <h2 className="text-xl font-bold mb-2">Brak dostepu</h2>
           <p className={`text-sm mb-4 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-            Twoje konto nie ma uprawnień administratora.
+            {blockedMessage}
           </p>
           <div className="flex flex-col gap-2">
             <button
               onClick={goHome}
               className="px-4 py-2 rounded-xl bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition-colors"
             >
-              Wróć na stronę główną
+              Wroc na strone glowna
             </button>
             <button
               onClick={signOut}
               className={`px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${darkMode ? "border-white/10 text-gray-400 hover:text-white hover:bg-white/5" : "border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}
             >
-              Wyloguj się
+              Wyloguj sie
             </button>
           </div>
         </div>
@@ -66,33 +114,30 @@ export default function AdminPanel({ darkMode, goHome }) {
     );
   }
 
-  const adminMenu = [
-    { id: "dashboard", label: "Pulpit", icon: <LayoutDashboard size={18} /> },
-    { id: "wizard", label: "Generator", icon: <Wand2 size={18} /> },
-    { id: "seasons", label: "Sezony", icon: <Calendar size={18} /> },
-    { id: "teams", label: "Drużyny", icon: <Shield size={18} /> },
-    { id: "players", label: "Zawodnicy", icon: <Users size={18} /> },
-    { id: "rosters", label: "Kadry", icon: <UserCog size={18} /> },
-    { id: "schedule", label: "Terminarz", icon: <ListChecks size={18} /> },
-    { id: "results", label: "Wyniki", icon: <Trophy size={18} /> },
-    { id: "referees", label: "Sędziowie", icon: <Scale size={18} /> },
-    { id: "control-center", label: "Ustawienia", icon: <SlidersHorizontal size={18} /> },
-    { id: "users", label: "Konta", icon: <UserPlus size={18} /> },
-  ];
-
   const renderContent = () => {
     switch (adminSection) {
-      case "wizard": return <AdminSeasonWizard darkMode={darkMode} />;
-      case "seasons": return <AdminSeasons darkMode={darkMode} />;
-      case "teams": return <AdminTeams darkMode={darkMode} />;
-      case "players": return <AdminPlayers darkMode={darkMode} />;
-      case "rosters": return <AdminRosters darkMode={darkMode} />;
-      case "schedule": return <AdminSchedule darkMode={darkMode} />;
-      case "results": return <AdminMatchResults darkMode={darkMode} />;
-      case "referees": return <AdminReferees darkMode={darkMode} />;
-      case "control-center": return <AdminControlCenter darkMode={darkMode} />;
-      case "users": return <AdminUsers darkMode={darkMode} />;
-      default: return <AdminDashboard darkMode={darkMode} setAdminSection={setAdminSection} />;
+      case "wizard":
+        return <AdminSeasonWizard darkMode={darkMode} />;
+      case "seasons":
+        return <AdminSeasons darkMode={darkMode} />;
+      case "teams":
+        return <AdminTeams darkMode={darkMode} />;
+      case "players":
+        return <AdminPlayers darkMode={darkMode} />;
+      case "rosters":
+        return <AdminRosters darkMode={darkMode} />;
+      case "schedule":
+        return <AdminSchedule darkMode={darkMode} />;
+      case "results":
+        return <AdminMatchResults darkMode={darkMode} />;
+      case "referees":
+        return <AdminReferees darkMode={darkMode} />;
+      case "control-center":
+        return <AdminControlCenter darkMode={darkMode} />;
+      case "users":
+        return <AdminUsers darkMode={darkMode} />;
+      default:
+        return <AdminDashboard darkMode={darkMode} setAdminSection={setAdminSection} />;
     }
   };
 
@@ -119,24 +164,22 @@ export default function AdminPanel({ darkMode, goHome }) {
 
   return (
     <div className="flex min-h-[80vh]">
-      {/* Mobile menu button */}
       <div className="md:hidden fixed bottom-4 right-4 z-40">
         <button
-          onClick={() => setMobileMenuOpen(v => !v)}
+          onClick={() => setMobileMenuOpen((value) => !value)}
           className="w-12 h-12 rounded-full bg-yellow-500 text-black flex items-center justify-center shadow-lg"
         >
           {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
-      {/* Mobile menu overlay */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-30 bg-black/60" onClick={() => setMobileMenuOpen(false)}>
           <div
-            onClick={e => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
             className={`absolute bottom-20 right-4 w-56 rounded-2xl border p-3 shadow-xl ${darkMode ? "bg-[#141828] border-white/10" : "bg-white border-gray-200"}`}
           >
-            {adminMenu.map(item => (
+            {adminMenu.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
@@ -147,7 +190,7 @@ export default function AdminPanel({ darkMode, goHome }) {
             ))}
             <hr className={`my-2 ${darkMode ? "border-white/10" : "border-gray-200"}`} />
             <button onClick={goHome} className={`${menuItemBase} ${menuItemInactive}`}>
-              <ArrowLeft size={18} /> Wróć do strony
+              <ArrowLeft size={18} /> Wroc do strony
             </button>
             <button onClick={handleSignOut} className={`${menuItemBase} text-red-400 hover:bg-red-500/10`}>
               <LogOut size={18} /> Wyloguj
@@ -156,16 +199,15 @@ export default function AdminPanel({ darkMode, goHome }) {
         </div>
       )}
 
-      {/* Desktop sidebar */}
       <div className={`hidden md:flex flex-col w-52 shrink-0 border-r p-3 ${sidebarBg}`}>
         <button onClick={goHome} className={`${menuItemBase} ${menuItemInactive} mb-2`}>
-          <ArrowLeft size={18} /> Wróć do strony
+          <ArrowLeft size={18} /> Wroc do strony
         </button>
 
         <hr className={`my-2 ${darkMode ? "border-white/10" : "border-gray-200"}`} />
 
         <nav className="flex-1 space-y-1">
-          {adminMenu.map(item => (
+          {adminMenu.map((item) => (
             <button
               key={item.id}
               onClick={() => handleNavClick(item.id)}
@@ -183,7 +225,6 @@ export default function AdminPanel({ darkMode, goHome }) {
         </button>
       </div>
 
-      {/* Content */}
       <div className="flex-1 p-4 md:p-6 min-w-0">
         {renderContent()}
       </div>

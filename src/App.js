@@ -2940,7 +2940,7 @@ function ContactPage({ darkMode }) {
    APP
    ========================================= */
 export default function App() {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, hasAdminAccess, signOut } = useAuth();
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('mlpn-darkMode');
     return saved !== null ? saved === 'true' : false;
@@ -3958,7 +3958,7 @@ export default function App() {
                 </button>
               );
             })}
-            {user && isAdmin && (
+            {user && hasAdminAccess && (
               <button
                 onClick={() => {
                   setSelectedTeam(null);
@@ -4106,7 +4106,7 @@ export default function App() {
                   </button>
                 );
               })}
-              {user && isAdmin && (
+              {user && hasAdminAccess && (
                 <button
                   onClick={() => {
                     setSelectedTeam(null);

@@ -1,5 +1,6 @@
 ﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../contexts/AuthContext";
 import AdminAlert from "./components/AdminAlert";
 import {
   Vote,
@@ -100,6 +101,7 @@ function TeamLogoThumb({ src, name, darkMode }) {
 }
 
 export default function AdminControlCenter({ darkMode }) {
+  const { isAdmin, canAny } = useAuth();
   const [tab, setTab] = useState("polls");
   const [alert, setAlert] = useState({ type: null, message: null });
 
@@ -155,15 +157,32 @@ export default function AdminControlCenter({ darkMode }) {
     ? "px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-gray-200 hover:bg-white/10"
     : "px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50";
   const tabs = useMemo(
-    () => [
-      { id: "polls", label: "Ankiety", icon: <Vote size={16} /> },
-      { id: "typer", label: "Typer na kolejkę", icon: <Target size={16} /> },
-      { id: "password", label: "Zmiana hasła", icon: <KeyRound size={16} /> },
-      { id: "permissions", label: "Uprawnienia", icon: <ShieldCheck size={16} /> },
-      { id: "admins", label: "Podadmini / zaproszenia", icon: <UserPlus size={16} /> },
-    ],
-    []
+    () =>
+      [
+        {
+          id: "polls",
+          label: "Ankiety",
+          icon: <Vote size={16} />,
+          visible: isAdmin || canAny(["polls.create", "polls.edit", "polls.delete"]),
+        },
+        {
+          id: "typer",
+          label: "Typer na kolejke",
+          icon: <Target size={16} />,
+          visible: isAdmin || canAny(["typer.create", "typer.edit", "typer.delete"]),
+        },
+        { id: "password", label: "Zmiana hasla", icon: <KeyRound size={16} />, visible: true },
+      ].filter((item) => item.visible),
+    [canAny, isAdmin]
   );
+
+  useEffect(() => {
+    if (!tabs.length) return;
+    const currentVisible = tabs.some((item) => item.id === tab);
+    if (!currentVisible) {
+      setTab(tabs[0].id);
+    }
+  }, [tab, tabs]);
 
   const loadMeta = useCallback(async () => {
     setMetaLoading(true);

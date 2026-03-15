@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import {
+  hasAnyPermission,
+  hasGrantedPermissions,
+  hasPermission,
+  normalizePermissions,
+} from '../lib/adminPermissions';
 
 const AuthContext = createContext(null);
 
@@ -136,16 +142,36 @@ export function AuthProvider({ children }) {
   const isAdmin = profile?.role === 'admin';
   const isEditor = profile?.role === 'editor';
   const isEditorOrAdmin = isAdmin || isEditor;
+  const permissions = normalizePermissions(profile?.permissions);
+  const accountStatus = profile?.account_status || 'active';
+  const isAccountActive = accountStatus === 'active';
+  const hasAdminAccess = !!user && isAccountActive && (isAdmin || isEditor || hasGrantedPermissions(permissions));
+
+  const can = (permissionKey) => {
+    if (!user || !isAccountActive) return false;
+    return hasPermission(permissions, permissionKey, profile?.role || 'viewer');
+  };
+
+  const canAny = (permissionKeys) => {
+    if (!user || !isAccountActive) return false;
+    return hasAnyPermission(permissions, permissionKeys, profile?.role || 'viewer');
+  };
 
   const value = {
     user,
     profile,
     loading,
+    permissions,
+    accountStatus,
+    isAccountActive,
+    hasAdminAccess,
     signIn,
     signOut,
     isAdmin,
     isEditor,
     isEditorOrAdmin,
+    can,
+    canAny,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
