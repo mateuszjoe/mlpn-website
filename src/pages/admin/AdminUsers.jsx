@@ -66,6 +66,7 @@ export default function AdminUsers({ darkMode }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [schemaUpdateRequired, setSchemaUpdateRequired] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [originalEmail, setOriginalEmail] = useState("");
@@ -91,17 +92,35 @@ export default function AdminUsers({ darkMode }) {
   const textMain = darkMode ? "text-white" : "text-gray-900";
   const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
 
+  const isSchemaError = (message = "") =>
+    message.includes("column profiles.") ||
+    message.includes("column public.profiles.") ||
+    message.includes("Could not find the 'email' column");
+
   const loadUsers = useCallback(async () => {
     setLoading(true);
 
+    const { error: schemaError } = await supabase
+      .from("profiles")
+      .select("email, first_name, last_name, permissions, account_status")
+      .limit(1);
+
+    const schemaMissing = isSchemaError(schemaError?.message || "");
+    setSchemaUpdateRequired(schemaMissing);
+
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, email, first_name, last_name, display_name, role, account_status, permissions, created_at")
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Blad ladowania uzytkownikow:", error);
-      setAlert({ type: "error", message: error.message || "Nie udalo sie zaladowac kont." });
+      setAlert({
+        type: "error",
+        message: schemaMissing
+          ? "Baza nie jest jeszcze zaktualizowana. Uruchom w Supabase plik: supabase/migrations/017_user_permissions.sql"
+          : error.message || "Nie udalo sie zaladowac kont.",
+      });
       setUsers([]);
       setLoading(false);
       return;
@@ -255,6 +274,14 @@ export default function AdminUsers({ darkMode }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    if (schemaUpdateRequired) {
+      setAlert({
+        type: "error",
+        message: "Najpierw uruchom w Supabase plik: supabase/migrations/017_user_permissions.sql",
+      });
+      return;
+    }
+
     if (!canManageAnyUsers) {
       setAlert({ type: "error", message: "To konto nie moze zarzadzac uzytkownikami." });
       return;
@@ -344,7 +371,17 @@ export default function AdminUsers({ darkMode }) {
       resetForm();
       await loadUsers();
     } catch (error) {
-      setAlert({ type: "error", message: error.message || "Nie udalo sie zapisac konta." });
+      const message = error.message || "Nie udalo sie zapisac konta.";
+      const schemaMissing = isSchemaError(message);
+      if (schemaMissing) {
+        setSchemaUpdateRequired(true);
+      }
+      setAlert({
+        type: "error",
+        message: schemaMissing
+          ? "Brakuje nowych pol w bazie. W Supabase uruchom plik: supabase/migrations/017_user_permissions.sql"
+          : message,
+      });
     } finally {
       setSaving(false);
     }
@@ -371,6 +408,14 @@ export default function AdminUsers({ darkMode }) {
   };
 
   const handleDeleteUser = async (user) => {
+    if (schemaUpdateRequired) {
+      setAlert({
+        type: "error",
+        message: "Najpierw uruchom w Supabase plik: supabase/migrations/017_user_permissions.sql",
+      });
+      return;
+    }
+
     if (!canDeleteUsers) {
       setAlert({ type: "error", message: "Brak uprawnien do usuwania kont." });
       return;
@@ -396,6 +441,14 @@ export default function AdminUsers({ darkMode }) {
   };
 
   const handleQuickStatusChange = async (user, nextStatus) => {
+    if (schemaUpdateRequired) {
+      setAlert({
+        type: "error",
+        message: "Najpierw uruchom w Supabase plik: supabase/migrations/017_user_permissions.sql",
+      });
+      return;
+    }
+
     if (nextStatus === "banned" && !canBanUsers) {
       setAlert({ type: "error", message: "Brak uprawnien do banowania kont." });
       return;
@@ -463,12 +516,25 @@ export default function AdminUsers({ darkMode }) {
               resetForm();
               setShowForm(true);
             }}
+            disabled={schemaUpdateRequired}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition-colors"
           >
             <UserPlus size={18} /> Nowe konto
           </button>
         )}
       </div>
+
+      {schemaUpdateRequired && (
+        <div className={`rounded-2xl border px-4 py-4 ${darkMode ? "border-yellow-500/30 bg-yellow-500/10" : "border-yellow-200 bg-yellow-50"}`}>
+          <div className={`font-semibold ${darkMode ? "text-yellow-300" : "text-yellow-800"}`}>
+            Trzeba zaktualizowac baze danych
+          </div>
+          <p className={`text-sm mt-1 ${darkMode ? "text-yellow-100/80" : "text-yellow-700"}`}>
+            Ten ekran jest juz gotowy, ale Twoj projekt w Supabase nie ma jeszcze nowych kolumn dla kont i uprawnien.
+            Uruchom plik <code className="font-mono">supabase/migrations/017_user_permissions.sql</code> w SQL Editor.
+          </p>
+        </div>
+      )}
 
       {showForm && (
         <div className={`rounded-2xl border p-5 ${card}`}>

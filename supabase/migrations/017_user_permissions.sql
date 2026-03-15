@@ -5,10 +5,13 @@
 -- ============================================================
 
 ALTER TABLE public.profiles
+    ADD COLUMN IF NOT EXISTS email TEXT,
     ADD COLUMN IF NOT EXISTS first_name TEXT,
     ADD COLUMN IF NOT EXISTS last_name TEXT,
     ADD COLUMN IF NOT EXISTS permissions JSONB NOT NULL DEFAULT '{}'::jsonb,
     ADD COLUMN IF NOT EXISTS account_status TEXT NOT NULL DEFAULT 'active';
+
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles (email);
 
 DO $$
 BEGIN
@@ -30,6 +33,18 @@ SET
 WHERE permissions IS NULL
    OR account_status IS NULL
    OR account_status = '';
+
+UPDATE public.profiles p
+SET
+    email = u.email,
+    display_name = COALESCE(NULLIF(p.display_name, ''), NULLIF(u.raw_user_meta_data->>'display_name', ''), u.email),
+    updated_at = now()
+FROM auth.users u
+WHERE u.id = p.id
+  AND (
+    p.email IS DISTINCT FROM u.email
+    OR (NULLIF(p.display_name, '') IS NULL AND COALESCE(NULLIF(u.raw_user_meta_data->>'display_name', ''), u.email) IS NOT NULL)
+  );
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -305,35 +320,35 @@ CREATE POLICY "poll_options_editor_update" ON public.poll_options
 CREATE POLICY "poll_options_admin_delete" ON public.poll_options
     FOR DELETE USING (public.has_permission('polls.delete'));
 
-DROP POLICY IF EXISTS "typer_round_configs_editor_insert" ON public.typer_round_configs;
-DROP POLICY IF EXISTS "typer_round_configs_editor_update" ON public.typer_round_configs;
-DROP POLICY IF EXISTS "typer_round_configs_editor_delete" ON public.typer_round_configs;
-CREATE POLICY "typer_round_configs_editor_insert" ON public.typer_round_configs
-    FOR INSERT WITH CHECK (public.has_permission('typer.create'));
-CREATE POLICY "typer_round_configs_editor_update" ON public.typer_round_configs
-    FOR UPDATE USING (public.has_permission('typer.edit'));
-CREATE POLICY "typer_round_configs_editor_delete" ON public.typer_round_configs
-    FOR DELETE USING (public.has_permission('typer.delete'));
+DO $$
+BEGIN
+    IF to_regclass('public.typer_round_configs') IS NOT NULL THEN
+        EXECUTE 'DROP POLICY IF EXISTS "typer_round_configs_editor_insert" ON public.typer_round_configs';
+        EXECUTE 'DROP POLICY IF EXISTS "typer_round_configs_editor_update" ON public.typer_round_configs';
+        EXECUTE 'DROP POLICY IF EXISTS "typer_round_configs_editor_delete" ON public.typer_round_configs';
+        EXECUTE 'CREATE POLICY "typer_round_configs_editor_insert" ON public.typer_round_configs FOR INSERT WITH CHECK (public.has_permission(''typer.create''))';
+        EXECUTE 'CREATE POLICY "typer_round_configs_editor_update" ON public.typer_round_configs FOR UPDATE USING (public.has_permission(''typer.edit''))';
+        EXECUTE 'CREATE POLICY "typer_round_configs_editor_delete" ON public.typer_round_configs FOR DELETE USING (public.has_permission(''typer.delete''))';
+    END IF;
 
-DROP POLICY IF EXISTS "typer_round_cfg_matches_editor_insert" ON public.typer_round_config_matches;
-DROP POLICY IF EXISTS "typer_round_cfg_matches_editor_update" ON public.typer_round_config_matches;
-DROP POLICY IF EXISTS "typer_round_cfg_matches_editor_delete" ON public.typer_round_config_matches;
-CREATE POLICY "typer_round_cfg_matches_editor_insert" ON public.typer_round_config_matches
-    FOR INSERT WITH CHECK (public.has_permission('typer.create'));
-CREATE POLICY "typer_round_cfg_matches_editor_update" ON public.typer_round_config_matches
-    FOR UPDATE USING (public.has_permission('typer.edit'));
-CREATE POLICY "typer_round_cfg_matches_editor_delete" ON public.typer_round_config_matches
-    FOR DELETE USING (public.has_permission('typer.delete'));
+    IF to_regclass('public.typer_round_config_matches') IS NOT NULL THEN
+        EXECUTE 'DROP POLICY IF EXISTS "typer_round_cfg_matches_editor_insert" ON public.typer_round_config_matches';
+        EXECUTE 'DROP POLICY IF EXISTS "typer_round_cfg_matches_editor_update" ON public.typer_round_config_matches';
+        EXECUTE 'DROP POLICY IF EXISTS "typer_round_cfg_matches_editor_delete" ON public.typer_round_config_matches';
+        EXECUTE 'CREATE POLICY "typer_round_cfg_matches_editor_insert" ON public.typer_round_config_matches FOR INSERT WITH CHECK (public.has_permission(''typer.create''))';
+        EXECUTE 'CREATE POLICY "typer_round_cfg_matches_editor_update" ON public.typer_round_config_matches FOR UPDATE USING (public.has_permission(''typer.edit''))';
+        EXECUTE 'CREATE POLICY "typer_round_cfg_matches_editor_delete" ON public.typer_round_config_matches FOR DELETE USING (public.has_permission(''typer.delete''))';
+    END IF;
 
-DROP POLICY IF EXISTS "referees_editor_insert" ON public.referees;
-DROP POLICY IF EXISTS "referees_editor_update" ON public.referees;
-DROP POLICY IF EXISTS "referees_editor_delete" ON public.referees;
-CREATE POLICY "referees_editor_insert" ON public.referees
-    FOR INSERT WITH CHECK (public.has_permission('referees.create'));
-CREATE POLICY "referees_editor_update" ON public.referees
-    FOR UPDATE USING (public.has_permission('referees.edit'));
-CREATE POLICY "referees_editor_delete" ON public.referees
-    FOR DELETE USING (public.has_permission('referees.delete'));
+    IF to_regclass('public.referees') IS NOT NULL THEN
+        EXECUTE 'DROP POLICY IF EXISTS "referees_editor_insert" ON public.referees';
+        EXECUTE 'DROP POLICY IF EXISTS "referees_editor_update" ON public.referees';
+        EXECUTE 'DROP POLICY IF EXISTS "referees_editor_delete" ON public.referees';
+        EXECUTE 'CREATE POLICY "referees_editor_insert" ON public.referees FOR INSERT WITH CHECK (public.has_permission(''referees.create''))';
+        EXECUTE 'CREATE POLICY "referees_editor_update" ON public.referees FOR UPDATE USING (public.has_permission(''referees.edit''))';
+        EXECUTE 'CREATE POLICY "referees_editor_delete" ON public.referees FOR DELETE USING (public.has_permission(''referees.delete''))';
+    END IF;
+END $$;
 
 DROP POLICY IF EXISTS "profiles_own_read" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_own_update" ON public.profiles;
