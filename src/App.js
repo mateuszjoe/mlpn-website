@@ -4044,7 +4044,7 @@ export default function App() {
       {/* Mobile Menu Drawer */}
       <div
         className={classNames(
-          "md:hidden fixed inset-0 z-[10010] transition-[visibility] duration-200",
+          "mlpn-mobile-menu-layer md:hidden fixed inset-0 z-[10010] transition-[visibility] duration-200",
           mobileMenuOpen ? "visible" : "invisible pointer-events-none"
         )}
       >
@@ -4053,13 +4053,13 @@ export default function App() {
           aria-label="Zamknij menu"
           onClick={() => setMobileMenuOpen(false)}
           className={classNames(
-            "absolute inset-0 transition-opacity duration-200",
+            "mlpn-mobile-menu-backdrop absolute inset-0 transition-opacity duration-200",
             mobileMenuOpen ? "opacity-100 bg-black/60 backdrop-blur-[2px]" : "opacity-0"
           )}
         />
         <div
           className={classNames(
-            "absolute left-3 right-3 top-[78px] bottom-3 overflow-y-auto rounded-[28px] border shadow-[0_24px_80px_rgba(0,0,0,0.45)] transition-all duration-200",
+            "mlpn-mobile-menu-panel absolute left-3 right-3 top-[78px] bottom-3 overflow-y-auto rounded-[28px] border shadow-[0_24px_80px_rgba(0,0,0,0.45)] transition-all duration-200",
             mobileMenuOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0",
             darkMode
               ? "bg-[#0d1117] border-white/10"

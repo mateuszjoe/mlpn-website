@@ -49,6 +49,25 @@ textarea {
   z-index: 1;
 }
 
+.mlpn-shell > .mlpn-mobile-menu-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10010 !important;
+}
+
+.mlpn-mobile-menu-layer .mlpn-mobile-menu-backdrop {
+  position: absolute !important;
+  inset: 0 !important;
+}
+
+.mlpn-mobile-menu-layer .mlpn-mobile-menu-panel {
+  position: absolute !important;
+  left: 12px !important;
+  right: 12px !important;
+  top: 78px !important;
+  bottom: 12px !important;
+}
+
 .mlpn-shell::before,
 .mlpn-shell::after {
   content: "";
