@@ -251,6 +251,10 @@ CREATE POLICY "players_admin_delete" ON public.players
     FOR DELETE USING (public.has_permission('players.delete'));
 
 DROP POLICY IF EXISTS "players_private_admin_all" ON public.players_private;
+DROP POLICY IF EXISTS "players_private_admin_read" ON public.players_private;
+DROP POLICY IF EXISTS "players_private_admin_insert" ON public.players_private;
+DROP POLICY IF EXISTS "players_private_admin_update" ON public.players_private;
+DROP POLICY IF EXISTS "players_private_admin_delete" ON public.players_private;
 CREATE POLICY "players_private_admin_read" ON public.players_private
     FOR SELECT USING (public.has_any_permission(ARRAY['players.create', 'players.edit', 'players.delete']) OR player_id = public.get_my_player_id());
 CREATE POLICY "players_private_admin_insert" ON public.players_private
@@ -353,6 +357,10 @@ END $$;
 DROP POLICY IF EXISTS "profiles_own_read" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_own_update" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_admin_all" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_manage_read" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_manage_insert" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_manage_update" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_manage_delete" ON public.profiles;
 CREATE POLICY "profiles_own_read" ON public.profiles
     FOR SELECT USING (id = auth.uid());
 CREATE POLICY "profiles_manage_read" ON public.profiles
