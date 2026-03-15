@@ -2954,14 +2954,6 @@ export default function App() {
     localStorage.setItem('mlpn-darkMode', String(darkMode));
   }, [darkMode]);
 
-  // Odśwież dane po wyjściu z panelu admina
-  useEffect(() => {
-    if (prevContextRef.current === "admin" && activeContext !== "admin") {
-      refreshData();
-    }
-    prevContextRef.current = activeContext;
-  }, [activeContext, refreshData]);
-
   // === DANE Z SUPABASE ===
   const {
     loading: dataLoading,
@@ -2991,6 +2983,14 @@ export default function App() {
     defaultSeason,
     refreshData,
   } = useMLPNData();
+
+  // Odśwież dane po wyjściu z panelu admina
+  useEffect(() => {
+    if (prevContextRef.current === "admin" && activeContext !== "admin") {
+      refreshData();
+    }
+    prevContextRef.current = activeContext;
+  }, [activeContext, refreshData]);
 
   const [round, setRound] = useState(1);
 
@@ -3863,17 +3863,18 @@ export default function App() {
       >
         {/* Mobile: Hamburger */}
         <button
+          type="button"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className={classNames(
-            "md:hidden p-2 rounded e3d-btn",
+            "md:hidden w-11 h-11 shrink-0 inline-flex items-center justify-center leading-none rounded-2xl e3d-btn",
             darkMode ? "bg-gray-800" : "bg-gray-200"
           )}
           aria-label="Toggle menu"
         >
           {mobileMenuOpen ? (
-            <X size={20} className="e3d-ico" />
+            <X size={20} className="block e3d-ico" />
           ) : (
-            <Menu size={20} className="e3d-ico" />
+            <Menu size={20} className="block e3d-ico" />
           )}
         </button>
 
@@ -4017,17 +4018,18 @@ export default function App() {
 
           {/* Dark mode toggle */}
           <button
+            type="button"
             onClick={() => setDarkMode((v) => !v)}
             className={classNames(
-              "p-2 rounded e3d-btn",
+              "w-11 h-11 shrink-0 inline-flex items-center justify-center leading-none rounded-2xl e3d-btn",
               darkMode ? "bg-gray-800" : "bg-white/10 border border-white/10 text-white hover:bg-white/15"
             )}
             aria-label="Toggle theme"
           >
             {darkMode ? (
-              <Sun size={18} className="e3d-ico" />
+              <Sun size={18} className="block e3d-ico" />
             ) : (
-              <Moon size={18} className="e3d-ico" />
+              <Moon size={18} className="block e3d-ico" />
             )}
           </button>
         </div>
