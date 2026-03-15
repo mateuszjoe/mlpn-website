@@ -3872,12 +3872,13 @@ export default function App() {
         {/* Mobile: Hamburger */}
         <button
           type="button"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onClick={() => setMobileMenuOpen((v) => !v)}
           className={classNames(
             "md:hidden w-11 h-11 shrink-0 inline-flex items-center justify-center leading-none rounded-2xl e3d-btn",
             darkMode ? "bg-gray-800" : "bg-gray-200"
           )}
           aria-label="Toggle menu"
+          aria-expanded={mobileMenuOpen}
         >
           {mobileMenuOpen ? (
             <X size={20} className="block e3d-ico" />
@@ -4041,20 +4042,31 @@ export default function App() {
       </nav>
 
       {/* Mobile Menu Drawer */}
-      {mobileMenuOpen && (
-        <div
-          className="md:hidden fixed inset-0 z-[10010] bg-black/60 backdrop-blur-[2px]"
+      <div
+        className={classNames(
+          "md:hidden fixed inset-0 z-[10010] transition-[visibility] duration-200",
+          mobileMenuOpen ? "visible" : "invisible pointer-events-none"
+        )}
+      >
+        <button
+          type="button"
+          aria-label="Zamknij menu"
           onClick={() => setMobileMenuOpen(false)}
+          className={classNames(
+            "absolute inset-0 transition-opacity duration-200",
+            mobileMenuOpen ? "opacity-100 bg-black/60 backdrop-blur-[2px]" : "opacity-0"
+          )}
+        />
+        <div
+          className={classNames(
+            "absolute left-3 right-3 top-[78px] bottom-3 overflow-y-auto rounded-[28px] border shadow-[0_24px_80px_rgba(0,0,0,0.45)] transition-all duration-200",
+            mobileMenuOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0",
+            darkMode
+              ? "bg-[#0d1117] border-white/10"
+              : "bg-gradient-to-b from-[#10203e] via-[#1b315c] to-[#1f3f7a] border-white/10"
+          )}
+          onClick={(e) => e.stopPropagation()}
         >
-          <div
-            className={classNames(
-              "absolute left-3 right-3 top-[78px] bottom-3 overflow-y-auto rounded-[28px] border shadow-[0_24px_80px_rgba(0,0,0,0.45)]",
-              darkMode
-                ? "bg-[#0d1117] border-white/10"
-                : "bg-gradient-to-b from-[#10203e] via-[#1b315c] to-[#1f3f7a] border-white/10"
-            )}
-            onClick={(e) => e.stopPropagation()}
-          >
             <div
               className="px-4 py-4 border-b flex items-center justify-between gap-3"
               style={{
@@ -4222,9 +4234,8 @@ export default function App() {
                 ))}
               </div>
             )}
-          </div>
         </div>
-      )}
+      </div>
 
       {/* LAYOUT */}
       <div className="flex flex-1 pt-[64px] md:pt-[72px]">
