@@ -9485,6 +9485,27 @@ function HomeDashboard({
       <div className="grid xl:grid-cols-[1.35fr_0.95fr] gap-3">
         <Card darkMode={darkMode} className="mlpn-home-hero p-0 overflow-hidden">
           <div className="relative p-4 lg:p-6 min-h-[340px] h-auto lg:min-h-[540px] lg:h-[600px]">
+            {heroSlides.length > 1 && (
+              <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-20">
+                <button
+                  type="button"
+                  onClick={prevHeroSlide}
+                  className="pointer-events-auto absolute left-2 md:left-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-11 md:h-11 rounded-full border border-white/20 bg-black/30 text-white hover:bg-white/15 transition-colors flex items-center justify-center font-black"
+                  title="Poprzedni slajd"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={nextHeroSlide}
+                  className="pointer-events-auto absolute right-2 md:right-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-11 md:h-11 rounded-full border border-white/20 bg-black/30 text-white hover:bg-white/15 transition-colors flex items-center justify-center font-black"
+                  title="Następny slajd"
+                >
+                  ›
+                </button>
+              </div>
+            )}
+
             <div className="lg:hidden space-y-3">
               <div>
                 <div className="text-[11px] font-black tracking-[0.2em] uppercase text-white/80 mb-2">
@@ -9524,10 +9545,12 @@ function HomeDashboard({
                     <div className="mt-1 text-2xl font-black text-white leading-tight">
                       {activeHeroSlide.title}
                     </div>
-                    <div className="mt-2 text-sm text-white/85 leading-relaxed">
-                      {activeHeroSlide.body}
-                    </div>
-                    {activeHeroSlide.meta && (
+                    {activeHeroKind !== "typer" && (
+                      <div className="mt-2 text-sm text-white/85 leading-relaxed">
+                        {activeHeroSlide.body}
+                      </div>
+                    )}
+                    {activeHeroKind !== "typer" && activeHeroSlide.meta && (
                       <div className="mt-2 text-xs text-white/70">
                         {activeHeroSlide.meta}
                       </div>
@@ -9542,57 +9565,30 @@ function HomeDashboard({
                         </div>
                       ) : (
                         <>
-                          {heroTyperMatches.slice(0, 3).map((m) => (
+                          {heroTyperMatches.slice(0, 2).map((m) => (
                             <div
                               key={`hero-mobile-typer-${m.id}`}
-                              className="rounded-2xl border border-white/10 bg-white/5 p-3 space-y-3"
+                              className="rounded-2xl border border-white/10 bg-white/5 p-3"
                             >
-                              <div className="flex items-center justify-between gap-2 text-[11px] text-white/70">
-                                <LeagueLink
-                                  leagueId={m.league}
-                                  leagueName={
-                                    ({ "1st": "I Liga", "2nd": "II Liga", "3rd": "III Liga" }[m.league] || m.league)
-                                  }
-                                  onClick={() => goToLeague(m.league)}
-                                  className="text-[11px] text-white"
-                                />
-                                <span>{m.date}{m.time ? ` • ${m.time}` : ""}</span>
+                              <div className="flex items-start gap-3 min-w-0">
+                                <TeamLogo team={m.home} darkMode={true} size={42} onClick={() => openTeam?.(m.home)} />
+                                <button
+                                  type="button"
+                                  onClick={() => openTeam?.(m.home)}
+                                  className="min-w-0 pt-1 text-left text-base font-black text-white leading-tight hover:underline"
+                                >
+                                  {displayTeamName(m.home)}
+                                </button>
                               </div>
 
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <TeamLogo team={m.home} darkMode={true} size={42} onClick={() => openTeam?.(m.home)} />
-                                  <button
-                                    type="button"
-                                    onClick={() => openTeam?.(m.home)}
-                                    className="min-w-0 text-left text-sm font-bold text-white leading-tight hover:underline"
-                                  >
-                                    {displayTeamName(m.home)}
-                                  </button>
-                                </div>
-                                <div className="text-[10px] font-black tracking-[0.18em] uppercase text-center text-white/45">
-                                  vs
-                                </div>
-                                <div className="flex items-center gap-3 min-w-0 justify-end">
-                                  <button
-                                    type="button"
-                                    onClick={() => openTeam?.(m.away)}
-                                    className="min-w-0 text-right text-sm font-bold text-white leading-tight hover:underline"
-                                  >
-                                    {displayTeamName(m.away)}
-                                  </button>
-                                  <TeamLogo team={m.away} darkMode={true} size={42} onClick={() => openTeam?.(m.away)} />
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-3 gap-2">
+                              <div className="mt-3 grid grid-cols-3 gap-2">
                                 {["1", "X", "2"].map((pick) => (
                                   <button
                                     key={`hero-mobile-pick-${m.id}-${pick}`}
                                     type="button"
                                     onClick={() => selectHeroTyperPick(m.id, pick)}
                                     className={classNames(
-                                      "py-2.5 rounded-xl border text-base font-black transition-colors",
+                                      "py-2.5 rounded-xl border text-lg font-black transition-colors",
                                       heroTyperPicks[m.id] === pick
                                         ? "bg-emerald-400 text-black border-emerald-300"
                                         : "bg-white/5 text-white border-white/15 hover:bg-white/10"
@@ -9602,13 +9598,24 @@ function HomeDashboard({
                                   </button>
                                 ))}
                               </div>
+
+                              <div className="mt-3 flex items-end justify-end gap-3 min-w-0">
+                                <button
+                                  type="button"
+                                  onClick={() => openTeam?.(m.away)}
+                                  className="min-w-0 pb-1 text-right text-base font-black text-white leading-tight hover:underline"
+                                >
+                                  {displayTeamName(m.away)}
+                                </button>
+                                <TeamLogo team={m.away} darkMode={true} size={42} onClick={() => openTeam?.(m.away)} />
+                              </div>
                             </div>
                           ))}
 
                           <div className="flex items-center justify-between gap-3 pt-1">
                             <div className="text-[11px] text-white/75 leading-relaxed">
                               {heroTyperSubmitted
-                                ? "Typy zapisane lokalnie w podglądzie."
+                                ? "Typy zapisane lokalnie."
                                 : heroTyperAllPicked
                                 ? "Masz komplet typów."
                                 : `Uzupełnij typy (${Object.keys(heroTyperPicks).length}/${heroTyperMatches.length}).`}
@@ -9670,7 +9677,7 @@ function HomeDashboard({
                     </div>
                   )}
 
-                  {activeHeroSlide.onClick && (
+                  {activeHeroSlide.onClick && activeHeroKind !== "typer" && (
                     <button
                       type="button"
                       onClick={activeHeroSlide.onClick}
@@ -9687,16 +9694,15 @@ function HomeDashboard({
               )}
 
               {heroSlides.length > 1 && (
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center justify-center gap-2">
                   <button
                     type="button"
                     onClick={prevHeroSlide}
-                    className="w-12 h-12 rounded-full border border-white/20 bg-black/20 text-white hover:bg-white/10 transition-colors flex items-center justify-center font-black"
+                    className="w-11 h-11 rounded-full border border-white/20 bg-black/25 text-white hover:bg-white/10 transition-colors flex items-center justify-center font-black"
                     title="Poprzedni slajd"
                   >
                     ‹
                   </button>
-
                   <div className="flex items-center justify-center gap-2">
                     {heroSlides.map((slide, idx) => (
                       <button
@@ -9711,11 +9717,10 @@ function HomeDashboard({
                       />
                     ))}
                   </div>
-
                   <button
                     type="button"
                     onClick={nextHeroSlide}
-                    className="w-12 h-12 rounded-full border border-white/20 bg-black/20 text-white hover:bg-white/10 transition-colors flex items-center justify-center font-black"
+                    className="w-11 h-11 rounded-full border border-white/20 bg-black/25 text-white hover:bg-white/10 transition-colors flex items-center justify-center font-black"
                     title="Następny slajd"
                   >
                     ›
