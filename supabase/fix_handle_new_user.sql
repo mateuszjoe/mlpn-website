@@ -10,10 +10,11 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, role, display_name)
+    INSERT INTO public.profiles (id, role, email, display_name)
     VALUES (
         NEW.id,
         'viewer',
+        NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'display_name', NEW.email)
     );
     RETURN NEW;
