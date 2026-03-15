@@ -4043,12 +4043,12 @@ export default function App() {
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
         <div
-          className="md:hidden fixed inset-0 z-40 bg-black/50"
+          className="md:hidden fixed inset-0 z-[10010] bg-black/60 backdrop-blur-[2px]"
           onClick={() => setMobileMenuOpen(false)}
         >
           <div
             className={classNames(
-              "absolute left-3 right-3 top-[78px] max-h-[calc(100vh-92px)] overflow-y-auto rounded-[26px] border shadow-2xl",
+              "absolute left-3 right-3 top-[78px] bottom-3 overflow-y-auto rounded-[28px] border shadow-[0_24px_80px_rgba(0,0,0,0.45)]",
               darkMode
                 ? "bg-[#0d1117] border-white/10"
                 : "bg-gradient-to-b from-[#10203e] via-[#1b315c] to-[#1f3f7a] border-white/10"
@@ -10351,52 +10351,17 @@ function HomeDashboard({
                           : "border-gray-200 bg-gray-50"
                       )}
                     >
-                      <div className="md:hidden space-y-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1 space-y-2.5">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <TeamLogo
-                                team={f.home}
-                                darkMode={darkMode}
-                                size={42}
-                                onClick={() => openTeam(f.home)}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => openTeam(f.home)}
-                                className="min-w-0 text-left text-sm font-bold leading-tight hover:underline"
-                              >
-                                {displayTeamName(f.home)}
-                              </button>
-                            </div>
-
-                            <div
-                              className={classNames(
-                                "text-[10px] font-black uppercase tracking-[0.18em] text-center",
-                                darkMode ? "text-gray-400" : "text-gray-500"
-                              )}
-                            >
-                              vs
-                            </div>
-
-                            <div className="flex items-center justify-end gap-3 min-w-0">
-                              <button
-                                type="button"
-                                onClick={() => openTeam(f.away)}
-                                className="min-w-0 text-right text-sm font-bold leading-tight hover:underline"
-                              >
-                                {displayTeamName(f.away)}
-                              </button>
-                              <TeamLogo
-                                team={f.away}
-                                darkMode={darkMode}
-                                size={42}
-                                onClick={() => openTeam(f.away)}
-                              />
-                            </div>
+                      <div className="md:hidden rounded-2xl border p-3 space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div
+                            className={classNames(
+                              "text-[11px] font-semibold",
+                              darkMode ? "text-gray-400" : "text-gray-600"
+                            )}
+                          >
+                            {upcomingDate.date || f.date || "Termin do ustalenia"}
                           </div>
-
-                          <div className="shrink-0 pt-1">
+                          <div className="shrink-0">
                             <VideoIcon
                               darkMode={darkMode}
                               videoUrl={playedMatch?.videoUrl || f.videoUrl}
@@ -10414,41 +10379,77 @@ function HomeDashboard({
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between gap-2">
-                          <div
-                            className={classNames(
-                              "min-w-0 rounded-2xl border px-3 py-2.5",
-                              darkMode
-                                ? "bg-white/5 border-white/10"
-                                : "bg-white border-gray-200"
-                            )}
-                          >
-                            <div
-                              className={classNames(
-                                "text-[10px] font-black uppercase tracking-[0.14em]",
-                                darkMode ? "text-gray-400" : "text-gray-500"
-                              )}
-                            >
-                              {upcomingDate.weekday}
+                        <div className="grid grid-cols-[minmax(0,1fr)_84px] gap-3 items-start">
+                          <div className="space-y-2.5 min-w-0">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <TeamLogo
+                                team={f.home}
+                                darkMode={darkMode}
+                                size={30}
+                                onClick={() => openTeam(f.home)}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => openTeam(f.home)}
+                                className="min-w-0 text-left text-sm font-semibold leading-tight hover:underline"
+                              >
+                                {displayTeamName(f.home)}
+                              </button>
                             </div>
-                            <div className="text-sm font-bold">
-                              {upcomingDate.date || f.date || "Termin do ustalenia"}
-                              {f.time ? ` • ${f.time}` : ""}
+
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <TeamLogo
+                                team={f.away}
+                                darkMode={darkMode}
+                                size={30}
+                                onClick={() => openTeam(f.away)}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => openTeam(f.away)}
+                                className="min-w-0 text-left text-sm font-semibold leading-tight hover:underline"
+                              >
+                                {displayTeamName(f.away)}
+                              </button>
                             </div>
                           </div>
 
-                          <button
-                            onClick={() => openMatch(f.id)}
-                            className={classNames(
-                              "shrink-0 px-3 py-2.5 rounded-2xl border text-xs font-bold e3d-pill",
-                              darkMode
-                                ? "bg-white/5 border-white/10"
-                                : "bg-black/5 border-black/10"
-                            )}
-                            title="Szczegóły meczu"
-                          >
-                            Szczegóły
-                          </button>
+                          <div className="space-y-2">
+                            <button
+                              onClick={() => openMatch(f.id)}
+                              className={classNames(
+                                "w-full rounded-xl border px-2 py-3 text-center",
+                                darkMode
+                                  ? "bg-white/5 border-white/10"
+                                  : "bg-white border-gray-200"
+                              )}
+                              title="Szczegóły meczu"
+                            >
+                              <div
+                                className={classNames(
+                                  "text-[10px] font-black uppercase tracking-[0.14em]",
+                                  darkMode ? "text-gray-400" : "text-gray-500"
+                                )}
+                              >
+                                {String(f.status || "").toLowerCase() === "scheduled" ? "Start" : upcomingDate.weekday}
+                              </div>
+                              <div className="mt-1 text-lg font-black leading-none">
+                                {fixtureCenterTimeLabel(f)}
+                              </div>
+                            </button>
+
+                            <button
+                              onClick={() => openMatch(f.id)}
+                              className={classNames(
+                                "w-full rounded-xl border px-2 py-2 text-[11px] font-bold",
+                                darkMode
+                                  ? "bg-white/5 border-white/10"
+                                  : "bg-black/5 border-black/10"
+                              )}
+                            >
+                              Szczegóły
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -10564,74 +10565,86 @@ function HomeDashboard({
                           : "border-gray-200 bg-gray-50"
                       )}
                     >
-                      <div className="md:hidden space-y-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <TeamLogo
-                              team={m.home}
-                              darkMode={darkMode}
-                              size={42}
-                              onClick={() => openTeam(m.home)}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => openTeam(m.home)}
-                              className="min-w-0 text-left text-sm font-bold leading-tight hover:underline"
-                            >
-                              {displayTeamName(m.home)}
-                            </button>
-                          </div>
-
-                          <VideoIcon
-                            darkMode={darkMode}
-                            videoUrl={m.videoUrl}
-                            played={true}
-                            galleryUrl={m.galleryUrl}
-                            hasGallery={m.hasGallery}
-                            galleryCount={m.galleryCount}
-                            onOpenGallery={m.hasGallery ? () => openGallery?.(m) : undefined}
-                            size={16}
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => openMatch(m.id)}
-                          className={classNames(
-                            "w-full rounded-[22px] border px-4 py-3 text-center e3d-pill",
-                            darkMode
-                              ? "bg-white/5 border-white/10"
-                              : "bg-white border-gray-200"
-                          )}
-                        >
-                          <div className="text-3xl font-black leading-none">
-                            {m.homeGoals} : {m.awayGoals}
-                          </div>
+                      <div className="md:hidden rounded-2xl border p-3 space-y-3">
+                        <div className="flex items-center justify-between gap-2">
                           <div
                             className={classNames(
-                              "mt-1 text-[11px]",
+                              "text-[11px] font-semibold",
                               darkMode ? "text-gray-400" : "text-gray-600"
                             )}
                           >
                             {resultDate.date || m.date || ""}
                             {m.time ? ` • ${m.time}` : ""}
                           </div>
-                        </button>
+                          <div className="shrink-0">
+                            <VideoIcon
+                              darkMode={darkMode}
+                              videoUrl={m.videoUrl}
+                              played={true}
+                              galleryUrl={m.galleryUrl}
+                              hasGallery={m.hasGallery}
+                              galleryCount={m.galleryCount}
+                              onOpenGallery={m.hasGallery ? () => openGallery?.(m) : undefined}
+                              size={16}
+                            />
+                          </div>
+                        </div>
 
-                        <div className="flex items-center justify-end gap-3 min-w-0">
+                        <div className="grid grid-cols-[minmax(0,1fr)_48px] gap-3 items-start">
+                          <div className="space-y-2.5 min-w-0">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <TeamLogo
+                                team={m.home}
+                                darkMode={darkMode}
+                                size={30}
+                                onClick={() => openTeam(m.home)}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => openTeam(m.home)}
+                                className="min-w-0 text-left text-sm font-semibold leading-tight hover:underline"
+                              >
+                                {displayTeamName(m.home)}
+                              </button>
+                            </div>
+
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <TeamLogo
+                                team={m.away}
+                                darkMode={darkMode}
+                                size={30}
+                                onClick={() => openTeam(m.away)}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => openTeam(m.away)}
+                                className="min-w-0 text-left text-sm font-semibold leading-tight hover:underline"
+                              >
+                                {displayTeamName(m.away)}
+                              </button>
+                            </div>
+                          </div>
+
                           <button
                             type="button"
-                            onClick={() => openTeam(m.away)}
-                            className="min-w-0 text-right text-sm font-bold leading-tight hover:underline"
+                            onClick={() => openMatch(m.id)}
+                            className={classNames(
+                              "rounded-xl border p-2 text-center",
+                              darkMode
+                                ? "bg-white/5 border-white/10"
+                                : "bg-white border-gray-200"
+                            )}
+                            title="Szczegóły meczu"
                           >
-                            {displayTeamName(m.away)}
+                            <div className="grid grid-rows-2 gap-2">
+                              <div className="text-2xl font-black leading-none">
+                                {m.homeGoals}
+                              </div>
+                              <div className="text-2xl font-black leading-none">
+                                {m.awayGoals}
+                              </div>
+                            </div>
                           </button>
-                          <TeamLogo
-                            team={m.away}
-                            darkMode={darkMode}
-                            size={42}
-                            onClick={() => openTeam(m.away)}
-                          />
                         </div>
                       </div>
 
