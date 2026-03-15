@@ -9345,9 +9345,17 @@ function HomeDashboard({
   const [heroTyperPicks, setHeroTyperPicks] = useState({});
   const [heroTyperSubmitted, setHeroTyperSubmitted] = useState(false);
   const heroTyperKey = useMemo(() => heroTyperMatches.map((m) => m.id).join("|"), [heroTyperMatches]);
+  const heroTyperAnimationTimers = useRef([]);
+  const clearHeroTyperAnimationTimers = () => {
+    heroTyperAnimationTimers.current.forEach((timer) => clearTimeout(timer));
+    heroTyperAnimationTimers.current = [];
+  };
   useEffect(() => {
     setHeroTyperPicks({});
     setHeroTyperSubmitted(false);
+    setHeroTyperAnimatingPick(null);
+    setHeroTyperCardPhase("idle");
+    clearHeroTyperAnimationTimers();
   }, [heroTyperKey]);
   const heroCardRef = useRef(null);
 
@@ -9494,7 +9502,7 @@ function HomeDashboard({
     setHeroPollVoteIdx(idx);
   };
 
-  const selectHeroTyperPick = (matchId, value) => {
+  const selectHeroTyperPickInstant = (matchId, value) => {
     setHeroTyperSubmitted(false);
     setHeroTyperPicks((prev) => ({ ...prev, [matchId]: value }));
   };
@@ -9511,6 +9519,48 @@ function HomeDashboard({
     ? heroTyperMatches.length
     : Math.min(heroTyperAnsweredCount + 1, heroTyperMatches.length || 1);
   const [showHeroFloatingNav, setShowHeroFloatingNav] = useState(false);
+  const [heroTyperAnimatingPick, setHeroTyperAnimatingPick] = useState(null);
+  const [heroTyperCardPhase, setHeroTyperCardPhase] = useState("idle");
+  const heroTyperMobileActivePick =
+    heroTyperAnimatingPick?.matchId === heroTyperCurrentMatch?.id
+      ? heroTyperAnimatingPick.value
+      : heroTyperCurrentMatch
+      ? heroTyperPicks[heroTyperCurrentMatch.id]
+      : null;
+  const heroTyperMobileBusy = heroTyperCardPhase !== "idle" || !!heroTyperAnimatingPick;
+
+  const selectHeroTyperPickAnimated = (matchId, value) => {
+    if (!heroTyperCurrentMatch || heroTyperCurrentMatch.id !== matchId || heroTyperMobileBusy) {
+      return;
+    }
+
+    clearHeroTyperAnimationTimers();
+    setHeroTyperSubmitted(false);
+    setHeroTyperAnimatingPick({ matchId, value });
+    setHeroTyperCardPhase("selected");
+
+    heroTyperAnimationTimers.current.push(
+      setTimeout(() => {
+        setHeroTyperCardPhase("exit");
+      }, 220)
+    );
+
+    heroTyperAnimationTimers.current.push(
+      setTimeout(() => {
+        setHeroTyperPicks((prev) => ({ ...prev, [matchId]: value }));
+        setHeroTyperAnimatingPick(null);
+        setHeroTyperCardPhase("enter");
+      }, 470)
+    );
+
+    heroTyperAnimationTimers.current.push(
+      setTimeout(() => {
+        setHeroTyperCardPhase("idle");
+      }, 560)
+    );
+  };
+
+  useEffect(() => () => clearHeroTyperAnimationTimers(), []);
 
   useEffect(() => {
     const updateHeroFloatingNav = () => {
@@ -9622,7 +9672,13 @@ function HomeDashboard({
                           {heroTyperCurrentMatch && (
                             <div
                               key={`hero-mobile-typer-${heroTyperCurrentMatch.id}`}
-                              className="rounded-2xl border border-white/10 bg-white/5 p-3"
+                              className={classNames(
+                                "rounded-2xl border border-white/10 bg-white/5 p-3 transition-[opacity,transform,filter] duration-300 ease-out",
+                                heroTyperCardPhase === "selected" && "ring-1 ring-emerald-300/60 bg-emerald-400/10",
+                                heroTyperCardPhase === "exit" && "opacity-0 translate-y-3 scale-[0.98] blur-[1px]",
+                                heroTyperCardPhase === "enter" && "opacity-0 -translate-y-3 scale-[0.98]",
+                                heroTyperCardPhase === "idle" && "opacity-100 translate-y-0 scale-100"
+                              )}
                             >
                               <div className="flex items-start gap-3 min-w-0">
                                 <TeamLogo
@@ -9647,11 +9703,12 @@ function HomeDashboard({
                                   <button
                                     key={`hero-mobile-pick-${heroTyperCurrentMatch.id}-${pick}`}
                                     type="button"
-                                    onClick={() => selectHeroTyperPick(heroTyperCurrentMatch.id, pick)}
+                                    disabled={heroTyperMobileBusy}
+                                    onClick={() => selectHeroTyperPickAnimated(heroTyperCurrentMatch.id, pick)}
                                     className={classNames(
-                                      "py-2.5 rounded-xl border text-lg font-black transition-colors",
-                                      heroTyperPicks[heroTyperCurrentMatch.id] === pick
-                                        ? "bg-emerald-400 text-black border-emerald-300"
+                                      "py-2.5 rounded-xl border text-lg font-black transition-all duration-200",
+                                      heroTyperMobileActivePick === pick
+                                        ? "bg-emerald-400 text-black border-emerald-300 scale-[1.03] shadow-[0_0_0_1px_rgba(110,231,183,0.35),0_14px_24px_rgba(16,185,129,0.22)]"
                                         : "bg-white/5 text-white border-white/15 hover:bg-white/10"
                                     )}
                                   >
@@ -9859,7 +9916,7 @@ function HomeDashboard({
                                       <button
                                         key={`hero-pick-${m.id}-${pick}`}
                                         type="button"
-                                        onClick={() => selectHeroTyperPick(m.id, pick)}
+                                        onClick={() => selectHeroTyperPickInstant(m.id, pick)}
                                         className={classNames(
                                           "w-6 h-6 rounded-md border text-[10px] font-black transition-colors",
                                           heroTyperPicks[m.id] === pick
