@@ -9522,7 +9522,9 @@ function HomeDashboard({
   const [heroTyperAnimatingPick, setHeroTyperAnimatingPick] = useState(null);
   const [heroTyperCardPhase, setHeroTyperCardPhase] = useState("idle");
   const heroTyperMobileActivePick =
-    heroTyperAnimatingPick?.matchId === heroTyperCurrentMatch?.id
+    heroTyperAnimatingPick &&
+    heroTyperCurrentMatch &&
+    heroTyperAnimatingPick.matchId === heroTyperCurrentMatch.id
       ? heroTyperAnimatingPick.value
       : heroTyperCurrentMatch
       ? heroTyperPicks[heroTyperCurrentMatch.id]
