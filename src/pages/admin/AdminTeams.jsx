@@ -6,7 +6,7 @@ import AdminModal from "./components/AdminModal";
 import AdminAlert from "./components/AdminAlert";
 import AdminImageUpload from "./components/AdminImageUpload";
 import AdminTeamLogoCreator from "./components/AdminTeamLogoCreator";
-import { Plus, GitMerge } from "lucide-react";
+import { Plus, GitMerge, Trash2, Loader2 } from "lucide-react";
 import AdminConfirmDanger from "./components/AdminConfirmDanger";
 
 function normalizeTeamKey(name) {
@@ -423,6 +423,9 @@ export default function AdminTeams({ darkMode }) {
     setDangerTarget(team);
   };
 
+  const [forceDeleteTarget, setForceDeleteTarget] = useState(null); // {team, refs}
+  const [forceDeleting, setForceDeleting] = useState(false);
+
   const executeDelete = async () => {
     if (!dangerTarget) return;
     const target = dangerTarget;
@@ -436,24 +439,7 @@ export default function AdminTeams({ darkMode }) {
 
         if (isFkError) {
           const refs = await getTeamReferenceCounts(target.id);
-          const labels = [
-            ["sezony", refs.seasonTeams],
-            ["kadra", refs.teamPlayers],
-            ["tabela", refs.standings],
-            ["statystyki", refs.playerStats],
-            ["eventy", refs.matchEvents],
-            ["składy", refs.matchLineups],
-            ["mecze", refs.matches],
-          ];
-          const usedRefs = labels.filter(([, count]) => Number(count) > 0);
-          const refsMsg = usedRefs.length
-            ? usedRefs.map(([label, count]) => `${label}: ${count}`).join(", ")
-            : "powiązania istnieją, ale nie udało się ich policzyć";
-
-          setAlert({
-            type: "error",
-            message: `Nie można usunąć "${target.name}". Drużyna ma powiązane dane (${refsMsg}). Użyj scalania albo dezaktywacji.`,
-          });
+          setForceDeleteTarget({ team: target, refs });
         } else {
           setAlert({ type: "error", message: error.message });
         }
@@ -465,6 +451,76 @@ export default function AdminTeams({ darkMode }) {
       setAlert({ type: "error", message: err.message || "Nie udało się usunąć drużyny." });
     } finally {
       setDangerTarget(null);
+    }
+  };
+
+  const executeForceDelete = async () => {
+    if (!forceDeleteTarget) return;
+    const { team } = forceDeleteTarget;
+    setForceDeleting(true);
+
+    try {
+      // Kolejność usuwania uwzględnia zależności FK
+      // 1. suspensions (zależą od match_events)
+      const { data: eventsOfTeam } = await supabase
+        .from("match_events")
+        .select("id")
+        .eq("team_id", team.id);
+      if (eventsOfTeam?.length) {
+        const eventIds = eventsOfTeam.map(e => e.id);
+        await supabase.from("suspensions").delete().in("triggering_event_id", eventIds);
+      }
+
+      // 2. match_events
+      await supabase.from("match_events").delete().eq("team_id", team.id);
+
+      // 3. match_lineups
+      await supabase.from("match_lineups").delete().eq("team_id", team.id);
+
+      // 4. player_season_stats
+      await supabase.from("player_season_stats").delete().eq("team_id", team.id);
+
+      // 5. standings
+      await supabase.from("standings").delete().eq("team_id", team.id);
+
+      // 6. team_players
+      await supabase.from("team_players").delete().eq("team_id", team.id);
+
+      // 7. season_teams
+      await supabase.from("season_teams").delete().eq("team_id", team.id);
+
+      // 8. matches (home or away)
+      // Najpierw usuń eventy/lineup z meczów gdzie ta drużyna gra
+      const { data: teamMatches } = await supabase
+        .from("matches")
+        .select("id")
+        .or(`home_team_id.eq.${team.id},away_team_id.eq.${team.id}`);
+      if (teamMatches?.length) {
+        const matchIds = teamMatches.map(m => m.id);
+        // Usuń suspensions powiązane z eventami tych meczów
+        const { data: matchEvts } = await supabase
+          .from("match_events")
+          .select("id")
+          .in("match_id", matchIds);
+        if (matchEvts?.length) {
+          await supabase.from("suspensions").delete().in("triggering_event_id", matchEvts.map(e => e.id));
+        }
+        await supabase.from("match_events").delete().in("match_id", matchIds);
+        await supabase.from("match_lineups").delete().in("match_id", matchIds);
+        await supabase.from("matches").delete().in("id", matchIds);
+      }
+
+      // 9. Na koniec sama drużyna
+      const { error } = await supabase.from("teams").delete().eq("id", team.id);
+      if (error) throw error;
+
+      setAlert({ type: "success", message: `Drużyna "${team.name}" i wszystkie powiązane dane zostały usunięte.` });
+      loadData();
+    } catch (err) {
+      setAlert({ type: "error", message: `Błąd wymuszania usunięcia: ${err.message}` });
+    } finally {
+      setForceDeleting(false);
+      setForceDeleteTarget(null);
     }
   };
 
@@ -558,10 +614,13 @@ export default function AdminTeams({ darkMode }) {
           ? `Scalono "${mergedSourceNames[0]}" -> "${finalName}". Powiązania zostały przepięte, rekord źródłowy oznaczony jako MERGED.`
           : `Scalono ${sourceIds.length} drużyny do "${finalName}". Powiązania zostały przepięte, rekordy źródłowe oznaczone jako MERGED.`,
       });
-      closeMergeModal();
+      // Wróć do pickera (nie zamykaj) — użytkownik może kontynuować scalanie
+      setShowMerge(false);
+      setShowMergePicker(true);
       setMergeSource("");
       setMergeTarget("");
       setMergeExtraSources([]);
+      setMergeSelectedTeamIds([]);
       setMergeNameOption("selected");
       setMergeCustomName("");
       loadData();
@@ -735,6 +794,53 @@ export default function AdminTeams({ darkMode }) {
         title={`Trwałe usunięcie drużyny "${dangerTarget?.name || ""}"`}
         message="UWAGA: Drużyna zostanie trwale usunięta z bazy danych. Jeżeli ma powiązane mecze lub kadry, operacja się nie powiedzie. W takim przypadku użyj dezaktywacji (kliknij status)."
       />
+
+      {/* Force delete confirm */}
+      {forceDeleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-4 bg-black/60" onClick={() => !forceDeleting && setForceDeleteTarget(null)}>
+          <div onClick={e => e.stopPropagation()} className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl ${darkMode ? "bg-[#141828] border-white/10" : "bg-white border-gray-200"}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                <Trash2 size={22} className="text-red-400" />
+              </div>
+              <h3 className="text-lg font-bold text-red-400">Wymuś usunięcie &quot;{forceDeleteTarget.team.name}&quot;</h3>
+            </div>
+            <p className={`text-sm mb-3 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
+              Drużyna ma powiązane dane, które zostaną <strong>trwale usunięte</strong>:
+            </p>
+            <ul className={`text-sm mb-4 space-y-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+              {[
+                ["Sezony", forceDeleteTarget.refs.seasonTeams],
+                ["Kadra", forceDeleteTarget.refs.teamPlayers],
+                ["Tabela", forceDeleteTarget.refs.standings],
+                ["Statystyki", forceDeleteTarget.refs.playerStats],
+                ["Eventy meczowe", forceDeleteTarget.refs.matchEvents],
+                ["Składy meczowe", forceDeleteTarget.refs.matchLineups],
+                ["Mecze", forceDeleteTarget.refs.matches],
+              ].filter(([, c]) => c > 0).map(([label, count]) => (
+                <li key={label}>• {label}: <strong>{count}</strong></li>
+              ))}
+            </ul>
+            <div className="flex gap-2">
+              <button
+                onClick={executeForceDelete}
+                disabled={forceDeleting}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-400 transition-colors disabled:opacity-50"
+              >
+                {forceDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                {forceDeleting ? "Usuwanie..." : "Usuń wszystko"}
+              </button>
+              <button
+                onClick={() => setForceDeleteTarget(null)}
+                disabled={forceDeleting}
+                className={`px-4 py-2.5 rounded-xl border font-medium transition-colors ${darkMode ? "border-white/10 text-gray-300 hover:bg-white/5" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+              >
+                Anuluj
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Merge picker modal (duże okno z checkboxami) */}
       <AdminModal isOpen={showMergePicker} onClose={closeMergePicker} title="Wybierz drużyny do scalenia" darkMode={darkMode} xwide>

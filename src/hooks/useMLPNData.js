@@ -58,6 +58,7 @@ export function useMLPNData() {
   const cache = useRef({});
   const seasonsRef = useRef([]); // pełne dane sezonów (z polem status)
   const [defaultSeason, setDefaultSeason] = useState(null); // sezon z is_current=true
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Fikcyjni gracze (puste - brak w bazie na razie)
   const [players, setPlayers] = useState([]);
@@ -253,7 +254,7 @@ export function useMLPNData() {
 
     loadSeason(currentSeason);
     return () => { cancelled = true; };
-  }, [currentSeason]);
+  }, [currentSeason, refreshTrigger]);
 
   // 3. Załaduj treści (niezależne od sezonu) - raz
   useEffect(() => {
@@ -302,6 +303,12 @@ export function useMLPNData() {
     if (s) setSeasonStatus(s.status);
   }, []);
 
+  // Odśwież dane (po zmianach w panelu admina)
+  const refreshData = useCallback(() => {
+    if (currentSeason) delete cache.current[currentSeason];
+    setRefreshTrigger(t => t + 1);
+  }, [currentSeason]);
+
   return {
     loading,
     error,
@@ -328,6 +335,7 @@ export function useMLPNData() {
     seasonSummary,
     matchGalleries,
     defaultSeason,
+    refreshData,
   };
 }
 

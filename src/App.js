@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   Sun,
   Moon,
@@ -2947,11 +2947,20 @@ export default function App() {
   });
   const [activeContext, setActiveContext] = useState("home"); // home | 1st | 2nd | 3rd | tournaments | info | admin
   const [activeSection, setActiveSection] = useState("home"); // home/news/typer/polls/free | table/calendar/teams/players
+  const prevContextRef = useRef(activeContext);
 
   // Zapisz motyw do localStorage
   useEffect(() => {
     localStorage.setItem('mlpn-darkMode', String(darkMode));
   }, [darkMode]);
+
+  // Odśwież dane po wyjściu z panelu admina
+  useEffect(() => {
+    if (prevContextRef.current === "admin" && activeContext !== "admin") {
+      refreshData();
+    }
+    prevContextRef.current = activeContext;
+  }, [activeContext, refreshData]);
 
   // === DANE Z SUPABASE ===
   const {
@@ -2980,6 +2989,7 @@ export default function App() {
     seasonSummary,
     matchGalleries,
     defaultSeason,
+    refreshData,
   } = useMLPNData();
 
   const [round, setRound] = useState(1);
