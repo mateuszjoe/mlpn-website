@@ -50,6 +50,11 @@ function createEphemeralAuthClient(storageKeySuffix) {
   });
 }
 
+function getCurrentAuthRedirectUrl() {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
 function getStatusBadge(status) {
   switch (status) {
     case "banned":
@@ -333,6 +338,7 @@ export default function AdminUsers({ darkMode }) {
           email: profilePayload.email,
           password: form.password,
           options: {
+            emailRedirectTo: getCurrentAuthRedirectUrl(),
             data: {
               first_name: profilePayload.first_name,
               last_name: profilePayload.last_name,
@@ -365,7 +371,14 @@ export default function AdminUsers({ darkMode }) {
           throw profileError;
         }
 
-        setAlert({ type: "success", message: `Konto dla ${profilePayload.email} zostalo utworzone.` });
+        const requiresEmailConfirmation = !signUpData?.session;
+
+        setAlert({
+          type: requiresEmailConfirmation ? "warning" : "success",
+          message: requiresEmailConfirmation
+            ? `Konto dla ${profilePayload.email} zostalo utworzone, ale ta osoba musi jeszcze kliknac link z maila aktywacyjnego. Jesli chcesz, zeby nowe konta logowaly sie od razu, w Supabase wylacz opcje Confirm email.`
+            : `Konto dla ${profilePayload.email} zostalo utworzone i moze sie juz zalogowac.`,
+        });
       }
 
       resetForm();

@@ -2,6 +2,24 @@ import React, { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { Lock, Mail, Eye, EyeOff } from "lucide-react";
 
+function translateAuthError(message = "") {
+  const normalized = String(message).toLowerCase();
+
+  if (normalized.includes("email not confirmed")) {
+    return "To konto czeka jeszcze na potwierdzenie maila. Otworz link z wiadomosci e-mail albo wylacz potwierdzanie maila w ustawieniach Supabase.";
+  }
+
+  if (normalized.includes("invalid login credentials")) {
+    return "Nie udalo sie zalogowac. Sprawdz mail i haslo.";
+  }
+
+  if (normalized.includes("user not found")) {
+    return "Nie ma takiego konta.";
+  }
+
+  return message || "Nie udalo sie zalogowac.";
+}
+
 export default function AdminLogin({ darkMode }) {
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
@@ -17,7 +35,7 @@ export default function AdminLogin({ darkMode }) {
     try {
       await signIn(email, password);
     } catch (err) {
-      setError(err?.message || "Nie udalo sie zalogowac.");
+      setError(translateAuthError(err?.message));
     } finally {
       setLoading(false);
     }
