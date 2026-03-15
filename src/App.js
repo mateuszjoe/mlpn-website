@@ -1780,13 +1780,15 @@ function VideoIcon({
    ========================================= */
 function InfoPage({ darkMode, activeTab = "about", setActiveTab }) {
   return (
-    <Card darkMode={darkMode} className="p-6">
-      {activeTab === "about" && <AboutPage darkMode={darkMode} />}
-      {activeTab === "regulations" && <RegulationsPage darkMode={darkMode} />}
-      {activeTab === "sponsors" && <SponsorsPage darkMode={darkMode} />}
-      {activeTab === "rodo" && <RodoPage darkMode={darkMode} />}
-      {activeTab === "privacy" && <PrivacyPage darkMode={darkMode} />}
-      {activeTab === "contact" && <ContactPage darkMode={darkMode} />}
+    <Card darkMode={darkMode} className="p-0">
+      <div className="mx-auto w-full max-w-5xl px-5 py-6 md:px-8 md:py-8">
+        {activeTab === "about" && <AboutPage darkMode={darkMode} />}
+        {activeTab === "regulations" && <RegulationsPage darkMode={darkMode} />}
+        {activeTab === "sponsors" && <SponsorsPage darkMode={darkMode} />}
+        {activeTab === "rodo" && <RodoPage darkMode={darkMode} />}
+        {activeTab === "privacy" && <PrivacyPage darkMode={darkMode} />}
+        {activeTab === "contact" && <ContactPage darkMode={darkMode} />}
+      </div>
     </Card>
   );
 }
@@ -2771,42 +2773,42 @@ function ContactPage({ darkMode }) {
                 target="_blank"
                 rel="noreferrer"
                 className={classNames(
-                  "w-12 h-12 rounded-full flex items-center justify-center text-2xl",
+                  "w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-105 text-[#1877F2]",
                   darkMode
                     ? "bg-blue-500/20 hover:bg-blue-500/30"
                     : "bg-blue-100 hover:bg-blue-200"
                 )}
                 title="Facebook"
               >
-                📘
+                <SocialBrandIcon brand="facebook" className="w-5 h-5" />
               </a>
               <a
                 href="https://www.instagram.com/mlpn_sulejowek/"
                 target="_blank"
                 rel="noreferrer"
                 className={classNames(
-                  "w-12 h-12 rounded-full flex items-center justify-center text-2xl",
+                  "w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-105 text-[#E4405F]",
                   darkMode
                     ? "bg-pink-500/20 hover:bg-pink-500/30"
                     : "bg-pink-100 hover:bg-pink-200"
                 )}
                 title="Instagram"
               >
-                📷
+                <SocialBrandIcon brand="instagram" className="w-5 h-5" />
               </a>
               <a
                 href="https://www.youtube.com/@MLPN_YT"
                 target="_blank"
                 rel="noreferrer"
                 className={classNames(
-                  "w-12 h-12 rounded-full flex items-center justify-center text-2xl",
+                  "w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-105 text-[#FF0033]",
                   darkMode
                     ? "bg-red-500/20 hover:bg-red-500/30"
                     : "bg-red-100 hover:bg-red-200"
                 )}
                 title="YouTube"
               >
-                📹
+                <SocialBrandIcon brand="youtube" className="w-5 h-5" />
               </a>
             </div>
           </div>
@@ -4046,10 +4048,10 @@ export default function App() {
         >
           <div
             className={classNames(
-              "w-[86vw] max-w-[340px] h-full overflow-y-auto shadow-2xl",
+              "absolute left-3 right-3 top-[78px] max-h-[calc(100vh-92px)] overflow-y-auto rounded-[26px] border shadow-2xl",
               darkMode
-                ? "bg-[#0d1117]"
-                : "bg-gradient-to-b from-[#10203e] via-[#1b315c] to-[#1f3f7a]"
+                ? "bg-[#0d1117] border-white/10"
+                : "bg-gradient-to-b from-[#10203e] via-[#1b315c] to-[#1f3f7a] border-white/10"
             )}
             onClick={(e) => e.stopPropagation()}
           >
@@ -4363,6 +4365,37 @@ export default function App() {
 /* =========================================
    FOOTER
    ========================================= */
+function SocialBrandIcon({ brand, className = "" }) {
+  const common = {
+    fill: "currentColor",
+    className,
+    viewBox: "0 0 24 24",
+    "aria-hidden": "true",
+  };
+
+  if (brand === "facebook") {
+    return (
+      <svg {...common}>
+        <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073c0 6.019 4.388 11.01 10.125 11.927v-8.438H7.078v-3.49h3.047V9.41c0-3.017 1.792-4.685 4.533-4.685 1.313 0 2.686.236 2.686.236v2.963H15.83c-1.491 0-1.956.929-1.956 1.883v2.265h3.328l-.532 3.49h-2.796V24C19.612 23.083 24 18.092 24 12.073z" />
+      </svg>
+    );
+  }
+
+  if (brand === "instagram") {
+    return (
+      <svg {...common}>
+        <path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2zm0 1.75A4 4 0 0 0 3.75 7.75v8.5a4 4 0 0 0 4 4h8.5a4 4 0 0 0 4-4v-8.5a4 4 0 0 0-4-4h-8.5zm8.88 1.31a1.06 1.06 0 1 1 0 2.12 1.06 1.06 0 0 1 0-2.12zM12 6.75A5.25 5.25 0 1 1 6.75 12 5.26 5.26 0 0 1 12 6.75zm0 1.75A3.5 3.5 0 1 0 15.5 12 3.5 3.5 0 0 0 12 8.5z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="M23.5 6.2a3 3 0 0 0-2.11-2.12C19.53 3.5 12 3.5 12 3.5s-7.53 0-9.39.58A3 3 0 0 0 .5 6.2 31.2 31.2 0 0 0 0 12a31.2 31.2 0 0 0 .5 5.8 3 3 0 0 0 2.11 2.12c1.86.58 9.39.58 9.39.58s7.53 0 9.39-.58a3 3 0 0 0 2.11-2.12A31.2 31.2 0 0 0 24 12a31.2 31.2 0 0 0-.5-5.8zM9.75 15.8V8.2L16.5 12l-6.75 3.8z" />
+    </svg>
+  );
+}
+
 function Footer({ darkMode, setActiveContext, setActiveSection }) {
   const handleInfoClick = (tab) => {
     setActiveContext("info");
@@ -4491,42 +4524,42 @@ function Footer({ darkMode, setActiveContext, setActiveSection }) {
                 target="_blank"
                 rel="noreferrer"
                 className={classNames(
-                  "w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-transform hover:scale-110",
+                  "w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 text-[#1877F2]",
                   darkMode
                     ? "bg-blue-500/20 hover:bg-blue-500/30"
                     : "bg-blue-100 hover:bg-blue-200"
                 )}
                 title="Facebook"
               >
-                📘
+                <SocialBrandIcon brand="facebook" className="w-5 h-5" />
               </a>
               <a
                 href="https://www.instagram.com/mlpn_sulejowek/"
                 target="_blank"
                 rel="noreferrer"
                 className={classNames(
-                  "w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-transform hover:scale-110",
+                  "w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-transform hover:scale-110 text-[#E4405F]",
                   darkMode
                     ? "bg-pink-500/20 hover:bg-pink-500/30"
                     : "bg-pink-100 hover:bg-pink-200"
                 )}
                 title="Instagram"
               >
-                📷
+                <SocialBrandIcon brand="instagram" className="w-5 h-5" />
               </a>
               <a
                 href="https://www.youtube.com/@MLPN_YT"
                 target="_blank"
                 rel="noreferrer"
                 className={classNames(
-                  "w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-transform hover:scale-110",
+                  "w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-transform hover:scale-110 text-[#FF0033]",
                   darkMode
                     ? "bg-red-500/20 hover:bg-red-500/30"
                     : "bg-red-100 hover:bg-red-200"
                 )}
                 title="YouTube"
               >
-                📹
+                <SocialBrandIcon brand="youtube" className="w-5 h-5" />
               </a>
             </div>
             <button
@@ -9440,8 +9473,247 @@ function HomeDashboard({
     <div className="space-y-4">
       <div className="grid xl:grid-cols-[1.35fr_0.95fr] gap-3">
         <Card darkMode={darkMode} className="mlpn-home-hero p-0 overflow-hidden">
-          <div className="relative p-4 lg:p-6 min-h-[540px] h-auto lg:h-[600px]">
-            <div className="grid gap-2 items-start">
+          <div className="relative p-4 lg:p-6 min-h-[340px] h-auto lg:min-h-[540px] lg:h-[600px]">
+            <div className="lg:hidden space-y-3">
+              <div>
+                <div className="text-[11px] font-black tracking-[0.2em] uppercase text-white/80 mb-2">
+                  MLPN Match Center
+                </div>
+                <div className="text-3xl font-black leading-none text-white">
+                  Sportowy pulpit ligi
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {heroSlideButtonDefs
+                  .filter((b) => hasHeroSlideKind(b.kind))
+                  .map((b) => (
+                    <button
+                      key={`hero-mobile-btn-${b.kind}`}
+                      type="button"
+                      onClick={() => focusHeroSlide(b.kind)}
+                      className={classNames(
+                        "px-3 py-2.5 rounded-2xl border text-sm font-bold text-left transition-colors",
+                        isHeroKindActive(b.kind)
+                          ? "bg-white text-gray-900 border-white"
+                          : "text-white border-white/20 bg-black/20 hover:bg-white/10"
+                      )}
+                    >
+                      {b.label}
+                    </button>
+                  ))}
+              </div>
+
+              {activeHeroSlide ? (
+                <div className="rounded-[26px] border border-white/15 bg-black/20 p-4 space-y-3">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.16em] font-black text-sky-200">
+                      {activeHeroSlide.kicker}
+                    </div>
+                    <div className="mt-1 text-2xl font-black text-white leading-tight">
+                      {activeHeroSlide.title}
+                    </div>
+                    <div className="mt-2 text-sm text-white/85 leading-relaxed">
+                      {activeHeroSlide.body}
+                    </div>
+                    {activeHeroSlide.meta && (
+                      <div className="mt-2 text-xs text-white/70">
+                        {activeHeroSlide.meta}
+                      </div>
+                    )}
+                  </div>
+
+                  {activeHeroKind === "typer" && (
+                    <div className="space-y-2">
+                      {heroTyperMatches.length === 0 ? (
+                        <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4 text-sm text-white/75">
+                          Brak meczów do typowania.
+                        </div>
+                      ) : (
+                        <>
+                          {heroTyperMatches.slice(0, 3).map((m) => (
+                            <div
+                              key={`hero-mobile-typer-${m.id}`}
+                              className="rounded-2xl border border-white/10 bg-white/5 p-3 space-y-3"
+                            >
+                              <div className="flex items-center justify-between gap-2 text-[11px] text-white/70">
+                                <LeagueLink
+                                  leagueId={m.league}
+                                  leagueName={
+                                    ({ "1st": "I Liga", "2nd": "II Liga", "3rd": "III Liga" }[m.league] || m.league)
+                                  }
+                                  onClick={() => goToLeague(m.league)}
+                                  className="text-[11px] text-white"
+                                />
+                                <span>{m.date}{m.time ? ` • ${m.time}` : ""}</span>
+                              </div>
+
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <TeamLogo team={m.home} darkMode={true} size={42} onClick={() => openTeam?.(m.home)} />
+                                  <button
+                                    type="button"
+                                    onClick={() => openTeam?.(m.home)}
+                                    className="min-w-0 text-left text-sm font-bold text-white leading-tight hover:underline"
+                                  >
+                                    {displayTeamName(m.home)}
+                                  </button>
+                                </div>
+                                <div className="text-[10px] font-black tracking-[0.18em] uppercase text-center text-white/45">
+                                  vs
+                                </div>
+                                <div className="flex items-center gap-3 min-w-0 justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() => openTeam?.(m.away)}
+                                    className="min-w-0 text-right text-sm font-bold text-white leading-tight hover:underline"
+                                  >
+                                    {displayTeamName(m.away)}
+                                  </button>
+                                  <TeamLogo team={m.away} darkMode={true} size={42} onClick={() => openTeam?.(m.away)} />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-2">
+                                {["1", "X", "2"].map((pick) => (
+                                  <button
+                                    key={`hero-mobile-pick-${m.id}-${pick}`}
+                                    type="button"
+                                    onClick={() => selectHeroTyperPick(m.id, pick)}
+                                    className={classNames(
+                                      "py-2.5 rounded-xl border text-base font-black transition-colors",
+                                      heroTyperPicks[m.id] === pick
+                                        ? "bg-emerald-400 text-black border-emerald-300"
+                                        : "bg-white/5 text-white border-white/15 hover:bg-white/10"
+                                    )}
+                                  >
+                                    {pick}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+
+                          <div className="flex items-center justify-between gap-3 pt-1">
+                            <div className="text-[11px] text-white/75 leading-relaxed">
+                              {heroTyperSubmitted
+                                ? "Typy zapisane lokalnie w podglądzie."
+                                : heroTyperAllPicked
+                                ? "Masz komplet typów."
+                                : `Uzupełnij typy (${Object.keys(heroTyperPicks).length}/${heroTyperMatches.length}).`}
+                            </div>
+                            <button
+                              type="button"
+                              disabled={!heroTyperAllPicked}
+                              onClick={() => setHeroTyperSubmitted(true)}
+                              className={classNames(
+                                "shrink-0 px-3 py-2 rounded-xl border text-xs font-black transition-colors",
+                                heroTyperAllPicked
+                                  ? "bg-emerald-400 text-black border-emerald-300 hover:brightness-110"
+                                  : "bg-white/5 text-white/50 border-white/10 cursor-not-allowed"
+                              )}
+                            >
+                              Wyślij
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {activeHeroKind === "poll" && latestPoll && latestPollOptions.length > 0 && (
+                    <div className="space-y-2">
+                      {latestPollOptions.slice(0, 4).map((opt, idx) => {
+                        const count = heroPollCounts[idx] || 0;
+                        const pct = heroPollTotalVotes ? Math.round((count / heroPollTotalVotes) * 100) : 0;
+                        const chosen = heroPollVoteIdx === idx;
+                        return (
+                          <button
+                            key={`hero-mobile-poll-opt-${idx}`}
+                            type="button"
+                            onClick={() => voteInHeroPoll(idx)}
+                            disabled={heroPollIsArchived}
+                            className={classNames(
+                              "w-full relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition-colors",
+                              chosen
+                                ? "border-emerald-300/60 bg-emerald-400/15"
+                                : "border-white/10 bg-white/5 hover:bg-white/10",
+                              heroPollIsArchived && "cursor-not-allowed"
+                            )}
+                          >
+                            {heroPollShowResults && (
+                              <div
+                                className="absolute inset-y-0 left-0 bg-white/10"
+                                style={{ width: `${pct}%` }}
+                              />
+                            )}
+                            <div className="relative flex items-center justify-between gap-3">
+                              <span className="text-sm font-semibold text-white">{opt}</span>
+                              {heroPollShowResults && (
+                                <span className="text-xs font-black text-white">{pct}%</span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {activeHeroSlide.onClick && (
+                    <button
+                      type="button"
+                      onClick={activeHeroSlide.onClick}
+                      className="w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-black text-white transition-colors hover:bg-white/15"
+                    >
+                      {activeHeroSlide.ctaLabel || "Otwórz"}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-[26px] border border-white/10 bg-black/15 p-4 text-sm text-white/75">
+                  Brak tematów do wyświetlenia.
+                </div>
+              )}
+
+              {heroSlides.length > 1 && (
+                <div className="flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={prevHeroSlide}
+                    className="w-12 h-12 rounded-full border border-white/20 bg-black/20 text-white hover:bg-white/10 transition-colors flex items-center justify-center font-black"
+                    title="Poprzedni slajd"
+                  >
+                    ‹
+                  </button>
+
+                  <div className="flex items-center justify-center gap-2">
+                    {heroSlides.map((slide, idx) => (
+                      <button
+                        key={`hero-mobile-slide-dot-${slide.key}`}
+                        type="button"
+                        onClick={() => setHeroSlideIndex(idx)}
+                        className={classNames(
+                          "h-3 rounded-full transition-all",
+                          idx === heroSlideIndex ? "w-10 bg-white" : "w-3 bg-white/35 hover:bg-white/55"
+                        )}
+                        title={slide.kicker}
+                      />
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={nextHeroSlide}
+                    className="w-12 h-12 rounded-full border border-white/20 bg-black/20 text-white hover:bg-white/10 transition-colors flex items-center justify-center font-black"
+                    title="Następny slajd"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="hidden lg:grid gap-2 items-start">
               <div className="grid lg:grid-cols-[1fr_360px] gap-3 items-start">
                 <div>
                   <div className="text-[11px] font-black tracking-[0.2em] uppercase text-white/80 mb-2">
@@ -10068,6 +10340,7 @@ function HomeDashboard({
               {upcoming.map((f) => {
                 const playedMatch = matchById[f.id];
                 const isExpanded = expandedMatchId === f.id;
+                const upcomingDate = fixtureDateHeaderParts(f.date);
                 return (
                   <React.Fragment key={f.id}>
                     <div
@@ -10078,7 +10351,108 @@ function HomeDashboard({
                           : "border-gray-200 bg-gray-50"
                       )}
                     >
-                      <div className="grid grid-cols-[40px_minmax(0,1fr)_240px_minmax(0,1fr)_40px] gap-2 items-center">
+                      <div className="md:hidden space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1 space-y-2.5">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <TeamLogo
+                                team={f.home}
+                                darkMode={darkMode}
+                                size={42}
+                                onClick={() => openTeam(f.home)}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => openTeam(f.home)}
+                                className="min-w-0 text-left text-sm font-bold leading-tight hover:underline"
+                              >
+                                {displayTeamName(f.home)}
+                              </button>
+                            </div>
+
+                            <div
+                              className={classNames(
+                                "text-[10px] font-black uppercase tracking-[0.18em] text-center",
+                                darkMode ? "text-gray-400" : "text-gray-500"
+                              )}
+                            >
+                              vs
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() => openTeam(f.away)}
+                                className="min-w-0 text-right text-sm font-bold leading-tight hover:underline"
+                              >
+                                {displayTeamName(f.away)}
+                              </button>
+                              <TeamLogo
+                                team={f.away}
+                                darkMode={darkMode}
+                                size={42}
+                                onClick={() => openTeam(f.away)}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 pt-1">
+                            <VideoIcon
+                              darkMode={darkMode}
+                              videoUrl={playedMatch?.videoUrl || f.videoUrl}
+                              played={!!playedMatch}
+                              galleryUrl={playedMatch?.galleryUrl || f.galleryUrl}
+                              hasGallery={!!(playedMatch?.hasGallery || f.hasGallery)}
+                              galleryCount={playedMatch?.galleryCount || f.galleryCount || 0}
+                              onOpenGallery={
+                                playedMatch?.hasGallery || f.hasGallery
+                                  ? () => openGallery?.(playedMatch || f)
+                                  : undefined
+                              }
+                              size={16}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2">
+                          <div
+                            className={classNames(
+                              "min-w-0 rounded-2xl border px-3 py-2.5",
+                              darkMode
+                                ? "bg-white/5 border-white/10"
+                                : "bg-white border-gray-200"
+                            )}
+                          >
+                            <div
+                              className={classNames(
+                                "text-[10px] font-black uppercase tracking-[0.14em]",
+                                darkMode ? "text-gray-400" : "text-gray-500"
+                              )}
+                            >
+                              {upcomingDate.weekday}
+                            </div>
+                            <div className="text-sm font-bold">
+                              {upcomingDate.date || f.date || "Termin do ustalenia"}
+                              {f.time ? ` • ${f.time}` : ""}
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => openMatch(f.id)}
+                            className={classNames(
+                              "shrink-0 px-3 py-2.5 rounded-2xl border text-xs font-bold e3d-pill",
+                              darkMode
+                                ? "bg-white/5 border-white/10"
+                                : "bg-black/5 border-black/10"
+                            )}
+                            title="Szczegóły meczu"
+                          >
+                            Szczegóły
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="hidden md:grid grid-cols-[40px_minmax(0,1fr)_240px_minmax(0,1fr)_40px] gap-2 items-center">
                         <TeamLogo
                           team={f.home}
                           darkMode={darkMode}
@@ -10179,6 +10553,7 @@ function HomeDashboard({
               )}
               {lastMatches.map((m) => {
                 const isExpanded = expandedMatchId === m.id;
+                const resultDate = fixtureDateHeaderParts(m.date);
                 return (
                   <React.Fragment key={m.id}>
                     <div
@@ -10189,7 +10564,78 @@ function HomeDashboard({
                           : "border-gray-200 bg-gray-50"
                       )}
                     >
-                      <div className="grid grid-cols-[40px_minmax(0,1fr)_auto_minmax(0,1fr)_40px] gap-2 items-center">
+                      <div className="md:hidden space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <TeamLogo
+                              team={m.home}
+                              darkMode={darkMode}
+                              size={42}
+                              onClick={() => openTeam(m.home)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => openTeam(m.home)}
+                              className="min-w-0 text-left text-sm font-bold leading-tight hover:underline"
+                            >
+                              {displayTeamName(m.home)}
+                            </button>
+                          </div>
+
+                          <VideoIcon
+                            darkMode={darkMode}
+                            videoUrl={m.videoUrl}
+                            played={true}
+                            galleryUrl={m.galleryUrl}
+                            hasGallery={m.hasGallery}
+                            galleryCount={m.galleryCount}
+                            onOpenGallery={m.hasGallery ? () => openGallery?.(m) : undefined}
+                            size={16}
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => openMatch(m.id)}
+                          className={classNames(
+                            "w-full rounded-[22px] border px-4 py-3 text-center e3d-pill",
+                            darkMode
+                              ? "bg-white/5 border-white/10"
+                              : "bg-white border-gray-200"
+                          )}
+                        >
+                          <div className="text-3xl font-black leading-none">
+                            {m.homeGoals} : {m.awayGoals}
+                          </div>
+                          <div
+                            className={classNames(
+                              "mt-1 text-[11px]",
+                              darkMode ? "text-gray-400" : "text-gray-600"
+                            )}
+                          >
+                            {resultDate.date || m.date || ""}
+                            {m.time ? ` • ${m.time}` : ""}
+                          </div>
+                        </button>
+
+                        <div className="flex items-center justify-end gap-3 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => openTeam(m.away)}
+                            className="min-w-0 text-right text-sm font-bold leading-tight hover:underline"
+                          >
+                            {displayTeamName(m.away)}
+                          </button>
+                          <TeamLogo
+                            team={m.away}
+                            darkMode={darkMode}
+                            size={42}
+                            onClick={() => openTeam(m.away)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="hidden md:grid grid-cols-[40px_minmax(0,1fr)_auto_minmax(0,1fr)_40px] gap-2 items-center">
                         <TeamLogo
                           team={m.home}
                           darkMode={darkMode}
@@ -10851,28 +11297,8 @@ function TyperPage({
                   : "border-gray-200 bg-gray-50"
               )}
             >
-              <div className="grid grid-cols-[36px_minmax(0,1fr)_auto_minmax(0,1fr)_36px] gap-1.5 items-center">
-                <TeamLogo
-                  team={m.home}
-                  darkMode={darkMode}
-                  size={36}
-                  onClick={() => openTeam(m.home)}
-                />
-
-                <TeamLink
-                  team={m.home}
-                  onClick={() => openTeam(m.home)}
-                  className="font-semibold text-xs e3d-link truncate"
-                />
-
-                <div
-                  className={classNames(
-                    "text-xs px-1.5 py-0.5 rounded-full border e3d-pill flex items-center gap-1 whitespace-nowrap",
-                    darkMode
-                      ? "bg-white/5 border-white/10"
-                      : "bg-black/5 border-black/10"
-                  )}
-                >
+              <div className="md:hidden space-y-3 p-1">
+                <div className="flex items-center justify-between gap-2">
                   <LeagueLink
                     leagueId={m.league}
                     leagueName={
@@ -10881,85 +11307,231 @@ function TyperPage({
                     onClick={() => goToLeague(m.league)}
                     className="text-xs"
                   />
-                  <span>•</span>
-                  <span className="font-semibold">{m.date}</span>
-                </div>
-
-                <TeamLink
-                  team={m.away}
-                  onClick={() => openTeam(m.away)}
-                  className="font-semibold text-xs e3d-link text-right truncate"
-                />
-
-                <TeamLogo
-                  team={m.away}
-                  darkMode={darkMode}
-                  size={36}
-                  onClick={() => openTeam(m.away)}
-                />
-              </div>
-
-              {/* Forma drużyn - widoczna przed wysłaniem typów */}
-              {!submitted && (
-                <div className="mt-1 flex items-center justify-between px-1">
-                  <div className="flex gap-0.5">
-                    {getTeamFormDotsWithTooltips(m.home, matches)
-                      .slice(0, 5)
-                      .map((d, i) => (
-                        <FormDot key={i} v={d.v} title={d.title} />
-                      ))}
-                  </div>
-                  <div className="flex gap-0.5">
-                    {getTeamFormDotsWithTooltips(m.away, matches)
-                      .slice(0, 5)
-                      .map((d, i) => (
-                        <FormDot key={i} v={d.v} title={d.title} />
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-1 flex items-center justify-center gap-1.5">
-                {[
-                  { k: "1", label: "1" },
-                  { k: "X", label: "X" },
-                  { k: "2", label: "2" },
-                ].map((b) => (
-                  <button
-                    key={b.k}
-                    onClick={() => selectPick(m.id, b.k)}
+                  <div
                     className={classNames(
-                      "w-12 py-1 rounded-lg border font-bold text-sm e3d-dot",
-                      picks[m.id] === b.k
-                        ? "bg-green-400 text-black border-green-500/40"
-                        : darkMode
-                        ? "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                        : "bg-black/5 border-black/10 hover:bg-black/10 text-gray-900"
+                      "text-[11px] px-2.5 py-1 rounded-full border font-semibold",
+                      darkMode
+                        ? "bg-white/5 border-white/10 text-gray-300"
+                        : "bg-black/5 border-black/10 text-gray-700"
                     )}
                   >
-                    <div>{b.label}</div>
-                    {submitted && othersDist?.[m.id] && (
-                      <div
-                        className={classNames(
-                          "text-[10px] font-normal leading-none mt-0.5",
-                          picks[m.id] === b.k
-                            ? "text-black/70"
-                            : darkMode
-                            ? "text-gray-400"
-                            : "text-gray-500"
-                        )}
+                    {m.date}{m.time ? ` • ${m.time}` : ""}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="rounded-2xl border border-transparent px-1 py-1.5">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <TeamLogo
+                        team={m.home}
+                        darkMode={darkMode}
+                        size={42}
+                        onClick={() => openTeam(m.home)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => openTeam(m.home)}
+                        className="min-w-0 text-left text-sm font-bold leading-tight hover:underline"
                       >
-                        {othersDist[m.id][b.k]}%
+                        {displayTeamName(m.home)}
+                      </button>
+                    </div>
+                    {!submitted && (
+                      <div className="mt-2 flex gap-0.5 pl-[54px]">
+                        {getTeamFormDotsWithTooltips(m.home, matches)
+                          .slice(0, 5)
+                          .map((d, i) => (
+                            <FormDot key={i} v={d.v} title={d.title} />
+                          ))}
                       </div>
                     )}
-                  </button>
-                ))}
+                  </div>
+
+                  <div
+                    className={classNames(
+                      "text-[10px] font-black uppercase tracking-[0.18em] text-center",
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    )}
+                  >
+                    vs
+                  </div>
+
+                  <div className="rounded-2xl border border-transparent px-1 py-1.5">
+                    <div className="flex items-center justify-end gap-3 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => openTeam(m.away)}
+                        className="min-w-0 text-right text-sm font-bold leading-tight hover:underline"
+                      >
+                        {displayTeamName(m.away)}
+                      </button>
+                      <TeamLogo
+                        team={m.away}
+                        darkMode={darkMode}
+                        size={42}
+                        onClick={() => openTeam(m.away)}
+                      />
+                    </div>
+                    {!submitted && (
+                      <div className="mt-2 flex justify-end gap-0.5 pr-[54px]">
+                        {getTeamFormDotsWithTooltips(m.away, matches)
+                          .slice(0, 5)
+                          .map((d, i) => (
+                            <FormDot key={i} v={d.v} title={d.title} />
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { k: "1", label: "1" },
+                    { k: "X", label: "X" },
+                    { k: "2", label: "2" },
+                  ].map((b) => (
+                    <button
+                      key={`mobile-${b.k}-${m.id}`}
+                      onClick={() => selectPick(m.id, b.k)}
+                      className={classNames(
+                        "min-h-[52px] rounded-xl border font-bold text-base e3d-dot",
+                        picks[m.id] === b.k
+                          ? "bg-green-400 text-black border-green-500/40"
+                          : darkMode
+                          ? "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                          : "bg-black/5 border-black/10 hover:bg-black/10 text-gray-900"
+                      )}
+                    >
+                      <div>{b.label}</div>
+                      {submitted && othersDist?.[m.id] && (
+                        <div
+                          className={classNames(
+                            "text-[10px] font-normal leading-none mt-0.5",
+                            picks[m.id] === b.k
+                              ? "text-black/70"
+                              : darkMode
+                              ? "text-gray-400"
+                              : "text-gray-500"
+                          )}
+                        >
+                          {othersDist[m.id][b.k]}%
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="hidden md:block">
+                <div className="grid grid-cols-[36px_minmax(0,1fr)_auto_minmax(0,1fr)_36px] gap-1.5 items-center">
+                  <TeamLogo
+                    team={m.home}
+                    darkMode={darkMode}
+                    size={36}
+                    onClick={() => openTeam(m.home)}
+                  />
+
+                  <TeamLink
+                    team={m.home}
+                    onClick={() => openTeam(m.home)}
+                    className="font-semibold text-xs e3d-link truncate"
+                  />
+
+                  <div
+                    className={classNames(
+                      "text-xs px-1.5 py-0.5 rounded-full border e3d-pill flex items-center gap-1 whitespace-nowrap",
+                      darkMode
+                        ? "bg-white/5 border-white/10"
+                        : "bg-black/5 border-black/10"
+                    )}
+                  >
+                    <LeagueLink
+                      leagueId={m.league}
+                      leagueName={
+                        ({ "1st": "I Liga", "2nd": "II Liga", "3rd": "III Liga" }[m.league] || m.league)
+                      }
+                      onClick={() => goToLeague(m.league)}
+                      className="text-xs"
+                    />
+                    <span>•</span>
+                    <span className="font-semibold">{m.date}</span>
+                  </div>
+
+                  <TeamLink
+                    team={m.away}
+                    onClick={() => openTeam(m.away)}
+                    className="font-semibold text-xs e3d-link text-right truncate"
+                  />
+
+                  <TeamLogo
+                    team={m.away}
+                    darkMode={darkMode}
+                    size={36}
+                    onClick={() => openTeam(m.away)}
+                  />
+                </div>
+
+                {!submitted && (
+                  <div className="mt-1 flex items-center justify-between px-1">
+                    <div className="flex gap-0.5">
+                      {getTeamFormDotsWithTooltips(m.home, matches)
+                        .slice(0, 5)
+                        .map((d, i) => (
+                          <FormDot key={i} v={d.v} title={d.title} />
+                        ))}
+                    </div>
+                    <div className="flex gap-0.5">
+                      {getTeamFormDotsWithTooltips(m.away, matches)
+                        .slice(0, 5)
+                        .map((d, i) => (
+                          <FormDot key={i} v={d.v} title={d.title} />
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-1 flex items-center justify-center gap-1.5">
+                  {[
+                    { k: "1", label: "1" },
+                    { k: "X", label: "X" },
+                    { k: "2", label: "2" },
+                  ].map((b) => (
+                    <button
+                      key={b.k}
+                      onClick={() => selectPick(m.id, b.k)}
+                      className={classNames(
+                        "w-12 py-1 rounded-lg border font-bold text-sm e3d-dot",
+                        picks[m.id] === b.k
+                          ? "bg-green-400 text-black border-green-500/40"
+                          : darkMode
+                          ? "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                          : "bg-black/5 border-black/10 hover:bg-black/10 text-gray-900"
+                      )}
+                    >
+                      <div>{b.label}</div>
+                      {submitted && othersDist?.[m.id] && (
+                        <div
+                          className={classNames(
+                            "text-[10px] font-normal leading-none mt-0.5",
+                            picks[m.id] === b.k
+                              ? "text-black/70"
+                              : darkMode
+                              ? "text-gray-400"
+                              : "text-gray-500"
+                          )}
+                        >
+                          {othersDist[m.id][b.k]}%
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div
             className={classNames(
               "text-xs",
@@ -10977,7 +11549,7 @@ function TyperPage({
               setOthersDist(buildOthersDistribution());
             }}
             className={classNames(
-              "px-4 py-2 rounded-xl font-extrabold border e3d-btn",
+              "w-full sm:w-auto px-4 py-3 sm:py-2 rounded-xl font-extrabold border e3d-btn",
               allPicked
                 ? "bg-green-400 text-black border-green-500/40 hover:brightness-110"
                 : darkMode
