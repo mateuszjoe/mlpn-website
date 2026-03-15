@@ -9349,6 +9349,7 @@ function HomeDashboard({
     setHeroTyperPicks({});
     setHeroTyperSubmitted(false);
   }, [heroTyperKey]);
+  const heroCardRef = useRef(null);
 
   const latestPollOptions = useMemo(
     () => (Array.isArray(latestPoll?.options) ? latestPoll.options.filter(Boolean) : []),
@@ -9498,18 +9499,52 @@ function HomeDashboard({
     setHeroTyperPicks((prev) => ({ ...prev, [matchId]: value }));
   };
   const heroTyperAllPicked = heroTyperMatches.length > 0 && heroTyperMatches.every((m) => heroTyperPicks[m.id]);
+  const heroTyperAnsweredCount = heroTyperMatches.filter((m) => heroTyperPicks[m.id]).length;
+  const heroTyperCurrentIndex = useMemo(() => {
+    if (!heroTyperMatches.length) return -1;
+    const nextIdx = heroTyperMatches.findIndex((m) => !heroTyperPicks[m.id]);
+    return nextIdx === -1 ? heroTyperMatches.length - 1 : nextIdx;
+  }, [heroTyperMatches, heroTyperPicks]);
+  const heroTyperCurrentMatch =
+    heroTyperCurrentIndex >= 0 ? heroTyperMatches[heroTyperCurrentIndex] : null;
+  const heroTyperProgressStep = heroTyperAllPicked
+    ? heroTyperMatches.length
+    : Math.min(heroTyperAnsweredCount + 1, heroTyperMatches.length || 1);
+  const [showHeroFloatingNav, setShowHeroFloatingNav] = useState(false);
+
+  useEffect(() => {
+    const updateHeroFloatingNav = () => {
+      const el = heroCardRef.current;
+      if (!el || typeof window === "undefined" || window.innerWidth >= 1024 || heroSlides.length <= 1) {
+        setShowHeroFloatingNav(false);
+        return;
+      }
+
+      const rect = el.getBoundingClientRect();
+      const isVisible = rect.top < window.innerHeight * 0.65 && rect.bottom > 120;
+      setShowHeroFloatingNav(isVisible);
+    };
+
+    updateHeroFloatingNav();
+    window.addEventListener("scroll", updateHeroFloatingNav, { passive: true });
+    window.addEventListener("resize", updateHeroFloatingNav);
+    return () => {
+      window.removeEventListener("scroll", updateHeroFloatingNav);
+      window.removeEventListener("resize", updateHeroFloatingNav);
+    };
+  }, [heroSlides.length]);
 
   return (
     <div className="space-y-4">
       <div className="grid xl:grid-cols-[1.35fr_0.95fr] gap-3">
         <Card darkMode={darkMode} className="mlpn-home-hero p-0 overflow-hidden">
-          <div className="relative p-4 lg:p-6 min-h-[340px] h-auto lg:min-h-[540px] lg:h-[600px]">
-            {heroSlides.length > 1 && (
-              <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-20">
+          <div ref={heroCardRef} className="relative p-4 lg:p-6 min-h-[340px] h-auto lg:min-h-[540px] lg:h-[600px]">
+            {heroSlides.length > 1 && showHeroFloatingNav && (
+              <div className="pointer-events-none fixed inset-y-0 left-0 right-0 z-[10005] lg:hidden">
                 <button
                   type="button"
                   onClick={prevHeroSlide}
-                  className="pointer-events-auto absolute left-2 md:left-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-11 md:h-11 rounded-full border border-white/20 bg-black/30 text-white hover:bg-white/15 transition-colors flex items-center justify-center font-black"
+                  className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-white/10 bg-black/20 text-white/80 hover:bg-white/10 transition-colors flex items-center justify-center text-lg font-black"
                   title="Poprzedni slajd"
                 >
                   ‹
@@ -9517,7 +9552,7 @@ function HomeDashboard({
                 <button
                   type="button"
                   onClick={nextHeroSlide}
-                  className="pointer-events-auto absolute right-2 md:right-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-11 md:h-11 rounded-full border border-white/20 bg-black/30 text-white hover:bg-white/15 transition-colors flex items-center justify-center font-black"
+                  className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-white/10 bg-black/20 text-white/80 hover:bg-white/10 transition-colors flex items-center justify-center text-lg font-black"
                   title="Następny slajd"
                 >
                   ›
@@ -9584,38 +9619,38 @@ function HomeDashboard({
                         </div>
                       ) : (
                         <>
-                          {heroTyperMatches.slice(0, 2).map((m) => (
+                          {heroTyperCurrentMatch && (
                             <div
-                              key={`hero-mobile-typer-${m.id}`}
+                              key={`hero-mobile-typer-${heroTyperCurrentMatch.id}`}
                               className="rounded-2xl border border-white/10 bg-white/5 p-3"
                             >
                               <div className="flex items-start gap-3 min-w-0">
                                 <TeamLogo
-                                  team={m.home}
+                                  team={heroTyperCurrentMatch.home}
                                   darkMode={true}
-                                  size={54}
+                                  size={46}
                                   framed={false}
-                                  imgScale={0.98}
-                                  onClick={() => openTeam?.(m.home)}
+                                  imgScale={0.92}
+                                  onClick={() => openTeam?.(heroTyperCurrentMatch.home)}
                                 />
                                 <button
                                   type="button"
-                                  onClick={() => openTeam?.(m.home)}
+                                  onClick={() => openTeam?.(heroTyperCurrentMatch.home)}
                                   className="min-w-0 pt-1 text-left text-base font-black text-white leading-tight hover:underline"
                                 >
-                                  {displayTeamName(m.home)}
+                                  {displayTeamName(heroTyperCurrentMatch.home)}
                                 </button>
                               </div>
 
                               <div className="mt-3 grid grid-cols-3 gap-2">
                                 {["1", "X", "2"].map((pick) => (
                                   <button
-                                    key={`hero-mobile-pick-${m.id}-${pick}`}
+                                    key={`hero-mobile-pick-${heroTyperCurrentMatch.id}-${pick}`}
                                     type="button"
-                                    onClick={() => selectHeroTyperPick(m.id, pick)}
+                                    onClick={() => selectHeroTyperPick(heroTyperCurrentMatch.id, pick)}
                                     className={classNames(
                                       "py-2.5 rounded-xl border text-lg font-black transition-colors",
-                                      heroTyperPicks[m.id] === pick
+                                      heroTyperPicks[heroTyperCurrentMatch.id] === pick
                                         ? "bg-emerald-400 text-black border-emerald-300"
                                         : "bg-white/5 text-white border-white/15 hover:bg-white/10"
                                     )}
@@ -9628,30 +9663,30 @@ function HomeDashboard({
                               <div className="mt-3 flex items-end justify-end gap-3 min-w-0">
                                 <button
                                   type="button"
-                                  onClick={() => openTeam?.(m.away)}
+                                  onClick={() => openTeam?.(heroTyperCurrentMatch.away)}
                                   className="min-w-0 pb-1 text-right text-base font-black text-white leading-tight hover:underline"
                                 >
-                                  {displayTeamName(m.away)}
+                                  {displayTeamName(heroTyperCurrentMatch.away)}
                                 </button>
                                 <TeamLogo
-                                  team={m.away}
+                                  team={heroTyperCurrentMatch.away}
                                   darkMode={true}
-                                  size={54}
+                                  size={46}
                                   framed={false}
-                                  imgScale={0.98}
-                                  onClick={() => openTeam?.(m.away)}
+                                  imgScale={0.92}
+                                  onClick={() => openTeam?.(heroTyperCurrentMatch.away)}
                                 />
                               </div>
                             </div>
-                          ))}
+                          )}
 
                           <div className="flex items-center justify-between gap-3 pt-1">
                             <div className="text-[11px] text-white/75 leading-relaxed">
                               {heroTyperSubmitted
                                 ? "Typy zapisane lokalnie."
                                 : heroTyperAllPicked
-                                ? "Masz komplet typów."
-                                : `Uzupełnij typy (${Object.keys(heroTyperPicks).length}/${heroTyperMatches.length}).`}
+                                ? `Masz komplet typów ${heroTyperMatches.length}/${heroTyperMatches.length}.`
+                                : `Uzupełnij typy ${heroTyperProgressStep}/${heroTyperMatches.length}.`}
                             </div>
                             <button
                               type="button"
@@ -9728,14 +9763,6 @@ function HomeDashboard({
 
               {heroSlides.length > 1 && (
                 <div className="flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={prevHeroSlide}
-                    className="w-11 h-11 rounded-full border border-white/20 bg-black/25 text-white hover:bg-white/10 transition-colors flex items-center justify-center font-black"
-                    title="Poprzedni slajd"
-                  >
-                    ‹
-                  </button>
                   <div className="flex items-center justify-center gap-2">
                     {heroSlides.map((slide, idx) => (
                       <button
@@ -9750,14 +9777,6 @@ function HomeDashboard({
                       />
                     ))}
                   </div>
-                  <button
-                    type="button"
-                    onClick={nextHeroSlide}
-                    className="w-11 h-11 rounded-full border border-white/20 bg-black/25 text-white hover:bg-white/10 transition-colors flex items-center justify-center font-black"
-                    title="Następny slajd"
-                  >
-                    ›
-                  </button>
                 </div>
               )}
             </div>
