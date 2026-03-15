@@ -22,6 +22,10 @@ export default function AdminPanel({ darkMode, goHome }) {
   const [adminSection, setAdminSection] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  if (!user) {
+    return <AdminLogin darkMode={darkMode} />;
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] px-4">
@@ -33,10 +37,6 @@ export default function AdminPanel({ darkMode, goHome }) {
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    return <AdminLogin darkMode={darkMode} />;
   }
 
   if (!isAdmin) {

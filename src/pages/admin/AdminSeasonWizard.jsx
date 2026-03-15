@@ -4,6 +4,7 @@ import AdminFormField from "./components/AdminFormField";
 import {
   Check, ChevronRight, ChevronLeft, Loader2, Sparkles, Copy,
   ArrowRight, Calendar, Clock, Rocket, Eye, Settings2, X,
+  Users, Search, UserPlus, UserMinus, Undo2,
 } from "lucide-react";
 
 // ── Helpers ──
@@ -97,18 +98,26 @@ export default function AdminSeasonWizard({ darkMode }) {
   const [teamAssignments, setTeamAssignments] = useState({});
   const [activeLeagueIdx, setActiveLeagueIdx] = useState(0);
 
-  // ── Krok 4: Kalendarz (LOCAL) ──
+  // ── Krok 4: Składy (LOCAL) ──
+  const [rosterDraft, setRosterDraft] = useState({}); // { teamId: { kept: [...], released: [...], added: [...] } }
+  const [activeRosterTeamIdx, setActiveRosterTeamIdx] = useState(0);
+  const [showCallUpModal, setShowCallUpModal] = useState(false);
+  const [rosterLoading, setRosterLoading] = useState(false);
+  const [callUpSearch, setCallUpSearch] = useState("");
+  const [allPlayersForCallUp, setAllPlayersForCallUp] = useState([]);
+
+  // ── Krok 5: Kalendarz (LOCAL) ──
   const [matchWeekends, setMatchWeekends] = useState([]);
   const [calMonth, setCalMonth] = useState(null);
 
-  // ── Krok 5: Timeline (LOCAL) ──
+  // ── Krok 6: Timeline (LOCAL) ──
   const [satStart, setSatStart] = useState("14:00");
   const [sunStart, setSunStart] = useState("14:00");
   const [satSlots, setSatSlots] = useState([]);
   const [sunSlots, setSunSlots] = useState([]);
   const [activeTile, setActiveTile] = useState(null); // leagueId aktualnie wybranego kafelka
 
-  // ── Krok 6-8: Generowanie ──
+  // ── Krok 7-9: Generowanie ──
   const [generating, setGenerating] = useState(false);
   const [genLog, setGenLog] = useState([]);
   const [createdSeasonId, setCreatedSeasonId] = useState(null);
@@ -219,15 +228,17 @@ export default function AdminSeasonWizard({ darkMode }) {
     setEditSeasonId(null); setEditHasResults(false);
     setSeasonForm({ year: new Date().getFullYear() + 1, name: "", start_date: "" });
     setTeamAssignments({}); setMatchWeekends([]); setStep(1);
+    setRosterDraft({}); setActiveRosterTeamIdx(0);
     setCreatedSeasonId(null); setGenLog([]); setPreviewMatches([]);
     setSatSlots([]); setSunSlots([]);
   };
 
   const steps = [
     { num: 1, label: "Sezon" }, { num: 2, label: "Zasady" },
-    { num: 3, label: "Drużyny" }, { num: 4, label: "Kalendarz" },
-    { num: 5, label: "Timeline" }, { num: 6, label: "Generuj" },
-    { num: 7, label: "Podgląd" }, { num: 8, label: "Publikuj" },
+    { num: 3, label: "Drużyny" }, { num: 4, label: "Składy" },
+    { num: 5, label: "Kalendarz" }, { num: 6, label: "Timeline" },
+    { num: 7, label: "Generuj" }, { num: 8, label: "Podgląd" },
+    { num: 9, label: "Publikuj" },
   ];
 
   const tpl = (lid) => Object.values(teamAssignments).filter(v => v === lid).length;
@@ -261,11 +272,184 @@ export default function AdminSeasonWizard({ darkMode }) {
     addToast("success", `Import ${pt.length} drużyn`);
   };
 
-  // ═══ KROK 4: Kalendarz ═══
+  // ═══ KROK 4: Składy ═══
+  const assignedTeamIds = useMemo(() => Object.keys(teamAssignments), [teamAssignments]);
+  const rosterTeams = useMemo(() => {
+    // Pogrupuj po ligach
+    const byLeague = {};
+    for (const lg of leagues) byLeague[lg.id] = [];
+    for (const [tid, lid] of Object.entries(teamAssignments)) {
+      const team = allTeams.find(t => t.id === tid);
+      if (team && byLeague[lid]) byLeague[lid].push(team);
+    }
+    const result = [];
+    for (const lg of leagues) {
+      for (const t of (byLeague[lg.id] || []).sort((a, b) => a.name.localeCompare(b.name, "pl"))) {
+        result.push({ ...t, leagueId: lg.id, leagueName: lg.name });
+      }
+    }
+    return result;
+  }, [teamAssignments, allTeams, leagues]);
+
+  const loadRosterDraft = useCallback(async () => {
+    if (Object.keys(rosterDraft).length > 0 || assignedTeamIds.length === 0) return;
+    setRosterLoading(true);
+    try {
+      // Znajdź poprzedni sezon
+      const { data: prevSeasons } = await supabase.from("seasons")
+        .select("id, year").lt("year", parseInt(seasonForm.year))
+        .order("year", { ascending: false }).limit(1);
+      const prevSid = prevSeasons?.[0]?.id;
+      const draft = {};
+
+      if (prevSid) {
+        // Pobierz aktywnych graczy z poprzedniego sezonu
+        const { data: tp } = await supabase.from("team_players")
+          .select("id, team_id, player_id, position, shirt_number, is_captain, players(id, first_name, last_name)")
+          .eq("season_id", prevSid).is("left_date", null);
+
+        for (const tid of assignedTeamIds) {
+          const teamPlayers = (tp || []).filter(p => p.team_id === tid).map(p => ({
+            player_id: p.player_id,
+            display_name: `${p.players?.first_name || ""} ${p.players?.last_name || ""}`.trim(),
+            position: p.position,
+            shirt_number: p.shirt_number,
+            is_captain: p.is_captain,
+            source_tp_id: p.id,
+          }));
+          draft[tid] = { kept: teamPlayers, released: [], added: [] };
+        }
+      } else {
+        for (const tid of assignedTeamIds) draft[tid] = { kept: [], released: [], added: [] };
+      }
+
+      // Inicjalizuj brakujące drużyny (nowe, bez historii)
+      for (const tid of assignedTeamIds) {
+        if (!draft[tid]) draft[tid] = { kept: [], released: [], added: [] };
+      }
+
+      setRosterDraft(draft);
+
+      // Pobierz wszystkich graczy do modala powołań
+      const { data: ap } = await supabase.from("players")
+        .select("id, first_name, last_name").order("last_name");
+      setAllPlayersForCallUp(ap || []);
+    } catch (err) {
+      addToast("error", "Błąd ładowania kadr: " + err.message);
+    } finally {
+      setRosterLoading(false);
+    }
+  }, [rosterDraft, assignedTeamIds, seasonForm.year, addToast]);
+
+  useEffect(() => { if (step === 4) loadRosterDraft(); }, [step, loadRosterDraft]);
+
+  const activeRosterTeam = rosterTeams[activeRosterTeamIdx] || null;
+  const activeRosterData = activeRosterTeam ? rosterDraft[activeRosterTeam.id] : null;
+
+  const releasePlayer = (teamId, playerId) => {
+    setRosterDraft(prev => {
+      const t = { ...prev[teamId] };
+      const fromKept = t.kept.find(p => p.player_id === playerId);
+      const fromAdded = t.added.find(p => p.player_id === playerId);
+      if (fromKept) {
+        t.kept = t.kept.filter(p => p.player_id !== playerId);
+        t.released = [...t.released, fromKept];
+      } else if (fromAdded) {
+        // Usuwamy dodanego — cofamy transfer
+        t.added = t.added.filter(p => p.player_id !== playerId);
+        // Przywróć w źródłowej drużynie jeśli był transfer
+        if (fromAdded.from_team_id) {
+          const src = { ...prev[fromAdded.from_team_id] };
+          src.kept = [...src.kept, { ...fromAdded, from_team_id: undefined }];
+          return { ...prev, [teamId]: t, [fromAdded.from_team_id]: src };
+        }
+      }
+      return { ...prev, [teamId]: t };
+    });
+  };
+
+  const restorePlayer = (teamId, playerId) => {
+    setRosterDraft(prev => {
+      const t = { ...prev[teamId] };
+      const p = t.released.find(p => p.player_id === playerId);
+      if (!p) return prev;
+      t.released = t.released.filter(p => p.player_id !== playerId);
+      t.kept = [...t.kept, p];
+      return { ...prev, [teamId]: t };
+    });
+  };
+
+  const callUpPlayer = (targetTeamId, player) => {
+    setRosterDraft(prev => {
+      const updated = { ...prev };
+      // Sprawdź czy gracz jest w innej drużynie (transfer)
+      let fromTeamId = null;
+      for (const [tid, data] of Object.entries(updated)) {
+        if (tid === targetTeamId) continue;
+        const inKept = data.kept.find(p => p.player_id === player.id);
+        const inAdded = data.added.find(p => p.player_id === player.id);
+        if (inKept || inAdded) {
+          fromTeamId = tid;
+          const t = { ...data };
+          if (inKept) {
+            t.kept = t.kept.filter(p => p.player_id !== player.id);
+            t.released = [...t.released, inKept];
+          } else {
+            t.added = t.added.filter(p => p.player_id !== player.id);
+          }
+          updated[tid] = t;
+          break;
+        }
+      }
+
+      const target = { ...updated[targetTeamId] };
+      target.added = [...target.added, {
+        player_id: player.id,
+        display_name: `${player.first_name || ""} ${player.last_name || ""}`.trim(),
+        position: null, shirt_number: null, is_captain: false,
+        from_team_id: fromTeamId,
+      }];
+      updated[targetTeamId] = target;
+      return updated;
+    });
+    setShowCallUpModal(false);
+    setCallUpSearch("");
+  };
+
+  // Filtrowanie graczy w modalu powołań
+  const callUpCandidates = useMemo(() => {
+    if (!callUpSearch || callUpSearch.length < 2) return [];
+    const q = callUpSearch.toLowerCase();
+    // Już w bieżącej drużynie?
+    const currentIds = new Set([
+      ...(activeRosterData?.kept || []).map(p => p.player_id),
+      ...(activeRosterData?.added || []).map(p => p.player_id),
+    ]);
+    return allPlayersForCallUp
+      .filter(p => !currentIds.has(p.id))
+      .filter(p => {
+        const full = `${p.first_name} ${p.last_name}`.toLowerCase();
+        return full.includes(q);
+      })
+      .slice(0, 20);
+  }, [callUpSearch, allPlayersForCallUp, activeRosterData]);
+
+  // Znajdź drużynę gracza w draft
+  const findPlayerTeamInDraft = (playerId) => {
+    for (const [tid, data] of Object.entries(rosterDraft)) {
+      if (data.kept.some(p => p.player_id === playerId) || data.added.some(p => p.player_id === playerId)) {
+        const team = allTeams.find(t => t.id === tid);
+        return team?.name || null;
+      }
+    }
+    return null;
+  };
+
+  // ═══ KROK 5: Kalendarz ═══
   const toggleWknd = (sat) => setMatchWeekends(p => p.includes(sat) ? p.filter(d => d !== sat) : [...p, sat].sort());
   const calDays = useMemo(() => calMonth ? genMonthDays(calMonth.year, calMonth.month) : [], [calMonth]);
 
-  // ═══ KROK 5: Timeline ═══
+  // ═══ KROK 6: Timeline ═══
   const calcSlotCount = (startTime) => {
     const maxMin = 21 * 60;
     const [sh, sm] = startTime.split(":").map(Number);
@@ -277,7 +461,7 @@ export default function AdminSeasonWizard({ darkMode }) {
 
   // Regeneruj sloty gdy zmienią się parametry
   useEffect(() => {
-    if (step === 5) {
+    if (step === 6) {
       setSatSlots(genSlots(satStart, matchDuration, breakBetween, satSlotsCount));
       setSunSlots(genSlots(sunStart, matchDuration, breakBetween, sunSlotsCount));
       setActiveTile(null);
@@ -312,7 +496,7 @@ export default function AdminSeasonWizard({ darkMode }) {
 
   const allTilesAssigned = leagues.every(l => tilesUsed(l.id) >= tilesNeeded(l.id));
 
-  // ═══ KROK 6: Generowanie ═══
+  // ═══ KROK 7: Generowanie ═══
   const generateSeason = async () => {
     setGenerating(true);
     setGenLog(["Start..."]);
@@ -330,6 +514,7 @@ export default function AdminSeasonWizard({ darkMode }) {
         }
         await supabase.from("standings").delete().eq("season_id", sid);
         await supabase.from("matches").delete().eq("season_id", sid);
+        await supabase.from("team_players").delete().eq("season_id", sid);
         await supabase.from("season_teams").delete().eq("season_id", sid);
         await supabase.from("season_leagues").delete().eq("season_id", sid);
         const { error: uErr } = await supabase.from("seasons").update({
@@ -374,6 +559,28 @@ export default function AdminSeasonWizard({ darkMode }) {
       }));
       const { error: stErr } = await supabase.from("season_teams").insert(stEntries);
       if (stErr) throw new Error("Drużyny: " + stErr.message);
+
+      // 3b. Aplikuj składy z rosterDraft
+      if (Object.keys(rosterDraft).length > 0) {
+        setGenLog(l => [...l, "Zapisywanie kadr..."]);
+        let tpInserted = 0;
+        for (const [teamId, data] of Object.entries(rosterDraft)) {
+          const leagueId = teamAssignments[teamId];
+          if (!leagueId) continue;
+          // Aktywni = kept + added
+          const activePlayers = [...data.kept, ...data.added];
+          if (activePlayers.length === 0) continue;
+          const tpEntries = activePlayers.map(p => ({
+            season_id: sid, league_id: leagueId, team_id: teamId,
+            player_id: p.player_id, position: p.position,
+            shirt_number: p.shirt_number, is_captain: p.is_captain || false,
+          }));
+          const { error: tpErr } = await supabase.from("team_players").insert(tpEntries);
+          if (tpErr) setGenLog(l => [...l, `  Kadra błąd: ${tpErr.message}`]);
+          else tpInserted += tpEntries.length;
+        }
+        setGenLog(l => [...l, `  ${tpInserted} zawodników przypisanych`]);
+      }
 
       // 4. Generuj round-robin
       const firstDate = matchWeekends[0] || seasonForm.start_date || fmtDate(new Date());
@@ -454,7 +661,7 @@ export default function AdminSeasonWizard({ darkMode }) {
 
       setGenLog(l => [...l, "Gotowe!"]);
       addToast("success", "Sezon wygenerowany!");
-      setStep(7);
+      setStep(8);
       await loadPreview(sid);
     } catch (err) {
       setGenLog(l => [...l, `BŁĄD: ${err.message}`]);
@@ -463,6 +670,7 @@ export default function AdminSeasonWizard({ darkMode }) {
       if (createdSeasonId) {
         await supabase.from("standings").delete().eq("season_id", createdSeasonId);
         await supabase.from("matches").delete().eq("season_id", createdSeasonId);
+        await supabase.from("team_players").delete().eq("season_id", createdSeasonId);
         await supabase.from("season_teams").delete().eq("season_id", createdSeasonId);
         await supabase.from("season_leagues").delete().eq("season_id", createdSeasonId);
         if (!editSeasonId) {
@@ -475,7 +683,7 @@ export default function AdminSeasonWizard({ darkMode }) {
     }
   };
 
-  // ═══ KROK 7: Podgląd ═══
+  // ═══ KROK 8: Podgląd ═══
   const loadPreview = async (sid) => {
     const { data } = await supabase.from("v_matches").select("*")
       .eq("season_id", sid || createdSeasonId)
@@ -484,7 +692,7 @@ export default function AdminSeasonWizard({ darkMode }) {
     if (leagues.length > 0 && !previewLeague) setPreviewLeague(leagues[0].id);
   };
 
-  useEffect(() => { if (step === 7 && createdSeasonId) loadPreview(); }, [step, createdSeasonId]);
+  useEffect(() => { if (step === 8 && createdSeasonId) loadPreview(); }, [step, createdSeasonId]);
 
   const filtered = previewMatches.filter(m => m.league_id === previewLeague);
   const grouped = useMemo(() => {
@@ -522,7 +730,7 @@ export default function AdminSeasonWizard({ darkMode }) {
     addToast("success", "Mecze zamienione");
   };
 
-  // ═══ KROK 8: Publikacja ═══
+  // ═══ KROK 9: Publikacja ═══
   const publish = async () => {
     setPublishing(true);
     try {
@@ -784,13 +992,197 @@ export default function AdminSeasonWizard({ darkMode }) {
 
           <div className="mt-6 flex gap-3">
             <button onClick={() => setStep(2)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Wstecz</span></button>
-            <button onClick={() => setStep(4)} className={btnP} disabled={leagues.some(l => tpl(l.id) < 2)}>Dalej: Kalendarz</button>
+            <button onClick={() => setStep(4)} className={btnP} disabled={leagues.some(l => tpl(l.id) < 2)}>Dalej: Składy</button>
           </div>
         </div>
       )}
 
-      {/* ═══ KROK 4: KALENDARZ ═══ */}
-      {step === 4 && calMonth && (
+      {/* ═══ KROK 4: SKŁADY ═══ */}
+      {step === 4 && (
+        <div className={`rounded-2xl border p-6 ${card}`}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2"><Users size={22} /> Składy drużyn</h2>
+            <span className={`text-sm ${muted}`}>{rosterTeams.length} drużyn</span>
+          </div>
+
+          {rosterLoading ? (
+            <div className="flex items-center justify-center py-12 gap-3">
+              <Loader2 size={24} className="animate-spin text-yellow-500" />
+              <span className={muted}>Ładowanie kadr z poprzedniego sezonu...</span>
+            </div>
+          ) : (
+            <>
+              {/* Zakładki drużyn */}
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {rosterTeams.map((t, idx) => {
+                  const data = rosterDraft[t.id];
+                  const total = (data?.kept?.length || 0) + (data?.added?.length || 0);
+                  const hasReleased = (data?.released?.length || 0) > 0;
+                  const hasAdded = (data?.added?.length || 0) > 0;
+                  const isActive = idx === activeRosterTeamIdx;
+                  return (
+                    <button key={t.id} onClick={() => setActiveRosterTeamIdx(idx)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        isActive ? "bg-yellow-500 text-black"
+                          : total > 0 ? darkMode ? "bg-green-500/20 text-green-400" : "bg-green-100 text-green-700"
+                            : darkMode ? "bg-white/5 text-gray-500" : "bg-gray-100 text-gray-400"
+                      }`}>
+                      {t.logo_url ? <img src={t.logo_url} alt="" className="w-5 h-5 object-contain rounded" /> : null}
+                      <span className="hidden md:inline">{t.name}</span>
+                      <span className="md:hidden">{(t.abbreviation || t.name).slice(0, 3)}</span>
+                      <span className={`text-[10px] px-1 rounded-full ${isActive ? "bg-black/20" : darkMode ? "bg-white/10" : "bg-gray-200"}`}>{total}</span>
+                      {hasReleased && <span className="w-1.5 h-1.5 rounded-full bg-red-400" title="Zwolnieni" />}
+                      {hasAdded && <span className="w-1.5 h-1.5 rounded-full bg-blue-400" title="Nowi" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Liga aktualnej drużyny */}
+              {activeRosterTeam && (
+                <p className={`text-xs mb-3 ${muted}`}>{activeRosterTeam.leagueName} — {activeRosterTeam.name}</p>
+              )}
+
+              {/* Lista zawodników */}
+              {activeRosterData && (
+                <div className={`rounded-xl border ${darkMode ? "border-white/10" : "border-gray-200"}`}>
+                  {/* Aktywni (kept + added) */}
+                  {[...activeRosterData.kept, ...activeRosterData.added].length === 0 && activeRosterData.released.length === 0 && (
+                    <p className={`text-center py-6 text-sm ${muted}`}>Brak zawodników w kadrze</p>
+                  )}
+
+                  {[...activeRosterData.kept.map(p => ({ ...p, _type: "kept" })),
+                    ...activeRosterData.added.map(p => ({ ...p, _type: "added" }))
+                  ].map((p, i) => (
+                    <div key={p.player_id} className={`flex items-center gap-3 px-4 py-2.5 border-b last:border-b-0 ${darkMode ? "border-white/5" : "border-gray-100"} ${
+                      p._type === "added" ? darkMode ? "bg-blue-500/5" : "bg-blue-50/50" : ""
+                    }`}>
+                      <span className={`text-xs font-bold w-5 text-center ${muted}`}>{i + 1}</span>
+                      <span className="flex-1 text-sm font-medium">
+                        {p.display_name}
+                        {p.is_captain && <span className="ml-1 text-yellow-500 text-xs font-bold">C</span>}
+                      </span>
+                      {p.shirt_number && <span className={`text-xs ${muted}`}>#{p.shirt_number}</span>}
+                      {p.position && <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? "bg-white/5" : "bg-gray-100"} ${muted}`}>{p.position}</span>}
+                      {p._type === "added" && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${darkMode ? "bg-blue-500/20 text-blue-400" : "bg-blue-100 text-blue-700"}`}>
+                          {p.from_team_id ? "TRANSFER" : "NOWY"}
+                        </span>
+                      )}
+                      <button onClick={() => releasePlayer(activeRosterTeam.id, p.player_id)}
+                        className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 text-xs flex items-center gap-1" title="Zwolnij">
+                        <UserMinus size={14} />
+                        <span className="hidden sm:inline">Zwolnij</span>
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Zwolnieni */}
+                  {activeRosterData.released.length > 0 && (
+                    <>
+                      <div className={`px-4 py-2 text-xs font-semibold ${darkMode ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-700"}`}>
+                        Zwolnieni ({activeRosterData.released.length})
+                      </div>
+                      {activeRosterData.released.map(p => (
+                        <div key={p.player_id} className={`flex items-center gap-3 px-4 py-2 border-b last:border-b-0 opacity-50 ${darkMode ? "border-white/5" : "border-gray-100"}`}>
+                          <span className="flex-1 text-sm line-through">{p.display_name}</span>
+                          {p.shirt_number && <span className={`text-xs ${muted}`}>#{p.shirt_number}</span>}
+                          <button onClick={() => restorePlayer(activeRosterTeam.id, p.player_id)}
+                            className="p-1.5 rounded-lg hover:bg-green-500/20 text-green-400 text-xs flex items-center gap-1" title="Przywróć">
+                            <Undo2 size={14} />
+                            <span className="hidden sm:inline">Przywróć</span>
+                          </button>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Przycisk powołaj */}
+              {activeRosterTeam && (
+                <button onClick={() => { setShowCallUpModal(true); setCallUpSearch(""); }}
+                  className={`mt-4 w-full px-4 py-3 rounded-xl border-2 border-dashed text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
+                    darkMode ? "border-white/10 text-gray-400 hover:border-blue-500/50 hover:text-blue-400 hover:bg-blue-500/5"
+                      : "border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50"
+                  }`}>
+                  <UserPlus size={18} /> Powołaj zawodnika
+                </button>
+              )}
+
+              {/* Modal powołania */}
+              {showCallUpModal && activeRosterTeam && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowCallUpModal(false)}>
+                  <div className={`w-full max-w-md mx-4 rounded-2xl border p-6 shadow-2xl ${darkMode ? "bg-gray-900 border-white/10" : "bg-white border-gray-200"}`}
+                    onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold flex items-center gap-2"><UserPlus size={20} /> Powołaj do: {activeRosterTeam.name}</h3>
+                      <button onClick={() => setShowCallUpModal(false)} className="p-1 rounded-lg hover:bg-white/10"><X size={18} /></button>
+                    </div>
+
+                    {/* Wyszukiwarka */}
+                    <div className="relative mb-4">
+                      <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${muted}`} />
+                      <input type="text" placeholder="Szukaj zawodnika..." value={callUpSearch}
+                        onChange={e => setCallUpSearch(e.target.value)} autoFocus
+                        className={`w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none ${
+                          darkMode ? "bg-white/5 border-white/10 text-white placeholder-gray-500" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`} />
+                    </div>
+
+                    {/* Wyniki */}
+                    <div className="max-h-64 overflow-y-auto space-y-1">
+                      {callUpSearch.length < 2 && (
+                        <p className={`text-center py-4 text-sm ${muted}`}>Wpisz min. 2 znaki aby wyszukać</p>
+                      )}
+                      {callUpSearch.length >= 2 && callUpCandidates.length === 0 && (
+                        <p className={`text-center py-4 text-sm ${muted}`}>Nie znaleziono zawodników</p>
+                      )}
+                      {callUpCandidates.map(p => {
+                        const currentTeam = findPlayerTeamInDraft(p.id);
+                        return (
+                          <button key={p.id} onClick={() => callUpPlayer(activeRosterTeam.id, p)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                              darkMode ? "hover:bg-white/10" : "hover:bg-gray-100"
+                            }`}>
+                            <span className="flex-1 text-sm font-medium">{p.first_name} {p.last_name}</span>
+                            {currentTeam && (
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                                darkMode ? "bg-orange-500/20 text-orange-400" : "bg-orange-100 text-orange-700"
+                              }`}>
+                                {currentTeam} → Transfer
+                              </span>
+                            )}
+                            {!currentTeam && (
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${darkMode ? "bg-green-500/20 text-green-400" : "bg-green-100 text-green-700"}`}>
+                                Wolny
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="mt-6 flex gap-3">
+            <button onClick={() => setStep(3)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Wstecz</span></button>
+            <button onClick={() => {
+              if (seasonForm.start_date) {
+                const d = new Date(seasonForm.start_date);
+                setCalMonth({ year: d.getFullYear(), month: d.getMonth() });
+              } else if (!calMonth) setCalMonth({ year: new Date().getFullYear(), month: new Date().getMonth() });
+              setStep(5);
+            }} className={btnP}>Dalej: Kalendarz</button>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ KROK 5: KALENDARZ ═══ */}
+      {step === 5 && calMonth && (
         <div className={`rounded-2xl border p-6 ${card}`}>
           <h2 className="text-xl font-bold mb-2">Wybierz weekendy meczówe</h2>
           <p className={`text-sm mb-4 ${muted}`}>
@@ -854,14 +1246,14 @@ export default function AdminSeasonWizard({ darkMode }) {
           )}
 
           <div className="mt-6 flex gap-3">
-            <button onClick={() => setStep(3)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Wstecz</span></button>
-            <button onClick={() => setStep(5)} className={btnP} disabled={matchWeekends.length < totalRoundsNeeded}>Dalej: Timeline</button>
+            <button onClick={() => setStep(4)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Wstecz</span></button>
+            <button onClick={() => setStep(6)} className={btnP} disabled={matchWeekends.length < totalRoundsNeeded}>Dalej: Timeline</button>
           </div>
         </div>
       )}
 
-      {/* ═══ KROK 5: TIMELINE ═══ */}
-      {step === 5 && (
+      {/* ═══ KROK 6: TIMELINE ═══ */}
+      {step === 6 && (
         <div className={`rounded-2xl border p-6 ${card}`}>
           <h2 className="text-xl font-bold mb-2">Rozkład dnia meczowego</h2>
           <p className={`text-sm mb-4 ${muted}`}>
@@ -951,14 +1343,14 @@ export default function AdminSeasonWizard({ darkMode }) {
           </div>
 
           <div className="mt-6 flex gap-3">
-            <button onClick={() => setStep(4)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Wstecz</span></button>
-            <button onClick={() => setStep(6)} className={btnP} disabled={!allTilesAssigned}>Dalej: Generuj</button>
+            <button onClick={() => setStep(5)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Wstecz</span></button>
+            <button onClick={() => setStep(7)} className={btnP} disabled={!allTilesAssigned}>Dalej: Generuj</button>
           </div>
         </div>
       )}
 
-      {/* ═══ KROK 6: GENERUJ ═══ */}
-      {step === 6 && (
+      {/* ═══ KROK 7: GENERUJ ═══ */}
+      {step === 7 && (
         <div className={`rounded-2xl border p-6 ${card}`}>
           <h2 className="text-xl font-bold mb-4">Generuj sezon</h2>
 
@@ -1000,13 +1392,13 @@ export default function AdminSeasonWizard({ darkMode }) {
           </button>
 
           <div className="mt-4">
-            <button onClick={() => setStep(5)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Wstecz</span></button>
+            <button onClick={() => setStep(6)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Wstecz</span></button>
           </div>
         </div>
       )}
 
-      {/* ═══ KROK 7: PODGLĄD ═══ */}
-      {step === 7 && (
+      {/* ═══ KROK 8: PODGLĄD ═══ */}
+      {step === 8 && (
         <div className={`rounded-2xl border p-6 ${card}`}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Podgląd terminarza</h2>
@@ -1056,13 +1448,13 @@ export default function AdminSeasonWizard({ darkMode }) {
           )}
 
           <div className="mt-6 flex gap-3">
-            <button onClick={() => setStep(8)} className={btnP}>Dalej: Publikuj</button>
+            <button onClick={() => setStep(9)} className={btnP}>Dalej: Publikuj</button>
           </div>
         </div>
       )}
 
-      {/* ═══ KROK 8: PUBLIKACJA ═══ */}
-      {step === 8 && (
+      {/* ═══ KROK 9: PUBLIKACJA ═══ */}
+      {step === 9 && (
         <div className={`rounded-2xl border p-6 ${card}`}>
           <h2 className="text-xl font-bold mb-4">Publikuj sezon</h2>
           <div className={`rounded-xl border p-6 text-center mb-6 ${darkMode ? "border-white/10" : "border-gray-200"}`}>
@@ -1079,7 +1471,7 @@ export default function AdminSeasonWizard({ darkMode }) {
             </p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => setStep(7)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Podgląd</span></button>
+            <button onClick={() => setStep(8)} className={btnS}><span className="flex items-center gap-1"><ChevronLeft size={16} /> Podgląd</span></button>
             <button onClick={publish} disabled={publishing}
               className="px-8 py-4 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-black text-lg hover:from-green-400 hover:to-emerald-400 disabled:opacity-40 flex items-center gap-3">
               {publishing ? <><Loader2 size={24} className="animate-spin" /> Publikowanie...</> : <><Rocket size={24} /> PUBLIKUJ SEZON</>}

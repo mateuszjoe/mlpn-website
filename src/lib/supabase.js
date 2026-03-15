@@ -13,7 +13,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Klient z autoryzacją (do logowania, operacji admina)
 export const supabase = createClient(
   supabaseUrl || '',
-  supabaseAnonKey || ''
+  supabaseAnonKey || '',
+  {
+    auth: {
+      storageKey: 'mlpn-auth',
+    },
+  }
 );
 
 // Klient publiczny — zawsze anon key, nigdy nie czeka na refresh tokena.
@@ -25,6 +30,8 @@ export const publicSupabase = createClient(
     auth: {
       persistSession: false,
       autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: 'mlpn-public',
     },
   }
 );
