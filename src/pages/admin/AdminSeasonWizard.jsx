@@ -28,10 +28,17 @@ function genMonthDays(y, m) {
   return days;
 }
 
+function addDaysToDateStr(dateStr, days) {
+  const d = new Date(`${dateStr}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return fmtDate(d);
+}
+
 function getWeekendSat(date) {
   const d = date.getDay();
   if (d === 6) return fmtDate(date);
   if (d === 0) { const s = new Date(date); s.setDate(s.getDate() - 1); return fmtDate(s); }
+  if (d === 1) { const s = new Date(date); s.setDate(s.getDate() - 2); return fmtDate(s); }
   return null;
 }
 
@@ -117,8 +124,10 @@ export default function AdminSeasonWizard({ darkMode }) {
   // ── Krok 6: Timeline (LOCAL) ──
   const [satStart, setSatStart] = useState("14:00");
   const [sunStart, setSunStart] = useState("14:00");
+  const [monStart, setMonStart] = useState("14:00");
   const [satSlots, setSatSlots] = useState([]);
   const [sunSlots, setSunSlots] = useState([]);
+  const [monSlots, setMonSlots] = useState([]);
   const [activeTile, setActiveTile] = useState(null); // leagueId aktualnie wybranego kafelka
 
   // ── Krok 7-9: Generowanie ──
@@ -201,20 +210,23 @@ export default function AdminSeasonWizard({ darkMode }) {
         const d = new Date(m.match_date + "T12:00:00");
         const dow = d.getDay();
         if (dow === 0) d.setDate(d.getDate() - 1);
+        else if (dow === 1) d.setDate(d.getDate() - 2);
         else if (dow !== 6) continue;
         saturdays.add(fmtDate(d));
       }
       setMatchWeekends([...saturdays].sort());
-      let eSat = "23:59", eSun = "23:59";
+      let eSat = "23:59", eSun = "23:59", eMon = "23:59";
       for (const m of matches) {
         if (!m.match_date || !m.match_time) continue;
         const dow = new Date(m.match_date + "T12:00:00").getDay();
         const tm = m.match_time.slice(0, 5);
         if (dow === 6 && tm < eSat) eSat = tm;
         if (dow === 0 && tm < eSun) eSun = tm;
+        if (dow === 1 && tm < eMon) eMon = tm;
       }
       if (eSat !== "23:59") setSatStart(eSat);
       if (eSun !== "23:59") setSunStart(eSun);
+      if (eMon !== "23:59") setMonStart(eMon);
     }
 
     const { count } = await supabase.from("matches")
@@ -234,7 +246,7 @@ export default function AdminSeasonWizard({ darkMode }) {
     setTeamAssignments({}); setMatchWeekends([]); setStep(1);
     setRosterDraft({}); setActiveRosterTeamIdx(0);
     setCreatedSeasonId(null); setGenLog([]); setPreviewMatches([]);
-    setSatSlots([]); setSunSlots([]);
+    setSatSlots([]); setSunSlots([]); setMonSlots([]);
   };
 
   const steps = [
@@ -472,28 +484,38 @@ export default function AdminSeasonWizard({ darkMode }) {
   };
   const satSlotsCount = useMemo(() => calcSlotCount(satStart), [satStart, matchDuration, breakBetween]);
   const sunSlotsCount = useMemo(() => calcSlotCount(sunStart), [sunStart, matchDuration, breakBetween]);
+  const monSlotsCount = useMemo(() => calcSlotCount(monStart), [monStart, matchDuration, breakBetween]);
 
   // Regeneruj sloty gdy zmienią się parametry
   useEffect(() => {
     if (step === 6) {
       setSatSlots(genSlots(satStart, matchDuration, breakBetween, satSlotsCount));
       setSunSlots(genSlots(sunStart, matchDuration, breakBetween, sunSlotsCount));
+      setMonSlots(genSlots(monStart, matchDuration, breakBetween, monSlotsCount));
       setActiveTile(null);
     }
-  }, [step, satStart, sunStart, matchDuration, breakBetween, satSlotsCount, sunSlotsCount]);
+  }, [step, satStart, sunStart, monStart, matchDuration, breakBetween, satSlotsCount, sunSlotsCount, monSlotsCount]);
 
   // Ile użyć kafelka per liga
   const tilesUsed = (lid) => {
-    return satSlots.filter(s => s.league === lid).length + sunSlots.filter(s => s.league === lid).length;
+    return satSlots.filter(s => s.league === lid).length
+      + sunSlots.filter(s => s.league === lid).length
+      + monSlots.filter(s => s.league === lid).length;
   };
   const tilesNeeded = (lid) => matchesPerRound(lid);
+
+  const getDaySetter = (day) => {
+    if (day === "sat") return setSatSlots;
+    if (day === "sun") return setSunSlots;
+    return setMonSlots;
+  };
 
   const assignSlot = (day, idx) => {
     if (!activeTile) return;
     const lid = activeTile;
     const needed = tilesNeeded(lid);
     const used = tilesUsed(lid);
-    const setter = day === "sat" ? setSatSlots : setSunSlots;
+    const setter = getDaySetter(day);
     setter(prev => prev.map((s, i) => {
       if (i !== idx) return s;
       if (s.league === lid) return { ...s, league: null }; // odznacz
@@ -504,7 +526,7 @@ export default function AdminSeasonWizard({ darkMode }) {
   };
 
   const clearSlot = (day, idx) => {
-    const setter = day === "sat" ? setSatSlots : setSunSlots;
+    const setter = getDaySetter(day);
     setter(prev => prev.map((s, i) => i === idx ? { ...s, league: null } : s));
   };
 
@@ -624,14 +646,10 @@ export default function AdminSeasonWizard({ darkMode }) {
         for (const slot of sunSlots) {
           if (slot.league === lg.id) leagueSlotsTemplate[lg.id].push({ dayOffset: 1, time: slot.start });
         }
+        for (const slot of monSlots) {
+          if (slot.league === lg.id) leagueSlotsTemplate[lg.id].push({ dayOffset: 2, time: slot.start });
+        }
       }
-
-      // Helper: oblicz datę niedzieli z soboty (bezpieczny timezone)
-      const getSunday = (satStr) => {
-        const d = new Date(satStr + "T12:00:00"); // noon unika problemów z timezone
-        d.setDate(d.getDate() + 1);
-        return fmtDate(d);
-      };
 
       // Dla każdej ligi: przypisz mecze z uwzględnieniem rund
       let updateErrors = 0;
@@ -650,7 +668,8 @@ export default function AdminSeasonWizard({ darkMode }) {
           if (wkndIdx >= matchWeekends.length) continue;
 
           const satStr = matchWeekends[wkndIdx];
-          const sunStr = getSunday(satStr);
+          const sunStr = addDaysToDateStr(satStr, 1);
+          const monStr = addDaysToDateStr(satStr, 2);
 
           const { data: roundMatches } = await supabase.from("matches")
             .select("id").eq("season_id", sid).eq("league_id", league.id).eq("round", r);
@@ -659,7 +678,7 @@ export default function AdminSeasonWizard({ darkMode }) {
           // Przypisz daty i godziny sekwencyjnie (niezawodne)
           for (let i = 0; i < roundMatches.length; i++) {
             const slot = slots[i % slots.length];
-            const dateStr = slot.dayOffset === 0 ? satStr : sunStr;
+            const dateStr = slot.dayOffset === 0 ? satStr : slot.dayOffset === 1 ? sunStr : monStr;
             const { error: uErr } = await supabase.from("matches").update({
               match_date: dateStr, match_time: slot.time,
             }).eq("id", roundMatches[i].id);
@@ -1219,12 +1238,12 @@ export default function AdminSeasonWizard({ darkMode }) {
       {/* ═══ KROK 5: KALENDARZ ═══ */}
       {step === 5 && calMonth && (
         <div className={`rounded-2xl border p-6 ${card}`}>
-          <h2 className="text-xl font-bold mb-2">Wybierz weekendy meczówe</h2>
+          <h2 className="text-xl font-bold mb-2">Wybierz terminy kolejek</h2>
           <p className={`text-sm mb-4 ${muted}`}>
-            Kliknij w weekend (sob+nie) aby oznaczyć jako termin.
-            Potrzebujesz <strong>{totalRoundsNeeded}</strong> weekendów ({maxRPR} kol. × 2 rundy).
+            Kliknij w blok kolejki (sob+nie+pon), aby oznaczyć go jako termin.
+            Potrzebujesz <strong>{totalRoundsNeeded}</strong> terminów kolejki ({maxRPR} kol. × 2 rundy).
             Wybrano: <strong className={matchWeekends.length >= totalRoundsNeeded ? "text-green-400" : "text-orange-400"}>{matchWeekends.length}</strong>.
-            {maxRPR > 0 && <><br/>Runda 1: weekendy 1–{maxRPR} • Runda 2: weekendy {maxRPR+1}–{maxRPR*2}</>}
+            {maxRPR > 0 && <><br/>Runda 1: terminy 1–{maxRPR} • Runda 2: terminy {maxRPR+1}–{maxRPR*2}</>}
           </p>
 
           <div className="flex items-center justify-between mb-4">
@@ -1234,7 +1253,7 @@ export default function AdminSeasonWizard({ darkMode }) {
           </div>
 
           <div className="grid grid-cols-7 gap-1">
-            {dayLabels.map(d => <div key={d} className={`text-center text-xs font-semibold py-2 ${d==="Sob"||d==="Nie" ? "text-yellow-500" : muted}`}>{d}</div>)}
+            {dayLabels.map(d => <div key={d} className={`text-center text-xs font-semibold py-2 ${d==="Sob"||d==="Nie"||d==="Pon" ? "text-yellow-500" : muted}`}>{d}</div>)}
             {calDays.map((day, i) => {
               if (!day) return <div key={`p${i}`} />;
               const ds = fmtDate(day);
@@ -1261,7 +1280,9 @@ export default function AdminSeasonWizard({ darkMode }) {
           {matchWeekends.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2 items-center">
               {matchWeekends.map((sat, i) => {
-                const d = new Date(sat); const s = new Date(d); s.setDate(s.getDate()+1);
+                const d = new Date(`${sat}T12:00:00`);
+                const s = new Date(`${sat}T12:00:00`); s.setDate(s.getDate()+1);
+                const m = new Date(`${sat}T12:00:00`); m.setDate(m.getDate()+2);
                 const isR2 = i >= maxRPR;
                 return <React.Fragment key={sat}>
                   {i === maxRPR && maxRPR > 0 && (
@@ -1273,7 +1294,7 @@ export default function AdminSeasonWizard({ darkMode }) {
                         ? darkMode ? "bg-cyan-500/20 text-cyan-400 hover:bg-red-500/20 hover:text-red-400" : "bg-cyan-100 text-cyan-800 hover:bg-red-100 hover:text-red-700"
                         : darkMode ? "bg-yellow-500/20 text-yellow-400 hover:bg-red-500/20 hover:text-red-400" : "bg-yellow-100 text-yellow-800 hover:bg-red-100 hover:text-red-700"
                     }`}>
-                    {rundaLabel(i)}: {d.getDate()}-{s.getDate()}.{pad2(d.getMonth()+1)} ✕
+                    {rundaLabel(i)}: {d.getDate()}.{pad2(d.getMonth()+1)}-{s.getDate()}.{pad2(s.getMonth()+1)}-{m.getDate()}.{pad2(m.getMonth()+1)} ✕
                   </button>
                 </React.Fragment>;
               })}
@@ -1290,14 +1311,14 @@ export default function AdminSeasonWizard({ darkMode }) {
       {/* ═══ KROK 6: TIMELINE ═══ */}
       {step === 6 && (
         <div className={`rounded-2xl border p-6 ${card}`}>
-          <h2 className="text-xl font-bold mb-2">Rozkład dnia meczowego</h2>
+          <h2 className="text-xl font-bold mb-2">Rozkład kolejki meczowej</h2>
           <p className={`text-sm mb-4 ${muted}`}>
-            Ustaw godziny startowe, potem kliknij kafelek ligi i przypisz go do slotu na osi czasu.
+            Ustaw godziny startowe dla soboty, niedzieli i poniedziałku, potem kliknij kafelek ligi i przypisz go do slotu na osi czasu.
             Każdy mecz = {matchDuration} min + {breakBetween} min przerwy.
           </p>
 
           {/* Godziny startu */}
-          <div className="flex gap-6 mb-6">
+          <div className="flex flex-wrap gap-6 mb-6">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Sobota od:</span>
               <input type="time" value={satStart} onChange={e => setSatStart(e.target.value)}
@@ -1306,6 +1327,11 @@ export default function AdminSeasonWizard({ darkMode }) {
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Niedziela od:</span>
               <input type="time" value={sunStart} onChange={e => setSunStart(e.target.value)}
+                className={`px-2 py-1 rounded-lg border text-sm ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-300 text-gray-900"}`} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Poniedziałek od:</span>
+              <input type="time" value={monStart} onChange={e => setMonStart(e.target.value)}
                 className={`px-2 py-1 rounded-lg border text-sm ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-300 text-gray-900"}`} />
             </div>
           </div>
@@ -1338,7 +1364,7 @@ export default function AdminSeasonWizard({ darkMode }) {
 
           {/* Timeline sobota */}
           <div className="space-y-4">
-            {[{ label: "SOBOTA", slots: satSlots, day: "sat" }, { label: "NIEDZIELA", slots: sunSlots, day: "sun" }].map(({ label, slots, day }) => (
+            {[{ label: "SOBOTA", slots: satSlots, day: "sat" }, { label: "NIEDZIELA", slots: sunSlots, day: "sun" }, { label: "PONIEDZIAŁEK", slots: monSlots, day: "mon" }].map(({ label, slots, day }) => (
               <div key={day}>
                 <h3 className="font-semibold text-sm mb-2">{label}</h3>
                 <div className="flex flex-wrap gap-2">
@@ -1404,7 +1430,7 @@ export default function AdminSeasonWizard({ darkMode }) {
 
           <div className={`rounded-xl border p-4 mb-6 text-sm ${darkMode ? "border-white/10" : "border-gray-200"}`}>
             <div className="grid grid-cols-2 gap-2">
-              <div><span className={muted}>Weekendów:</span> <strong>{matchWeekends.length}</strong></div>
+              <div><span className={muted}>Terminów kolejki:</span> <strong>{matchWeekends.length}</strong></div>
               <div><span className={muted}>Mecz:</span> <strong>{matchDuration} min + {breakBetween} min</strong></div>
             </div>
           </div>
@@ -1497,7 +1523,7 @@ export default function AdminSeasonWizard({ darkMode }) {
             <h3 className="text-lg font-bold mb-2">{seasonForm.name || `Sezon ${seasonForm.year}`}</h3>
             <div className={`text-sm space-y-1 ${muted}`}>
               {leagues.map(l => <p key={l.id}>{l.name}: {tpl(l.id)} drużyn, {roundsPerRunda(tpl(l.id))} kol/runda × 2 = {roundsForTeams(tpl(l.id))} kol.</p>)}
-              <p className="mt-2">{matchWeekends[0] || "—"} → {matchWeekends[matchWeekends.length-1] || "—"}</p>
+              <p className="mt-2">{matchWeekends[0] || "—"} → {matchWeekends.length ? addDaysToDateStr(matchWeekends[matchWeekends.length-1], 2) : "—"}</p>
             </div>
           </div>
           <div className={`rounded-xl border p-4 mb-6 ${darkMode ? "border-yellow-500/20 bg-yellow-500/5" : "border-yellow-200 bg-yellow-50"}`}>
