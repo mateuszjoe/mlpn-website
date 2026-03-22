@@ -183,6 +183,38 @@ const logoByTeam = {
   "ES Chobot Meat": `${PU}/ES CHOBOT MEAT.png`,
 };
 
+let activeTeamLogoRegistry = { ...logoByTeam };
+
+function createTeamLogoRegistry({ standings, fixtures, matches }) {
+  const map = { ...logoByTeam };
+
+  for (const entry of Object.values(standings?.teamStats || {})) {
+    if (entry?.team && entry?.logoUrl) {
+      map[entry.team] = entry.logoUrl;
+    }
+  }
+
+  for (const fixture of fixtures || []) {
+    if (fixture?.home && fixture?.homeLogoUrl) {
+      map[fixture.home] = fixture.homeLogoUrl;
+    }
+    if (fixture?.away && fixture?.awayLogoUrl) {
+      map[fixture.away] = fixture.awayLogoUrl;
+    }
+  }
+
+  for (const match of matches || []) {
+    if (match?.home && match?.homeLogoUrl) {
+      map[match.home] = match.homeLogoUrl;
+    }
+    if (match?.away && match?.awayLogoUrl) {
+      map[match.away] = match.awayLogoUrl;
+    }
+  }
+
+  return map;
+}
+
 /* =========================================
    SKRÓTY 3-literowe drużyn (konsekwentnie w całym serwisie)
    ========================================= */
@@ -1456,10 +1488,17 @@ function TeamLogo({
   darkMode,
   size = 40,
   onClick,
+  src,
   framed = false,
   imgScale = 0.96,
 }) {
-  const src = logoByTeam[team];
+  const [imgFailed, setImgFailed] = useState(false);
+  const resolvedSrc = src || activeTeamLogoRegistry[team] || logoByTeam[team] || "";
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [resolvedSrc, team]);
+
   return (
     <button
       onClick={onClick}
@@ -1472,16 +1511,16 @@ function TeamLogo({
       style={{ width: size, height: size }}
       title={team}
     >
-      {src ? (
+      {resolvedSrc && !imgFailed ? (
         <img
-          src={encodeURI(src)}
+          src={encodeURI(resolvedSrc)}
           alt={team}
           className={classNames(
             "object-contain e3d-logo",
             framed ? "" : "drop-shadow-[0_6px_12px_rgba(0,0,0,0.35)]"
           )}
           style={{ width: `${imgScale * 100}%`, height: `${imgScale * 100}%` }}
-          onError={(e) => (e.currentTarget.style.display = "none")}
+          onError={() => setImgFailed(true)}
         />
       ) : (
         <svg
@@ -3090,6 +3129,11 @@ export default function App() {
     [rawMatches, matchGalleriesByMatchId]
   );
 
+  activeTeamLogoRegistry = useMemo(
+    () => createTeamLogoRegistry({ standings: stats, fixtures, matches }),
+    [stats, fixtures, matches]
+  );
+
   const teamAbbrMap = useMemo(() => makeUniqueAbbrMap(currentLeagues), [currentLeagues]);
 
   // Upcoming round fixtures (typer)
@@ -3743,6 +3787,7 @@ export default function App() {
             round={round}
             setRound={setRound}
             fixtures={calendarFixtures}
+            leagueTeams={currentLeagues.find((l) => l.id === activeContext)?.teams || []}
             getPlayedMatch={getPlayedMatch}
             openTeam={openTeam}
             openMatch={openMatchInline}
@@ -5731,6 +5776,7 @@ function CalendarPage({
   leagueName,
   round,
   fixtures,
+  leagueTeams,
   getPlayedMatch,
   openTeam,
   openMatch,
@@ -5770,6 +5816,20 @@ function CalendarPage({
     return groups;
   }, [fixtures]);
 
+  const byeTeam = useMemo(() => {
+    const teams = (leagueTeams || []).filter(Boolean);
+    if (teams.length < 3 || teams.length % 2 === 0) return null;
+
+    const scheduledTeams = new Set();
+    for (const fixture of fixtures || []) {
+      if (fixture?.home) scheduledTeams.add(fixture.home);
+      if (fixture?.away) scheduledTeams.add(fixture.away);
+    }
+
+    const missingTeams = teams.filter((team) => !scheduledTeams.has(team));
+    return missingTeams.length === 1 ? missingTeams[0] : null;
+  }, [leagueTeams, fixtures]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -5797,6 +5857,26 @@ function CalendarPage({
           darkMode={darkMode}
         />
       </div>
+
+      {byeTeam && (
+        <div
+          className={classNames(
+            "px-4 py-3 rounded-2xl border flex items-center justify-between gap-3",
+            darkMode
+              ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-200"
+              : "border-yellow-200 bg-yellow-50 text-yellow-900"
+          )}
+        >
+          <div className="text-sm font-medium">
+            W tej kolejce pauzuje:
+            {" "}
+            <button onClick={() => openTeam(byeTeam)} className="font-black underline underline-offset-2">
+              {displayTeamName(byeTeam)}
+            </button>
+          </div>
+          <span className="text-xs font-black uppercase tracking-[0.12em]">Pauza</span>
+        </div>
+      )}
 
       <div className="grid gap-3">
         {groupedFixtures.map((group) => {
@@ -5858,6 +5938,7 @@ function CalendarPage({
                       <div className="grid grid-cols-[44px_minmax(0,1fr)_auto_auto_20px_minmax(0,1fr)_44px] gap-2 items-center">
                         <TeamLogo
                           team={f.home}
+                          src={f.homeLogoUrl}
                           darkMode={darkMode}
                           size={44}
                           onClick={() => openTeam(f.home)}
@@ -5918,6 +5999,7 @@ function CalendarPage({
 
                         <TeamLogo
                           team={f.away}
+                          src={f.awayLogoUrl}
                           darkMode={darkMode}
                           size={44}
                           onClick={() => openTeam(f.away)}
