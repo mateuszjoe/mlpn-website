@@ -8389,20 +8389,12 @@ function TeamProfile({
                         <div
                           key={item.id}
                           className={classNames(
-                            "grid grid-cols-[56px_44px_minmax(0,1fr)_auto] gap-2 items-center text-sm",
+                            "grid grid-cols-[56px_minmax(0,1fr)_auto] gap-2 items-center text-sm",
                             darkMode ? "text-gray-200" : "text-gray-800"
                           )}
                         >
                           <span className={darkMode ? "text-gray-400" : "text-gray-600"}>
                             {formatShortFixtureDate(item.date)}
-                          </span>
-                          <span
-                            className={classNames(
-                              "px-2 py-1 rounded-lg border text-[11px] font-black text-center",
-                              darkMode ? "border-white/10 bg-white/5" : "border-black/10 bg-black/5"
-                            )}
-                          >
-                            {item.teamSide === "home" ? "DOM" : "WYJ"}
                           </span>
                           <span className="font-bold truncate">{displayTeamName(item.opponent)}</span>
                           <span className="font-black">{item.homeGoals} : {item.awayGoals}</span>
@@ -8429,20 +8421,12 @@ function TeamProfile({
                         <div
                           key={item.id}
                           className={classNames(
-                            "grid grid-cols-[56px_44px_minmax(0,1fr)_auto] gap-2 items-center text-sm",
+                            "grid grid-cols-[56px_minmax(0,1fr)_auto] gap-2 items-center text-sm",
                             darkMode ? "text-gray-200" : "text-gray-800"
                           )}
                         >
                           <span className={darkMode ? "text-gray-400" : "text-gray-600"}>
                             {formatShortFixtureDate(item.date)}
-                          </span>
-                          <span
-                            className={classNames(
-                              "px-2 py-1 rounded-lg border text-[11px] font-black text-center",
-                              darkMode ? "border-white/10 bg-white/5" : "border-black/10 bg-black/5"
-                            )}
-                          >
-                            {item.teamSide === "home" ? "DOM" : "WYJ"}
                           </span>
                           <span className="font-bold truncate">{displayTeamName(item.opponent)}</span>
                           <span className="font-black text-xs">{scheduleStatusLabel(item)}</span>
@@ -12311,7 +12295,6 @@ function getTeamScheduleEntries(team, fixtures, matches) {
         homeGoals: playedMatch?.homeGoals ?? null,
         awayGoals: playedMatch?.awayGoals ?? null,
         opponent: isHome ? fixture.away : fixture.home,
-        teamSide: isHome ? "home" : "away",
       };
     });
 }
