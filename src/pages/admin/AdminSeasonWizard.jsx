@@ -97,6 +97,7 @@ export default function AdminSeasonWizard({ darkMode }) {
   const [leagues, setLeagues] = useState([]);
   const [teamAssignments, setTeamAssignments] = useState({});
   const [activeLeagueIdx, setActiveLeagueIdx] = useState(0);
+  const [leagueTeamSearch, setLeagueTeamSearch] = useState("");
 
   // ── Krok 4: Składy (LOCAL) ──
   const [rosterDraft, setRosterDraft] = useState({}); // { teamId: { kept: [...], released: [...], added: [...] } }
@@ -256,6 +257,16 @@ export default function AdminSeasonWizard({ darkMode }) {
   const curLeague = leagues[activeLeagueIdx] || null;
   const availTeams = allTeams.filter(t => { const a = teamAssignments[t.id]; return !a || (curLeague && a === curLeague.id); });
   const inCurLeague = curLeague ? allTeams.filter(t => teamAssignments[t.id] === curLeague.id) : [];
+  const availableTeamsOutsideCurrentLeague = availTeams.filter(t => teamAssignments[t.id] !== curLeague?.id);
+  const filteredAvailableTeams = useMemo(() => {
+    const query = leagueTeamSearch.trim().toLowerCase();
+    if (!query) return availableTeamsOutsideCurrentLeague;
+
+    return availableTeamsOutsideCurrentLeague.filter((team) => {
+      const haystack = [team.name, team.abbreviation].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [availableTeamsOutsideCurrentLeague, leagueTeamSearch]);
 
   const toggleTeam = (id) => {
     if (!curLeague) return;
@@ -938,7 +949,7 @@ export default function AdminSeasonWizard({ darkMode }) {
             {leagues.map((lg, idx) => {
               const c = tpl(lg.id);
               return (
-                <button key={lg.id} onClick={() => setActiveLeagueIdx(idx)}
+                <button key={lg.id} onClick={() => { setActiveLeagueIdx(idx); setLeagueTeamSearch(""); }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
                     idx === activeLeagueIdx ? "bg-yellow-500 text-black"
                       : c >= 2 ? darkMode ? "bg-green-500/20 text-green-400" : "bg-green-100 text-green-700"
@@ -953,10 +964,26 @@ export default function AdminSeasonWizard({ darkMode }) {
 
           {curLeague && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className={`rounded-xl border p-4 ${darkMode ? "border-white/10" : "border-gray-200"}`}>
+              <div className={`rounded-xl border p-4 [&>h3:first-child]:hidden ${darkMode ? "border-white/10" : "border-gray-200"}`}>
                 <h3 className={`text-sm font-semibold mb-3 ${muted}`}>Dostępne ({availTeams.filter(t => teamAssignments[t.id] !== curLeague.id).length})</h3>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h3 className={`text-sm font-semibold ${muted}`}>Dostepne ({filteredAvailableTeams.length})</h3>
+                  <span className={`text-[11px] ${muted}`}>wszystkich: {availableTeamsOutsideCurrentLeague.length}</span>
+                </div>
+                <div className="relative mb-3">
+                  <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${muted}`} />
+                  <input
+                    type="text"
+                    value={leagueTeamSearch}
+                    onChange={e => setLeagueTeamSearch(e.target.value)}
+                    placeholder="Szukaj druzyny..."
+                    className={`w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none ${
+                      darkMode ? "bg-white/5 border-white/10 text-white placeholder-gray-500" : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400"
+                    }`}
+                  />
+                </div>
                 <div className="space-y-1 max-h-96 overflow-y-auto">
-                  {availTeams.filter(t => teamAssignments[t.id] !== curLeague.id).map(t => (
+                  {filteredAvailableTeams.map(t => (
                     <button key={t.id} onClick={() => toggleTeam(t.id)}
                       className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left ${darkMode ? "hover:bg-white/10" : "hover:bg-gray-100"}`}>
                       {t.logo_url ? <img src={t.logo_url} alt="" className="w-7 h-7 object-contain rounded" />
@@ -965,6 +992,11 @@ export default function AdminSeasonWizard({ darkMode }) {
                       <ArrowRight size={14} className={muted} />
                     </button>
                   ))}
+                  {filteredAvailableTeams.length === 0 && (
+                    <div className={`px-3 py-6 text-center text-sm ${muted}`}>
+                      {leagueTeamSearch.trim() ? "Brak druzyn pasujacych do wyszukiwania." : "Brak dostepnych druzyn."}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className={`rounded-xl border p-4 ${darkMode ? "border-yellow-500/30 bg-yellow-500/5" : "border-yellow-300 bg-yellow-50"}`}>
