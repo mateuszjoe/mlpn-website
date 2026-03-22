@@ -3575,6 +3575,8 @@ export default function App() {
           leagueId={currentLeagues.find((l) => l.teams.includes(selectedTeam))?.id}
           teamRow={stats.teamStats[selectedTeam]}
           recentMatches={getTeamRecentMatches(selectedTeam, matches)}
+          fixtures={fixtures}
+          matches={matches}
           openMatch={openMatchInline}
           onBack={goBack}
           openTeam={openTeam}
@@ -8051,6 +8053,8 @@ function TeamProfile({
   leagueId,
   teamRow,
   recentMatches,
+  fixtures,
+  matches,
   openMatch,
   onBack,
   openTeam,
@@ -8063,6 +8067,7 @@ function TeamProfile({
   const [roster, setRoster] = useState([]);
   const [history, setHistory] = useState([]);
   const [rosterLoading, setRosterLoading] = useState(true);
+  const [showFullSchedule, setShowFullSchedule] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -8084,6 +8089,37 @@ function TeamProfile({
   const positionNames = { BR: "BR", OBR: "OBR", POM: "POM", NAP: "NAP" };
   const positionOrder = { BR: 0, OBR: 1, POM: 2, NAP: 3 };
   const sortedRoster = [...roster].sort((a, b) => (positionOrder[a.pos] ?? 9) - (positionOrder[b.pos] ?? 9));
+  const teamSchedule = useMemo(
+    () => getTeamScheduleEntries(team, fixtures, matches),
+    [team, fixtures, matches]
+  );
+  const recentSchedule = useMemo(
+    () => [...teamSchedule]
+      .filter((item) => item.played)
+      .sort((a, b) => teamScheduleSortKey(b, "desc").localeCompare(teamScheduleSortKey(a, "desc")) || b.round - a.round)
+      .slice(0, 5),
+    [teamSchedule]
+  );
+  const upcomingSchedule = useMemo(
+    () => [...teamSchedule]
+      .filter((item) => !item.played && item.status !== "cancelled")
+      .sort((a, b) => teamScheduleSortKey(a).localeCompare(teamScheduleSortKey(b)) || a.round - b.round)
+      .slice(0, 5),
+    [teamSchedule]
+  );
+  const fullSchedule = useMemo(
+    () => [...teamSchedule]
+      .sort((a, b) => a.round - b.round || teamScheduleSortKey(a).localeCompare(teamScheduleSortKey(b))),
+    [teamSchedule]
+  );
+
+  const scheduleStatusLabel = (item) => {
+    if (item.played) return `${item.homeGoals} : ${item.awayGoals}`;
+    if (item.status === "postponed") return "Przełożony";
+    if (item.status === "unplayed") return "Nierozegrany";
+    if (item.status === "cancelled") return "Odwołany";
+    return item.time || "Termin";
+  };
 
   return (
     <div className="space-y-4">
@@ -8309,37 +8345,176 @@ function TeamProfile({
         </Card>
 
         <Card darkMode={darkMode}>
-          <div className="font-extrabold mb-2">
-            Ostatnie mecze (kliknij wynik)
+          <button
+            onClick={() => setShowFullSchedule((prev) => !prev)}
+            className="w-full text-left"
+          >
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <div className="font-extrabold">Terminarz</div>
+                <div className={classNames("text-xs mt-0.5", darkMode ? "text-gray-400" : "text-gray-600")}>
+                  5 ostatnich i 5 najbliższych spotkań. Kliknij, aby {showFullSchedule ? "zwinąć" : "otworzyć"} pełny terminarz sezonu.
+                </div>
+              </div>
+              <div
+                className={classNames(
+                  "px-3 py-1 rounded-full border text-xs font-black e3d-pill",
+                  darkMode ? "border-white/10 bg-white/5" : "border-black/10 bg-black/5"
+                )}
+              >
+                {showFullSchedule ? "Zwiń" : "Otwórz"}
+              </div>
+            </div>
+
+            {teamSchedule.length === 0 ? (
+              <div className={darkMode ? "text-gray-400" : "text-gray-600"}>
+                Brak spotkań tej drużyny w sezonie {currentSeason}.
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                <div
+                  className={classNames(
+                    "rounded-xl border p-3",
+                    darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"
+                  )}
+                >
+                  <div className="font-bold mb-2">Ostatnie 5</div>
+                  {recentSchedule.length === 0 ? (
+                    <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+                      Brak rozegranych spotkań.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {recentSchedule.map((item) => (
+                        <div
+                          key={item.id}
+                          className={classNames(
+                            "grid grid-cols-[56px_44px_minmax(0,1fr)_auto] gap-2 items-center text-sm",
+                            darkMode ? "text-gray-200" : "text-gray-800"
+                          )}
+                        >
+                          <span className={darkMode ? "text-gray-400" : "text-gray-600"}>
+                            {formatShortFixtureDate(item.date)}
+                          </span>
+                          <span
+                            className={classNames(
+                              "px-2 py-1 rounded-lg border text-[11px] font-black text-center",
+                              darkMode ? "border-white/10 bg-white/5" : "border-black/10 bg-black/5"
+                            )}
+                          >
+                            {item.teamSide === "home" ? "DOM" : "WYJ"}
+                          </span>
+                          <span className="font-bold truncate">{displayTeamName(item.opponent)}</span>
+                          <span className="font-black">{item.homeGoals} : {item.awayGoals}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className={classNames(
+                    "rounded-xl border p-3",
+                    darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"
+                  )}
+                >
+                  <div className="font-bold mb-2">Najbliższe 5</div>
+                  {upcomingSchedule.length === 0 ? (
+                    <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+                      Brak zaplanowanych spotkań.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {upcomingSchedule.map((item) => (
+                        <div
+                          key={item.id}
+                          className={classNames(
+                            "grid grid-cols-[56px_44px_minmax(0,1fr)_auto] gap-2 items-center text-sm",
+                            darkMode ? "text-gray-200" : "text-gray-800"
+                          )}
+                        >
+                          <span className={darkMode ? "text-gray-400" : "text-gray-600"}>
+                            {formatShortFixtureDate(item.date)}
+                          </span>
+                          <span
+                            className={classNames(
+                              "px-2 py-1 rounded-lg border text-[11px] font-black text-center",
+                              darkMode ? "border-white/10 bg-white/5" : "border-black/10 bg-black/5"
+                            )}
+                          >
+                            {item.teamSide === "home" ? "DOM" : "WYJ"}
+                          </span>
+                          <span className="font-bold truncate">{displayTeamName(item.opponent)}</span>
+                          <span className="font-black text-xs">{scheduleStatusLabel(item)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </button>
+        </Card>
+      </div>
+
+      {showFullSchedule && (
+        <Card darkMode={darkMode}>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <div className="font-extrabold">Pełny terminarz</div>
+              <div className={classNames("text-xs mt-0.5", darkMode ? "text-gray-400" : "text-gray-600")}>
+                Wszystkie spotkania drużyny {displayTeamName(team)} w sezonie {currentSeason}.
+              </div>
+            </div>
+            <button
+              onClick={() => setShowFullSchedule(false)}
+              className={classNames(
+                "px-3 py-1 rounded-full border text-xs font-black e3d-pill",
+                darkMode ? "border-white/10 bg-white/5" : "border-black/10 bg-black/5"
+              )}
+            >
+              Zwiń
+            </button>
           </div>
-          {recentMatches.length === 0 ? (
+
+          {fullSchedule.length === 0 ? (
             <div className={darkMode ? "text-gray-400" : "text-gray-600"}>
-              Brak rozegranych meczów.
+              Brak spotkań do pokazania.
             </div>
           ) : (
             <div className="space-y-2">
-              {recentMatches.map((m) => (
-                <div key={m.id} className="space-y-1">
+              {fullSchedule.map((item) => {
+                const header = fixtureDateHeaderParts(item.date);
+                return (
                   <div
+                    key={item.id}
                     className={classNames(
-                      "p-2 rounded-xl border",
-                      darkMode
-                        ? "border-white/10 bg-black/10"
-                        : "border-gray-200 bg-gray-50"
+                      "rounded-xl border p-3",
+                      darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"
                     )}
                   >
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <div className={classNames("text-xs font-black uppercase tracking-[0.12em]", darkMode ? "text-cyan-200" : "text-blue-700")}>
+                        Kolejka {item.round}
+                      </div>
+                      <div className={classNames("text-xs", darkMode ? "text-gray-400" : "text-gray-600")}>
+                        {header.date ? `${header.weekday} • ${header.date}` : header.weekday}
+                        {item.time ? ` • ${item.time}` : ""}
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-[minmax(0,1fr)_120px_minmax(0,1fr)] gap-3 items-center">
                       <div className="flex items-center gap-2 min-w-0">
                         <TeamLogo
-                          team={m.home}
+                          team={item.home}
                           darkMode={darkMode}
                           size={40}
-                          onClick={() => openTeam(m.home)}
+                          onClick={() => openTeam(item.home)}
                         />
                         <div className="min-w-0 flex-1">
                           <TeamLink
-                            team={m.home}
-                            onClick={() => openTeam(m.home)}
+                            team={item.home}
+                            onClick={() => openTeam(item.home)}
                             className="font-bold e3d-link block w-full truncate"
                           />
                         </div>
@@ -8347,50 +8522,40 @@ function TeamProfile({
 
                       <div className="flex justify-center">
                         <button
-                          onClick={() => openMatch(m.id)}
+                          onClick={() => openMatch(item.id)}
                           className={classNames(
-                            "w-[120px] px-2 py-1.5 rounded-xl border e3d-pill font-extrabold text-lg text-center",
-                            darkMode
-                              ? "bg-white/5 border-white/10"
-                              : "bg-black/5 border-black/10"
+                            "w-[120px] px-2 py-1.5 rounded-xl border e3d-pill font-extrabold text-center",
+                            darkMode ? "bg-white/5 border-white/10" : "bg-black/5 border-black/10"
                           )}
-                          title="Kliknij: szczeg????y meczu"
+                          title="Kliknij: szczegóły meczu"
                         >
-                          {m.homeGoals} : {m.awayGoals}
+                          {item.played ? `${item.homeGoals} : ${item.awayGoals}` : scheduleStatusLabel(item)}
                         </button>
                       </div>
 
                       <div className="flex items-center justify-end gap-2 min-w-0">
                         <div className="min-w-0 flex-1">
                           <TeamLink
-                            team={m.away}
-                            onClick={() => openTeam(m.away)}
+                            team={item.away}
+                            onClick={() => openTeam(item.away)}
                             className="font-bold text-right e3d-link block w-full truncate"
                           />
                         </div>
                         <TeamLogo
-                          team={m.away}
+                          team={item.away}
                           darkMode={darkMode}
                           size={40}
-                          onClick={() => openTeam(m.away)}
+                          onClick={() => openTeam(item.away)}
                         />
                       </div>
                     </div>
                   </div>
-                  <div
-                    className={classNames(
-                      "text-xs text-center",
-                      darkMode ? "text-gray-400" : "text-gray-600"
-                    )}
-                  >
-                    {m.date} • {m.time}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>
-      </div>
+      )}
 
       {/* Historia drużyny */}
       {history.length > 0 && (
@@ -12123,6 +12288,39 @@ function getTeamRecentMatches(team, matches) {
   const list = matches.filter((m) => m.home === team || m.away === team);
   list.sort((a, b) => b.round - a.round);
   return list.slice(0, 6);
+}
+
+function teamScheduleSortKey(item, mode = "asc") {
+  const fallbackDate = mode === "asc" ? "9999-12-31" : "0000-01-01";
+  const fallbackTime = mode === "asc" ? "23:59" : "00:00";
+  return `${item?.date || fallbackDate} ${item?.time || fallbackTime}`;
+}
+
+function getTeamScheduleEntries(team, fixtures, matches) {
+  const playedById = new Map((matches || []).map((match) => [match.id, match]));
+
+  return (fixtures || [])
+    .filter((fixture) => fixture.home === team || fixture.away === team)
+    .map((fixture) => {
+      const playedMatch = playedById.get(fixture.id);
+      const isHome = fixture.home === team;
+
+      return {
+        ...fixture,
+        played: !!playedMatch,
+        homeGoals: playedMatch?.homeGoals ?? null,
+        awayGoals: playedMatch?.awayGoals ?? null,
+        opponent: isHome ? fixture.away : fixture.home,
+        teamSide: isHome ? "home" : "away",
+      };
+    });
+}
+
+function formatShortFixtureDate(dateStr) {
+  if (!dateStr) return "Termin";
+  const [year, month, day] = String(dateStr).split("-");
+  if (!year || !month || !day) return String(dateStr);
+  return `${day}.${month}`;
 }
 
 /* =========================================
