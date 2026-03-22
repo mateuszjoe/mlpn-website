@@ -418,11 +418,11 @@ BEGIN
 
     -- ZOLTA KARTKA - sprawdz akumulacje
     IF NEW.event_type = 'YELLOW_CARD' THEN
-        SELECT COALESCE(yellow_card_suspension_threshold, 2) INTO v_threshold
+        SELECT COALESCE(yellow_card_suspension_threshold, 3) INTO v_threshold
         FROM season_leagues
         WHERE season_id = v_match.season_id AND league_id = v_match.league_id;
 
-        v_threshold := COALESCE(v_threshold, 2);
+        v_threshold := COALESCE(v_threshold, 3);
 
         -- Licz zolte w tym sezonie w tej lidze
         SELECT COUNT(*) INTO v_yellow_count
@@ -433,8 +433,8 @@ BEGIN
           AND m.season_id = v_match.season_id
           AND m.league_id = v_match.league_id;
 
-        -- Sprawdz prog (co v_threshold zoltych = pauza)
-        IF v_yellow_count > 0 AND (v_yellow_count % v_threshold) = 0 THEN
+        -- Sprawdz prog (od v_threshold zoltych kazda kolejna daje pauze)
+        IF v_yellow_count >= v_threshold THEN
             INSERT INTO suspensions (
                 player_id, season_id, league_id, suspension_type,
                 reason, start_round, end_round, matches_remaining,
@@ -442,7 +442,7 @@ BEGIN
             ) VALUES (
                 NEW.player_id, v_match.season_id, v_match.league_id,
                 'yellow_accumulation',
-                format('Automatyczna pauza: %s zoltych kartek (prog: co %s)', v_yellow_count, v_threshold),
+                format('Automatyczna pauza: %s zoltych kartek (od progu %s, kazda kolejna kartka = kolejna pauza)', v_yellow_count, v_threshold),
                 v_match.round + 1, v_match.round + 1, 1,
                 NEW.id
             );

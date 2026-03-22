@@ -110,7 +110,7 @@ export default function AdminSeasons({ darkMode }) {
         walkover_goals_loser: 0,
         promotion_spots: league.code === "1st" ? 0 : 2,
         relegation_spots: league.code === "3rd" ? 0 : 2,
-        yellow_card_suspension_threshold: 2,
+        yellow_card_suspension_threshold: 3,
       }));
 
       const { error: seasonLeaguesError } = await supabase.from("season_leagues").insert(entries);

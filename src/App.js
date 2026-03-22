@@ -2066,7 +2066,7 @@ function RegulationsPage({ darkMode }) {
             )}
           >
             <li>
-              <strong>Żółta kartka:</strong> ostrzeżenie, 3 żółte = 1 mecz pauzy
+              <strong>Żółta kartka:</strong> ostrzeżenie, 3 żółte = 1 mecz pauzy, a każda kolejna żółta kartka = kolejna pauza
             </li>
             <li>
               <strong>Czerwona kartka (bezpośrednia):</strong> minimum 1 mecz

@@ -43,7 +43,7 @@ SELECT
         WHEN '2nd' THEN 2  -- z II ligi spadaja 2
         ELSE 0             -- z III ligi nie ma spadku
     END,
-    2  -- pauza co 2 zolte kartki
+    3  -- pauza po 3 zoltej kartce i po kazdej kolejnej
 FROM seasons s, leagues l
 WHERE s.year = 2025;
 

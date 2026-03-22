@@ -53,7 +53,7 @@ CREATE TABLE season_leagues (
     total_rounds        INTEGER,
     played_rounds       INTEGER NOT NULL DEFAULT 0,
     current_round       INTEGER NOT NULL DEFAULT 1,
-    yellow_card_suspension_threshold INTEGER NOT NULL DEFAULT 2,
+    yellow_card_suspension_threshold INTEGER NOT NULL DEFAULT 3,
     UNIQUE (season_id, league_id),
     created_at          TIMESTAMPTZ DEFAULT now() NOT NULL,
     updated_at          TIMESTAMPTZ DEFAULT now() NOT NULL

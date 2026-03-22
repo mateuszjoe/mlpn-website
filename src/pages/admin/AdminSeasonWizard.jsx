@@ -88,11 +88,11 @@ export default function AdminSeasonWizard({ darkMode }) {
   const [rules, setRules] = useState({
     points_win: 3, points_draw: 1, points_loss: 0,
     walkover_goals_winner: 3, walkover_goals_loser: 0,
-    yellow_card_suspension_threshold: 2,
+    yellow_card_suspension_threshold: 3,
   });
   const [leagueRules, setLeagueRules] = useState({}); // { leagueId: { promotion_spots, relegation_spots } }
   const [tiebreakers, setTiebreakers] = useState([
-    "points", "goal_diff", "goals_scored", "head_to_head", "fair_play",
+    "points", "head_to_head", "goal_diff", "goals_scored", "fair_play",
   ]);
 
   // ── Krok 3: Drużyny (LOCAL) ──
@@ -178,7 +178,7 @@ export default function AdminSeasonWizard({ darkMode }) {
       setRules({
         points_win: first.points_win ?? 3, points_draw: first.points_draw ?? 1, points_loss: first.points_loss ?? 0,
         walkover_goals_winner: first.walkover_goals_winner ?? 3, walkover_goals_loser: first.walkover_goals_loser ?? 0,
-        yellow_card_suspension_threshold: first.yellow_card_suspension_threshold ?? 2,
+        yellow_card_suspension_threshold: first.yellow_card_suspension_threshold ?? 3,
       });
       const lr = {};
       for (const s of sl) lr[s.league_id] = { promotion_spots: s.promotion_spots ?? 0, relegation_spots: s.relegation_spots ?? 0 };
@@ -877,7 +877,7 @@ export default function AdminSeasonWizard({ darkMode }) {
               <h3 className="font-semibold mb-3">Karty</h3>
               <div className="max-w-xs">
                 <AdminFormField label="Żółte karty do pauzy" name="yc" type="number" darkMode={darkMode} value={rules.yellow_card_suspension_threshold}
-                  onChange={e => setRules(r => ({ ...r, yellow_card_suspension_threshold: parseInt(e.target.value) || 2 }))} />
+                  onChange={e => setRules(r => ({ ...r, yellow_card_suspension_threshold: parseInt(e.target.value) || 3 }))} />
               </div>
             </div>
 

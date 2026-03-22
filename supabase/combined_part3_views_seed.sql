@@ -329,7 +329,7 @@ SELECT
         WHEN '2nd' THEN 2
         ELSE 0
     END,
-    2
+    3
 FROM seasons s, leagues l
 WHERE s.year = 2025;
 
