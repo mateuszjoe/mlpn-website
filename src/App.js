@@ -214,6 +214,280 @@ function createTeamLogoRegistry({ standings, fixtures, matches }) {
   return map;
 }
 
+const LEAGUE_CONTEXT_TO_SLUG = {
+  "1st": "1-liga",
+  "2nd": "2-liga",
+  "3rd": "3-liga",
+};
+
+const LEAGUE_SLUG_TO_CONTEXT = Object.fromEntries(
+  Object.entries(LEAGUE_CONTEXT_TO_SLUG).map(([context, slug]) => [slug, context])
+);
+
+const HOME_SECTION_TO_SLUG = {
+  home: "",
+  news: "aktualnosci",
+  typer: "typer",
+  polls: "ankiety",
+  free: "wolni-zawodnicy",
+  "teams-db": "baza-druzyn",
+  "players-db": "baza-zawodnikow",
+};
+
+const HOME_SLUG_TO_SECTION = Object.fromEntries(
+  Object.entries(HOME_SECTION_TO_SLUG)
+    .filter(([, slug]) => slug)
+    .map(([section, slug]) => [slug, section])
+);
+
+const LEAGUE_SECTION_TO_SLUG = {
+  home: "",
+  table: "tabela",
+  calendar: "kalendarz",
+  gallery: "galerie",
+  teams: "druzyny",
+  players: "statystyki",
+};
+
+const LEAGUE_SLUG_TO_SECTION = Object.fromEntries(
+  Object.entries(LEAGUE_SECTION_TO_SLUG)
+    .filter(([, slug]) => slug)
+    .map(([section, slug]) => [slug, section])
+);
+
+const INFO_SECTION_TO_SLUG = {
+  about: "o-nas",
+  regulations: "regulamin-ligi",
+  sponsors: "sponsorzy",
+  rodo: "rodo",
+  privacy: "polityka-prywatnosci",
+  contact: "kontakt",
+};
+
+const INFO_SLUG_TO_SECTION = Object.fromEntries(
+  Object.entries(INFO_SECTION_TO_SLUG).map(([section, slug]) => [slug, section])
+);
+
+const HOME_SECTIONS = new Set(Object.keys(HOME_SECTION_TO_SLUG));
+const LEAGUE_SECTIONS = new Set(Object.keys(LEAGUE_SECTION_TO_SLUG));
+const INFO_SECTIONS = new Set(Object.keys(INFO_SECTION_TO_SLUG));
+const APP_CONTEXTS = new Set([
+  "home",
+  "tournaments",
+  "info",
+  "admin",
+  ...Object.keys(LEAGUE_CONTEXT_TO_SLUG),
+]);
+
+function normalizeContext(context) {
+  return APP_CONTEXTS.has(context) ? context : "home";
+}
+
+function normalizeSectionForContext(context, section) {
+  if (context === "home") return HOME_SECTIONS.has(section) ? section : "home";
+  if (context === "info") return INFO_SECTIONS.has(section) ? section : "about";
+  if (LEAGUE_SECTIONS.has(section) && LEAGUE_CONTEXT_TO_SLUG[context]) return section;
+  if (LEAGUE_CONTEXT_TO_SLUG[context]) return "home";
+  if (context === "admin") return section || "dashboard";
+  return section || "home";
+}
+
+function parseRoundParam(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function parseHashRoute(hash) {
+  const rawHash = String(hash || "").replace(/^#/, "");
+  const normalizedHash = rawHash.replace(/^\/+/, "");
+  const [pathPart, queryPart = ""] = normalizedHash.split("?");
+  const segments = pathPart
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => {
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    });
+  const params = new URLSearchParams(queryPart);
+  const season = parseRoundParam(params.get("sezon") || params.get("season"));
+  const round = parseRoundParam(params.get("kolejka") || params.get("round"));
+  const inlineMatchId = params.get("mecz") || params.get("match") || null;
+  const rawContext = params.get("ctx");
+  const rawSection = params.get("sekcja") || params.get("section");
+
+  if (segments[0] === "druzyna" && segments[1]) {
+    const context = normalizeContext(rawContext || "home");
+    return {
+      activeContext: context,
+      activeSection: normalizeSectionForContext(context, rawSection || "home"),
+      selectedTeam: segments[1],
+      selectedMatchId: null,
+      selectedPlayerId: null,
+      matchViewMode: "inline",
+      round,
+      season,
+    };
+  }
+
+  if (segments[0] === "zawodnik" && segments[1]) {
+    const context = normalizeContext(rawContext || "home");
+    return {
+      activeContext: context,
+      activeSection: normalizeSectionForContext(context, rawSection || "home"),
+      selectedTeam: null,
+      selectedMatchId: null,
+      selectedPlayerId: segments[1],
+      matchViewMode: "inline",
+      round,
+      season,
+    };
+  }
+
+  if (segments[0] === "mecz" && segments[1]) {
+    const context = normalizeContext(rawContext || "home");
+    return {
+      activeContext: context,
+      activeSection: normalizeSectionForContext(context, rawSection || "home"),
+      selectedTeam: null,
+      selectedMatchId: segments[1],
+      selectedPlayerId: null,
+      matchViewMode: "page",
+      round,
+      season,
+    };
+  }
+
+  if (segments[0] === "turnieje") {
+    return {
+      activeContext: "tournaments",
+      activeSection: "home",
+      selectedTeam: null,
+      selectedMatchId: null,
+      selectedPlayerId: null,
+      matchViewMode: "inline",
+      round: null,
+      season,
+    };
+  }
+
+  if (segments[0] === "info") {
+    const infoSection = INFO_SLUG_TO_SECTION[segments[1]] || "about";
+    return {
+      activeContext: "info",
+      activeSection: infoSection,
+      selectedTeam: null,
+      selectedMatchId: null,
+      selectedPlayerId: null,
+      matchViewMode: "inline",
+      round: null,
+      season,
+    };
+  }
+
+  if (segments[0] === "admin") {
+    return {
+      activeContext: "admin",
+      activeSection: "dashboard",
+      selectedTeam: null,
+      selectedMatchId: null,
+      selectedPlayerId: null,
+      matchViewMode: "inline",
+      round: null,
+      season,
+    };
+  }
+
+  const leagueContext = LEAGUE_SLUG_TO_CONTEXT[segments[0]];
+  if (leagueContext) {
+    const leagueSection = LEAGUE_SLUG_TO_SECTION[segments[1]] || "home";
+    return {
+      activeContext: leagueContext,
+      activeSection: leagueSection,
+      selectedTeam: null,
+      selectedMatchId: inlineMatchId,
+      selectedPlayerId: null,
+      matchViewMode: "inline",
+      round,
+      season,
+    };
+  }
+
+  const homeSection = HOME_SLUG_TO_SECTION[segments[0]] || "home";
+  return {
+    activeContext: "home",
+    activeSection: homeSection,
+    selectedTeam: null,
+    selectedMatchId: inlineMatchId,
+    selectedPlayerId: null,
+    matchViewMode: "inline",
+    round: null,
+    season,
+  };
+}
+
+function buildHashRoute({
+  activeContext,
+  activeSection,
+  selectedTeam,
+  selectedMatchId,
+  selectedPlayerId,
+  matchViewMode,
+  round,
+  currentSeason,
+}) {
+  const params = new URLSearchParams();
+  if (currentSeason) params.set("sezon", String(currentSeason));
+
+  const baseContext = normalizeContext(activeContext);
+  const baseSection = normalizeSectionForContext(baseContext, activeSection);
+
+  if (LEAGUE_CONTEXT_TO_SLUG[baseContext] && round) {
+    params.set("kolejka", String(round));
+  }
+
+  const detailContext = baseContext;
+  const detailSection = baseSection;
+  if (detailContext !== "home" || detailSection !== "home") {
+    params.set("ctx", detailContext);
+    params.set("sekcja", detailSection);
+  }
+
+  let path = "";
+
+  if (selectedPlayerId) {
+    path = `/zawodnik/${encodeURIComponent(selectedPlayerId)}`;
+  } else if (selectedTeam) {
+    path = `/druzyna/${encodeURIComponent(selectedTeam)}`;
+  } else if (selectedMatchId && matchViewMode === "page") {
+    path = `/mecz/${encodeURIComponent(selectedMatchId)}`;
+  } else if (baseContext === "tournaments") {
+    path = "/turnieje";
+  } else if (baseContext === "info") {
+    path = `/info/${INFO_SECTION_TO_SLUG[baseSection] || INFO_SECTION_TO_SLUG.about}`;
+  } else if (baseContext === "admin") {
+    path = "/admin";
+  } else if (LEAGUE_CONTEXT_TO_SLUG[baseContext]) {
+    const leaguePath = LEAGUE_CONTEXT_TO_SLUG[baseContext];
+    const sectionPath = LEAGUE_SECTION_TO_SLUG[baseSection] || "";
+    path = sectionPath ? `/${leaguePath}/${sectionPath}` : `/${leaguePath}`;
+    if (selectedMatchId && matchViewMode !== "page") {
+      params.set("mecz", selectedMatchId);
+    }
+  } else {
+    const homePath = HOME_SECTION_TO_SLUG[baseSection] || "";
+    path = homePath ? `/${homePath}` : "/";
+    if (selectedMatchId && matchViewMode !== "page") {
+      params.set("mecz", selectedMatchId);
+    }
+  }
+
+  const queryString = params.toString();
+  return `#${path}${queryString ? `?${queryString}` : ""}`;
+}
+
 /* =========================================
    SKRÓTY 3-literowe drużyn (konsekwentnie w całym serwisie)
    ========================================= */
@@ -3000,6 +3274,8 @@ function ContactPage({ darkMode }) {
    ========================================= */
 export default function App() {
   const { user, hasAdminAccess, signOut } = useAuth();
+  const isApplyingRouteRef = useRef(false);
+  const routeReadyRef = useRef(false);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('mlpn-darkMode');
     return saved !== null ? saved === 'true' : false;
@@ -3052,14 +3328,30 @@ export default function App() {
   }, [activeContext, refreshData]);
 
   const [round, setRound] = useState(1);
+  const [routeSeasonRequest, setRouteSeasonRequest] = useState(null);
 
-  // Synchronizuj round z currentRound gdy dane się załadują (clamp do limitu ligi)
+  useEffect(() => {
+    const requestedSeason = routeSeasonRequest;
+    if (!requestedSeason || !availableSeasons?.length) return;
+    if (!availableSeasons.includes(requestedSeason)) return;
+    if (currentSeason === requestedSeason) return;
+    setCurrentSeason(requestedSeason);
+  }, [availableSeasons, currentSeason, routeSeasonRequest, setCurrentSeason]);
+
+  // Utrzymuj kolejkę w dozwolonym zakresie, ale nie nadpisuj ręcznego wyboru.
   React.useEffect(() => {
-    if (currentRound) {
-      const leagueMax = totalRoundsByLeague[activeContext] || currentRound;
-      setRound(Math.min(currentRound, leagueMax));
-    }
-  }, [currentRound]);
+    if (!currentRound) return;
+    const fallbackRound = currentRound || 1;
+    const leagueMax = totalRoundsByLeague[activeContext] || fallbackRound;
+
+    setRound((prev) => {
+      if (!prev) return Math.min(fallbackRound, leagueMax);
+      if (prev < 1 || prev > leagueMax) {
+        return Math.min(fallbackRound, leagueMax);
+      }
+      return prev;
+    });
+  }, [activeContext, currentRound, totalRoundsByLeague]);
 
   // "routing" wewnętrzny
   const [selectedTeam, setSelectedTeam] = useState(null); // team name
@@ -3078,6 +3370,65 @@ export default function App() {
     album: null,
     currentIndex: 0,
   });
+
+  useEffect(() => {
+    const applyRouteState = (route) => {
+      isApplyingRouteRef.current = true;
+
+      const nextContext = normalizeContext(route.activeContext || "home");
+      const nextSection = normalizeSectionForContext(
+        nextContext,
+        route.activeSection || (nextContext === "info" ? "about" : "home")
+      );
+
+      setRouteSeasonRequest(route.season || null);
+
+      setActiveContext(nextContext);
+      setActiveSection(nextSection);
+      setSelectedTeam(route.selectedTeam || null);
+      setSelectedMatchId(route.selectedMatchId || null);
+      setSelectedPlayerId(route.selectedPlayerId || null);
+      setMatchViewMode(route.matchViewMode === "page" ? "page" : "inline");
+      setMobileMenuOpen(false);
+
+      if (
+        route.selectedTeam ||
+        route.selectedPlayerId ||
+        (route.selectedMatchId && route.matchViewMode === "page")
+      ) {
+        setNavigationHistory([
+          {
+            activeContext: nextContext,
+            activeSection: nextSection,
+            selectedTeam: null,
+            selectedMatchId: null,
+            selectedPlayerId: null,
+            round: route.round || 1,
+          },
+        ]);
+      } else {
+        setNavigationHistory([]);
+      }
+
+      if (route.round) {
+        setRound(route.round);
+      }
+
+      requestAnimationFrame(() => {
+        isApplyingRouteRef.current = false;
+      });
+    };
+
+    applyRouteState(parseHashRoute(window.location.hash));
+    routeReadyRef.current = true;
+
+    const handleHashChange = () => {
+      applyRouteState(parseHashRoute(window.location.hash));
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   useEffect(() => {
     if (!galleryOverlay.open) return undefined;
@@ -3514,6 +3865,38 @@ export default function App() {
     );
   }, [fixtures, activeContext, round]);
 
+  useEffect(() => {
+    if (!routeReadyRef.current || isApplyingRouteRef.current) return;
+
+    const nextHash = buildHashRoute({
+      activeContext,
+      activeSection,
+      selectedTeam,
+      selectedMatchId,
+      selectedPlayerId,
+      matchViewMode,
+      round,
+      currentSeason,
+    });
+
+    if (window.location.hash === nextHash) return;
+
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}${nextHash}`
+    );
+  }, [
+    activeContext,
+    activeSection,
+    selectedTeam,
+    selectedMatchId,
+    selectedPlayerId,
+    matchViewMode,
+    round,
+    currentSeason,
+  ]);
+
   const activeLeagueGalleries = useMemo(() => {
     if (!["1st", "2nd", "3rd"].includes(activeContext)) return [];
 
@@ -3875,14 +4258,6 @@ export default function App() {
         );
     }
   };
-
-  // ensure round resets when switching league (clamp do limitu ligi)
-  useEffect(() => {
-    if (activeContext !== "home") {
-      const leagueMax = totalRoundsByLeague[activeContext] || _totalRounds;
-      setRound(Math.min(currentRound || 1, leagueMax));
-    }
-  }, [activeContext]);
 
   // === Ekran ładowania / błędu ===
   if (dataLoading && !currentSeason) {
