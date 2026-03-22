@@ -1838,14 +1838,20 @@ function LeagueLink({ leagueId, leagueName, onClick, className = "" }) {
   );
 }
 
-function FormDot({ v, title }) {
+function FormDot({ v, title, small = false }) {
   // kolorystyczna ikonka formy — BEZ LITEREK
   // W = wygrana (zielona), R = remis (żółta), P = przegrana (czerwona), ? = nadchodzący mecz (szara)
+  const sizeClass = small ? "w-4 h-4" : "w-6 h-6";
+  const textClass = small ? "text-[8px]" : "text-[9px]";
   if (v === "?") {
     return (
       <span
         title={title}
-        className="w-6 h-6 rounded-full e3d-dot bg-gray-400/50 flex items-center justify-center text-[9px] font-bold text-white cursor-help"
+        className={classNames(
+          sizeClass,
+          textClass,
+          "rounded-full e3d-dot bg-gray-400/50 flex items-center justify-center font-bold text-white cursor-help"
+        )}
       >
         ?
       </span>
@@ -1856,7 +1862,7 @@ function FormDot({ v, title }) {
   return (
     <span
       title={title}
-      className={classNames("w-6 h-6 rounded-full e3d-dot", base)}
+      className={classNames(sizeClass, "rounded-full e3d-dot", base)}
     />
   );
 }
@@ -2033,7 +2039,7 @@ function MobileFlashscoreMatchRow({
               team={homeTeam}
               src={homeLogoSrc}
               darkMode={darkMode}
-              size={24}
+              size={22}
               onClick={onOpenHome}
             />
             <button
@@ -2050,7 +2056,7 @@ function MobileFlashscoreMatchRow({
               team={awayTeam}
               src={awayLogoSrc}
               darkMode={darkMode}
-              size={24}
+              size={22}
               onClick={onOpenAway}
             />
             <button
@@ -6214,9 +6220,99 @@ function LeagueTablePage({
           darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-white"
         )}
       >
+        <div className="md:hidden">
+          <div
+            className={classNames(
+              "px-2 py-2 text-[10px] font-bold tracking-wide",
+              darkMode ? "text-gray-300 bg-black/20" : "text-gray-600 bg-gray-50"
+            )}
+          >
+            <div className="grid grid-cols-[22px_minmax(0,1fr)_34px_62px] gap-2 items-center">
+              <div>#</div>
+              <div>Drużyna</div>
+              <div className="text-right">Pkt</div>
+              <div className="text-center">Forma</div>
+            </div>
+          </div>
+
+          {sortedTable.map((r) => (
+            <div
+              key={`mobile-${r.team}`}
+              className={classNames(
+                "px-2 py-2 border-t",
+                getPositionBg(r.displayPos),
+                darkMode
+                  ? "border-white/10 hover:bg-white/5"
+                  : "border-gray-100 hover:bg-gray-50"
+              )}
+            >
+              <div className="grid grid-cols-[22px_minmax(0,1fr)_34px_62px] gap-2 items-center">
+                <div className="font-extrabold text-[13px] leading-none">{r.displayPos}</div>
+
+                <div className="flex items-center gap-2 min-w-0">
+                  <TeamLogo
+                    team={r.team}
+                    darkMode={darkMode}
+                    size={24}
+                    onClick={() => openTeam(r.team)}
+                  />
+                  <button
+                    onClick={() => openTeam(r.team)}
+                    className="font-bold hover:underline truncate text-[12px] leading-tight text-left min-w-0 block w-full"
+                  >
+                    {displayTeamName(r.team)}
+                  </button>
+                </div>
+
+                <div className="font-black text-[13px] text-right leading-none">{r.pts}</div>
+
+                <div className="flex gap-1 justify-end">
+                  {(r.form5 || []).slice(0, 4).map((f, i) => (
+                    <FormDot
+                      key={i}
+                      v={f.result}
+                      title={`${f.score} ${displayTeamName(f.opponent)}`}
+                      small
+                    />
+                  ))}
+                  {r.nextOpponent && (
+                    <FormDot
+                      v="?"
+                      title={`Następny mecz: ${displayTeamName(r.nextOpponent)}`}
+                      small
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div
+                className={classNames(
+                  "mt-1.5 grid grid-cols-7 gap-1 text-[9px] leading-tight",
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                )}
+              >
+                <div className="text-center"><span className="font-bold block">M</span>{r.played}</div>
+                <div className="text-center"><span className="font-bold block">W</span>{r.win}</div>
+                <div className="text-center"><span className="font-bold block">R</span>{r.draw}</div>
+                <div className="text-center"><span className="font-bold block">P</span>{r.loss}</div>
+                <div className="text-center"><span className="font-bold block">BZ</span>{r.gf}</div>
+                <div className="text-center"><span className="font-bold block">BS</span>{r.ga}</div>
+                <div className={classNames(
+                  "text-center",
+                  r.gf - r.ga > 0 ? "text-emerald-400" : r.gf - r.ga < 0 ? "text-rose-400" : ""
+                )}>
+                  <span className="font-bold block">+/-</span>
+                  {r.gf - r.ga > 0 ? "+" : ""}
+                  {r.gf - r.ga}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
         <div
           className={classNames(
-            "px-4 py-3 text-xs font-bold tracking-wide",
+            "hidden md:block px-4 py-3 text-xs font-bold tracking-wide",
             darkMode ? "text-gray-300 bg-black/20" : "text-gray-600 bg-gray-50"
           )}
         >
@@ -6239,7 +6335,7 @@ function LeagueTablePage({
           <div
             key={r.team}
             className={classNames(
-              "px-4 py-3 border-t",
+              "hidden md:block px-4 py-3 border-t",
               getPositionBg(r.displayPos),
               darkMode
                 ? "border-white/10 hover:bg-white/5"
