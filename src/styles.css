@@ -15,6 +15,8 @@ html,
 body,
 #root {
   min-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -24,6 +26,7 @@ body {
   line-height: 1.45;
   letter-spacing: 0.01em;
   background: #070c15;
+  overflow-x: hidden;
 }
 
 button,

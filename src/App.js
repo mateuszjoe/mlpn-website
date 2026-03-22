@@ -1867,6 +1867,89 @@ function FormDot({ v, title, small = false }) {
   );
 }
 
+function MobileLeagueTableRow({ row, darkMode, openTeam, showForm = true }) {
+  const position = row.displayPos ?? row.pos;
+
+  return (
+    <div
+      className={classNames(
+        "px-2 py-2 border-t",
+        darkMode ? "border-white/10 hover:bg-white/5" : "border-gray-100 hover:bg-gray-50"
+      )}
+    >
+      <div className="grid grid-cols-[20px_minmax(0,1fr)_32px_58px] gap-2 items-center">
+        <div className="font-extrabold text-[12px] leading-none text-center">{position}</div>
+
+        <div className="flex items-center gap-2 min-w-0">
+          <TeamLogo
+            team={row.team}
+            darkMode={darkMode}
+            size={22}
+            onClick={() => openTeam(row.team)}
+          />
+          <button
+            onClick={() => openTeam(row.team)}
+            className="font-bold hover:underline truncate text-[12px] leading-tight text-left min-w-0 block w-full"
+          >
+            {displayTeamName(row.team)}
+          </button>
+        </div>
+
+        <div className="font-black text-[12px] text-right leading-none">{row.pts}</div>
+
+        <div className="flex gap-1 justify-end">
+          {showForm
+            ? (
+              <>
+                {(row.form5 || []).slice(0, 4).map((f, i) => (
+                  <FormDot
+                    key={i}
+                    v={f.result}
+                    title={`${f.score} ${displayTeamName(f.opponent)}`}
+                    small
+                  />
+                ))}
+                {row.nextOpponent && (
+                  <FormDot
+                    v="?"
+                    title={`Następny mecz: ${displayTeamName(row.nextOpponent)}`}
+                    small
+                  />
+                )}
+              </>
+            ) : (
+              <div className={classNames("text-[9px] font-bold uppercase tracking-wide", darkMode ? "text-gray-500" : "text-gray-400")}>
+                Stat
+              </div>
+            )}
+        </div>
+      </div>
+
+      <div
+        className={classNames(
+          "mt-1.5 grid grid-cols-7 gap-1 text-[9px] leading-tight",
+          darkMode ? "text-gray-400" : "text-gray-600"
+        )}
+      >
+        <div className="text-center"><span className="font-bold block">M</span>{row.played}</div>
+        <div className="text-center"><span className="font-bold block">W</span>{row.win}</div>
+        <div className="text-center"><span className="font-bold block">R</span>{row.draw}</div>
+        <div className="text-center"><span className="font-bold block">P</span>{row.loss}</div>
+        <div className="text-center"><span className="font-bold block">BZ</span>{row.gf}</div>
+        <div className="text-center"><span className="font-bold block">BS</span>{row.ga}</div>
+        <div className={classNames(
+          "text-center",
+          row.gf - row.ga > 0 ? "text-emerald-400" : row.gf - row.ga < 0 ? "text-rose-400" : ""
+        )}>
+          <span className="font-bold block">+/-</span>
+          {row.gf - row.ga > 0 ? "+" : ""}
+          {row.gf - row.ga}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ScorePill({ homeGoals, awayGoals, darkMode, onClick, date, time, status }) {
   const statusKey = String(status || "").toLowerCase();
   const isWalkover = status?.startsWith('walkover');
@@ -4907,7 +4990,7 @@ export default function App() {
         </aside>}
 
         {/* CONTENT */}
-        <main className="flex-1 w-full p-3 sm:p-4 md:p-6 md:ml-56 max-w-[1600px] mx-auto">
+        <main className="flex-1 w-full min-w-0 max-w-full overflow-x-hidden p-3 sm:p-4 md:p-6 md:ml-56 md:max-w-[1600px] mx-auto">
           {/* round jump only on calendar and league context */}
           {activeContext !== "home" &&
             activeSection === "calendar" &&
@@ -5447,10 +5530,36 @@ function LeagueHomePage({
           <Card darkMode={darkMode}>
             <div className="font-extrabold mb-3 text-lg">Tabela końcowa sezonu {currentSeason}</div>
 
+            <div className="md:hidden">
+              <div
+                className={classNames(
+                  "px-2 py-2 text-[10px] font-bold tracking-wide",
+                  darkMode ? "text-gray-300 bg-black/20" : "text-gray-600 bg-gray-50"
+                )}
+              >
+                <div className="grid grid-cols-[20px_minmax(0,1fr)_32px_58px] gap-2 items-center">
+                  <div>#</div>
+                  <div>Druzyna</div>
+                  <div className="text-right">Pkt</div>
+                  <div className="text-center">Stat</div>
+                </div>
+              </div>
+
+              {table.map((r) => (
+                <MobileLeagueTableRow
+                  key={`archive-mobile-${r.team}`}
+                  row={r}
+                  darkMode={darkMode}
+                  openTeam={openTeam}
+                  showForm={false}
+                />
+              ))}
+            </div>
+
             {/* Nagłówki kolumn - bez Formy */}
             <div
               className={classNames(
-                "px-2 pb-2 text-[10px] font-bold",
+                "hidden md:block px-2 pb-2 text-[10px] font-bold",
                 darkMode ? "text-gray-400" : "text-gray-600"
               )}
             >
@@ -5473,7 +5582,7 @@ function LeagueHomePage({
                 <div
                   key={r.team}
                   className={classNames(
-                    "p-1.5 rounded-lg border",
+                    "hidden md:block p-1.5 rounded-lg border",
                     getPositionBg(r.pos),
                     darkMode
                       ? "border-white/10 bg-black/10 hover:bg-white/5"
@@ -5963,10 +6072,36 @@ function LeagueHomePage({
         <Card darkMode={darkMode}>
           <div className="font-extrabold mb-3 text-lg">Tabela ligowa</div>
 
+          <div className="md:hidden">
+            <div
+              className={classNames(
+                "px-2 py-2 text-[10px] font-bold tracking-wide",
+                darkMode ? "text-gray-300 bg-black/20" : "text-gray-600 bg-gray-50"
+              )}
+            >
+              <div className="grid grid-cols-[20px_minmax(0,1fr)_32px_58px] gap-2 items-center">
+                <div>#</div>
+                <div>Druzyna</div>
+                <div className="text-right">Pkt</div>
+                <div className="text-center">Forma</div>
+              </div>
+            </div>
+
+            {simpleTable.map((r) => (
+              <MobileLeagueTableRow
+                key={`current-mobile-${r.team}`}
+                row={r}
+                darkMode={darkMode}
+                openTeam={openTeam}
+                showForm
+              />
+            ))}
+          </div>
+
           {/* Nagłówki kolumn */}
           <div
             className={classNames(
-              "px-2 pb-2 text-xs font-bold",
+              "hidden md:block px-2 pb-2 text-xs font-bold",
               darkMode ? "text-gray-400" : "text-gray-600"
             )}
           >
@@ -5984,7 +6119,7 @@ function LeagueHomePage({
               <div
                 key={r.team}
                 className={classNames(
-                  "p-2 rounded-xl border",
+                  "hidden md:block p-2 rounded-xl border",
                   getPositionBg(r.pos),
                   darkMode
                     ? "border-white/10 bg-black/10 hover:bg-white/5"
