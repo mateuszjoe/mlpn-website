@@ -477,10 +477,15 @@ export default function AdminSeasonWizard({ darkMode }) {
 
   // ═══ KROK 6: Timeline ═══
   const calcSlotCount = (startTime) => {
-    const maxMin = 21 * 60;
+    const latestEndMin = 22 * 60;
     const [sh, sm] = startTime.split(":").map(Number);
+    const startMin = sh * 60 + sm;
     const slotLen = matchDuration + breakBetween;
-    return Math.max(1, Math.floor((maxMin - (sh * 60 + sm)) / slotLen));
+
+    if (startMin + matchDuration > latestEndMin) return 0;
+
+    // Przerwa liczona jest tylko miedzy meczami, nie po ostatnim.
+    return Math.max(1, Math.floor((latestEndMin - startMin + breakBetween) / slotLen));
   };
   const satSlotsCount = useMemo(() => calcSlotCount(satStart), [satStart, matchDuration, breakBetween]);
   const sunSlotsCount = useMemo(() => calcSlotCount(sunStart), [sunStart, matchDuration, breakBetween]);
