@@ -185,7 +185,8 @@ export async function fetchAllMatches(seasonYear) {
     .select('*')
     .eq('season_year', seasonYear)
     .order('round')
-    .order('match_date');
+    .order('match_date')
+    .order('match_time');
 
   if (error) throw error;
 

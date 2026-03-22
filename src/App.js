@@ -5792,11 +5792,21 @@ function CalendarPage({
   onSeasonChange,
 }) {
   const groupedFixtures = useMemo(() => {
+    const sortedFixtures = [...(fixtures || [])].sort((a, b) => {
+      const dateCompare = String(a?.date || "").localeCompare(String(b?.date || ""));
+      if (dateCompare !== 0) return dateCompare;
+
+      const timeCompare = String(a?.time || "").localeCompare(String(b?.time || ""));
+      if (timeCompare !== 0) return timeCompare;
+
+      return String(a?.home || "").localeCompare(String(b?.home || ""));
+    });
+
     const groups = [];
     let currentKey = null;
     let currentItems = [];
 
-    fixtures.forEach((f) => {
+    sortedFixtures.forEach((f) => {
       const key = f?.date || "__no_date__";
       if (key !== currentKey) {
         if (currentItems.length) {
