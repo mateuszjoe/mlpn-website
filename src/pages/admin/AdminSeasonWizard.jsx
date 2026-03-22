@@ -3,9 +3,13 @@ import { supabase } from "../../lib/supabase";
 import AdminFormField from "./components/AdminFormField";
 import {
   Check, ChevronRight, ChevronLeft, Loader2, Sparkles, Copy,
-  ArrowRight, Calendar, Clock, Rocket, Eye, Settings2, X,
+  ArrowRight, Calendar, Clock, Rocket, Eye, Settings2, X, RefreshCw,
   Users, Search, UserPlus, UserMinus, Undo2,
 } from "lucide-react";
+import {
+  buildRegenerationPlan,
+  formatLockedRounds,
+} from "./utils/scheduleRegeneration";
 
 // ── Helpers ──
 const pad2 = (n) => String(n).padStart(2, "0");
@@ -137,6 +141,7 @@ export default function AdminSeasonWizard({ darkMode }) {
   const [previewMatches, setPreviewMatches] = useState([]);
   const [previewLeague, setPreviewLeague] = useState("");
   const [selectedSwapMatch, setSelectedSwapMatch] = useState(null);
+  const [regeneratingPreviewLeague, setRegeneratingPreviewLeague] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
   // ── Tryb edycji istniejącego sezonu ──
@@ -790,6 +795,64 @@ export default function AdminSeasonWizard({ darkMode }) {
     addToast("success", "Mecze zamienione");
   };
 
+  const regeneratePreviewLeagueSchedule = async () => {
+    if (!createdSeasonId || !previewLeague) return;
+
+    const leagueMatches = previewMatches.filter((match) => match.league_id === previewLeague);
+    const teamCount = tpl(previewLeague);
+
+    if (leagueMatches.length === 0 || teamCount < 2) {
+      addToast("error", "Brak meczów tej ligi do regeneracji.");
+      return;
+    }
+
+    let plan;
+    try {
+      plan = buildRegenerationPlan(leagueMatches, teamCount);
+    } catch (err) {
+      addToast("error", err.message);
+      return;
+    }
+
+    if (plan.updates.length === 0) {
+      const lockedLabel = plan.lockedRounds.length
+        ? ` Zablokowane: ${formatLockedRounds(plan.lockedRounds, plan.roundsInHalf)}.`
+        : "";
+      addToast("info", `Nie ma kolejek do przetasowania dla tej ligi.${lockedLabel}`);
+      return;
+    }
+
+    setRegeneratingPreviewLeague(true);
+    try {
+      if (plan.cleanupMatchIds.length) {
+        await supabase.from("match_events").delete().in("match_id", plan.cleanupMatchIds);
+        await supabase.from("match_lineups").delete().in("match_id", plan.cleanupMatchIds);
+      }
+
+      for (const update of plan.updates) {
+        const { error } = await supabase
+          .from("matches")
+          .update(update.payload)
+          .eq("id", update.matchId);
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      setSelectedSwapMatch(null);
+      await loadPreview(createdSeasonId);
+      addToast(
+        "success",
+        `Przetasowano ${leagues.find((league) => league.id === previewLeague)?.name || "ligę"} w ${plan.editableRounds.length} kolejkach.`
+      );
+    } catch (err) {
+      addToast("error", `Nie udało się przetasować ligi: ${err.message}`);
+    } finally {
+      setRegeneratingPreviewLeague(false);
+    }
+  };
+
   // ═══ KROK 9: Publikacja ═══
   const publish = async () => {
     setPublishing(true);
@@ -989,7 +1052,7 @@ export default function AdminSeasonWizard({ darkMode }) {
       {/* ═══ KROK 3: DRUŻYNY ═══ */}
       {step === 3 && (
         <div className={`rounded-2xl border p-6 ${card}`}>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h2 className="text-xl font-bold">Przypisz drużyny</h2>
             <button onClick={importTeams} className={btnS}><span className="flex items-center gap-2"><Copy size={16} /> Import</span></button>
           </div>
@@ -1500,13 +1563,24 @@ export default function AdminSeasonWizard({ darkMode }) {
         <div className={`rounded-2xl border p-6 ${card}`}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Podgląd terminarza</h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {leagues.map(lg => (
                 <button key={lg.id} onClick={() => { setPreviewLeague(lg.id); setSelectedSwapMatch(null); }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${previewLeague===lg.id ? "bg-yellow-500 text-black" : darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-600"}`}>{lg.name}</button>
               ))}
+              <button onClick={regeneratePreviewLeagueSchedule} disabled={regeneratingPreviewLeague || !previewLeague}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${
+                  darkMode ? "bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 disabled:opacity-40" : "bg-cyan-100 text-cyan-800 hover:bg-cyan-200 disabled:opacity-40"
+                }`}>
+                {regeneratingPreviewLeague ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                Generuj ponownie tę ligę
+              </button>
             </div>
           </div>
+
+          <p className={`text-xs mb-4 ${muted}`}>
+            Możesz przetasować tylko wybraną ligę. Daty i godziny kolejek zostają na swoich miejscach, zmieniają się wyłącznie pary meczowe tej ligi.
+          </p>
 
           {Object.keys(grouped).length === 0 ? <p className={muted}>Brak meczów.</p> : (
             <div className="space-y-4 max-h-[600px] overflow-y-auto">

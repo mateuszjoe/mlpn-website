@@ -2,7 +2,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../lib/supabase";
 import AdminFormField from "./components/AdminFormField";
 import AdminAlert from "./components/AdminAlert";
-import { Calendar, Zap, Save } from "lucide-react";
+import { Calendar, Zap, Save, RefreshCw, Loader2 } from "lucide-react";
+import {
+  buildRegenerationPlan,
+  formatLockedRounds,
+} from "./utils/scheduleRegeneration";
 
 export default function AdminSchedule({ darkMode }) {
   const [seasons, setSeasons] = useState([]);
@@ -15,6 +19,7 @@ export default function AdminSchedule({ darkMode }) {
   const [alert, setAlert] = useState({ type: null, message: null });
   const [startDate, setStartDate] = useState("");
   const [editedMatches, setEditedMatches] = useState({});
+  const [regeneratingFuture, setRegeneratingFuture] = useState(false);
 
   const card = darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-200";
   const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
@@ -84,6 +89,86 @@ export default function AdminSchedule({ darkMode }) {
     setAlert({ type: "success", message: `Terminarz wygenerowany! ${data?.matches_created || ""} meczow w ${data?.rounds_total || ""} kolejkach.` });
     setGenerating(false);
     loadMatches();
+  }
+
+  async function handleRegenerateFutureRounds() {
+    if (!selectedSeason || !selectedLeague || matches.length === 0) {
+      setAlert({ type: "error", message: "Najpierw wybierz ligę z istniejącym terminarzem." });
+      return;
+    }
+
+    if (!window.confirm("Przetasować tylko nierozegrane kolejki tej ligi? Daty i godziny zostaną zachowane.")) {
+      return;
+    }
+
+    setRegeneratingFuture(true);
+
+    try {
+      const { data: seasonTeams, error: teamError } = await supabase
+        .from("season_teams")
+        .select("team_id")
+        .eq("season_id", selectedSeason)
+        .eq("league_id", selectedLeague);
+
+      if (teamError) {
+        throw teamError;
+      }
+
+      const teamCount = seasonTeams?.length || 0;
+      const plan = buildRegenerationPlan(matches, teamCount);
+
+      if (plan.updates.length === 0) {
+        const lockedLabel = plan.lockedRounds.length
+          ? ` Zablokowane: ${formatLockedRounds(plan.lockedRounds, plan.roundsInHalf)}.`
+          : "";
+        setAlert({
+          type: "warning",
+          message: `Brak kolejek do przetasowania.${lockedLabel}`,
+        });
+        setRegeneratingFuture(false);
+        return;
+      }
+
+      if (plan.cleanupMatchIds.length) {
+        const { error: lineupError } = await supabase
+          .from("match_lineups")
+          .delete()
+          .in("match_id", plan.cleanupMatchIds);
+        if (lineupError) throw lineupError;
+
+        const { error: eventError } = await supabase
+          .from("match_events")
+          .delete()
+          .in("match_id", plan.cleanupMatchIds);
+        if (eventError) throw eventError;
+      }
+
+      for (const update of plan.updates) {
+        const { error } = await supabase
+          .from("matches")
+          .update(update.payload)
+          .eq("id", update.matchId);
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      const lockedLabel = plan.lockedRounds.length
+        ? ` Zablokowane: ${formatLockedRounds(plan.lockedRounds, plan.roundsInHalf)}.`
+        : "";
+
+      setAlert({
+        type: "success",
+        message: `Przetasowano ${plan.editableRounds.length} kolejek bez naruszania rozegranych rund i ich rewanżów.${lockedLabel}`,
+      });
+
+      await loadMatches();
+    } catch (error) {
+      setAlert({ type: "error", message: `Błąd regenerowania: ${error.message}` });
+    } finally {
+      setRegeneratingFuture(false);
+    }
   }
 
   function handleMatchEdit(matchId, field, value) {
@@ -167,19 +252,23 @@ export default function AdminSchedule({ darkMode }) {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <p className={`text-sm ${textMuted}`}>{matches.length} meczow w {Object.keys(rounds).length} kolejkach</p>
             <div className="flex items-center gap-3">
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                className={`px-3 py-2 rounded-xl border outline-none text-sm ${
-                  darkMode ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-300"
-                }`}
-              />
-              <button onClick={handleGenerate} disabled={generating}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 text-red-400 text-sm hover:bg-red-500/20">
-                <Zap size={14} /> Generuj od nowa
+              <button
+                onClick={handleRegenerateFutureRounds}
+                disabled={regeneratingFuture}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-cyan-500/10 text-cyan-400 text-sm hover:bg-cyan-500/20 disabled:opacity-50"
+              >
+                {regeneratingFuture ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                Przetasuj przyszłe kolejki
               </button>
             </div>
+          </div>
+
+          <div className={`rounded-2xl border px-4 py-3 text-sm ${card}`}>
+            Ta opcja nie rusza rozegranych kolejek. Automatycznie blokuje też odpowiadające im kolejki rewanżowe,
+            a przyszłe mecze układa w już istniejących datach i godzinach tej ligi.
           </div>
 
           {/* Matches by round */}
