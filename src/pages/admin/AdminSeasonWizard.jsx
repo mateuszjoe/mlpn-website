@@ -12,6 +12,19 @@ import {
   buildRegenerationPlan,
   formatLockedRounds,
 } from "./utils/scheduleRegeneration";
+import {
+  buildEffectiveDayRuleMap,
+  filterScheduleGuidelinesForTeams,
+  getGuidelineRounds,
+  parseScheduleGuidelines,
+  ruleToLabel,
+  scoreGuidelineSlotPreference,
+  validatePlanAgainstGuidelines,
+} from "./utils/scheduleGuidelines";
+import {
+  assignMatchesToAllowedSlots,
+  getDayKeyFromDate,
+} from "./utils/scheduleAssignment";
 
 // ── Helpers ──
 const pad2 = (n) => String(n).padStart(2, "0");
@@ -35,110 +48,6 @@ const TEAM_DAY_RULE_OPTIONS = [
 const TEAM_DAY_RULE_LABELS = Object.fromEntries(
   TEAM_DAY_RULE_OPTIONS.map((option) => [option.value, option.label])
 );
-
-function getDayKeyFromOffset(dayOffset) {
-  if (dayOffset === 0) return "sat";
-  if (dayOffset === 1) return "sun";
-  return "mon";
-}
-
-function getDayKeyFromDate(dateStr) {
-  if (!dateStr) return null;
-  const date = new Date(`${dateStr}T12:00:00`);
-  const day = date.getDay();
-  if (day === 6) return "sat";
-  if (day === 0) return "sun";
-  if (day === 1) return "mon";
-  return null;
-}
-
-function isRuleAllowedOnDay(rule = "any", dayKey) {
-  switch (rule) {
-    case "only_sat":
-      return dayKey === "sat";
-    case "only_sun":
-      return dayKey === "sun";
-    case "only_mon":
-      return dayKey === "mon";
-    case "no_sat":
-      return dayKey !== "sat";
-    case "no_sun":
-      return dayKey !== "sun";
-    case "no_mon":
-      return dayKey !== "mon";
-    default:
-      return true;
-  }
-}
-
-function describeMatchTeams(match, teamNames) {
-  const home = teamNames.get(match.home_team_id) || "Gospodarze";
-  const away = teamNames.get(match.away_team_id) || "Goscie";
-  return `${home} vs ${away}`;
-}
-
-function assignMatchesToAllowedSlots(matches, slots, teamDayRules, teamNames, contextLabel) {
-  if (!matches.length) return [];
-  if (matches.length > slots.length) {
-    throw new Error(`Nie ma wystarczajacej liczby slotow dla ${contextLabel}.`);
-  }
-
-  const normalizedSlots = slots.map((slot, index) => ({
-    ...slot,
-    slotIndex: index,
-    dayKey: slot.dayKey || getDayKeyFromOffset(slot.dayOffset),
-  }));
-  const slotByIndex = new Map(normalizedSlots.map((slot) => [slot.slotIndex, slot]));
-
-  const candidateEntries = matches.map((match, matchIndex) => {
-    const candidates = normalizedSlots
-      .filter((slot) => {
-        const homeRule = teamDayRules[match.home_team_id] || "any";
-        const awayRule = teamDayRules[match.away_team_id] || "any";
-        return isRuleAllowedOnDay(homeRule, slot.dayKey) && isRuleAllowedOnDay(awayRule, slot.dayKey);
-      })
-      .map((slot) => slot.slotIndex);
-
-    return { match, matchIndex, candidates };
-  });
-
-  const impossibleEntry = candidateEntries.find((entry) => entry.candidates.length === 0);
-  if (impossibleEntry) {
-    throw new Error(
-      `Nie da sie ulozyc ${contextLabel}. Mecz ${describeMatchTeams(impossibleEntry.match, teamNames)} nie miesci sie w zadnym dostepnym dniu tej kolejki.`
-    );
-  }
-
-  const orderedEntries = [...candidateEntries].sort((a, b) => a.candidates.length - b.candidates.length);
-  const usedSlots = new Set();
-  const assignments = new Array(matches.length);
-
-  const backtrack = (position) => {
-    if (position >= orderedEntries.length) return true;
-
-    const entry = orderedEntries[position];
-    for (const slotIndex of entry.candidates) {
-      if (usedSlots.has(slotIndex)) continue;
-      usedSlots.add(slotIndex);
-      assignments[entry.matchIndex] = slotByIndex.get(slotIndex);
-      if (backtrack(position + 1)) return true;
-      usedSlots.delete(slotIndex);
-      assignments[entry.matchIndex] = null;
-    }
-    return false;
-  };
-
-  if (!backtrack(0)) {
-    throw new Error(
-      `Nie da sie ulozyc ${contextLabel} zgodnie z ograniczeniami druzyn. Zmien ograniczenia albo rozklad slotow w kolejce.`
-    );
-  }
-
-  return matches.map((match, index) => ({
-    match,
-    slot: assignments[index],
-  }));
-}
 
 function normalizeTeamName(name) {
   return String(name || "")
@@ -317,6 +226,7 @@ export default function AdminSeasonWizard({ darkMode }) {
   const [leagues, setLeagues] = useState([]);
   const [teamAssignments, setTeamAssignments] = useState({});
   const [teamDayRules, setTeamDayRules] = useState({});
+  const [scheduleGuidelinesNotes, setScheduleGuidelinesNotes] = useState("");
   const [activeLeagueIdx, setActiveLeagueIdx] = useState(0);
   const [leagueTeamSearch, setLeagueTeamSearch] = useState("");
 
@@ -401,6 +311,7 @@ export default function AdminSeasonWizard({ darkMode }) {
 
     setEditSeasonId(seasonId);
     setTeamDayRules({});
+    setScheduleGuidelinesNotes("");
     setSeasonForm({ year: season.year, name: season.name, start_date: season.start_date || "" });
 
     const { data: sl } = await supabase.from("season_leagues").select("*").eq("season_id", seasonId);
@@ -467,6 +378,7 @@ export default function AdminSeasonWizard({ darkMode }) {
     setSeasonForm({ year: new Date().getFullYear() + 1, name: "", start_date: "" });
     setTeamAssignments({}); setMatchWeekends([]); setStep(1);
     setTeamDayRules({});
+    setScheduleGuidelinesNotes("");
     setRosterDraft({}); setActiveRosterTeamIdx(0);
     setCreatedSeasonId(null); setGenLog([]); setPreviewMatches([]);
     setSatSlots([]); setSunSlots([]); setMonSlots([]);
@@ -544,6 +456,22 @@ export default function AdminSeasonWizard({ darkMode }) {
     () => Object.values(teamDayRules).filter((rule) => rule && rule !== "any").length,
     [teamDayRules]
   );
+  const assignedTeamsFlat = useMemo(
+    () => assignedTeamsByLeague.flatMap((league) => league.teams),
+    [assignedTeamsByLeague]
+  );
+  const parsedScheduleGuidelines = useMemo(
+    () => parseScheduleGuidelines(scheduleGuidelinesNotes, assignedTeamsFlat),
+    [scheduleGuidelinesNotes, assignedTeamsFlat]
+  );
+  const parsedScheduleGuidelineLabels = useMemo(
+    () => parsedScheduleGuidelines.rules.map((rule) => ruleToLabel(rule, teamNames)),
+    [parsedScheduleGuidelines, teamNames]
+  );
+  const parsedScheduleGuidelineRounds = useMemo(
+    () => getGuidelineRounds(parsedScheduleGuidelines),
+    [parsedScheduleGuidelines]
+  );
 
   const toggleTeam = (id) => {
     if (!curLeague) return;
@@ -559,6 +487,30 @@ export default function AdminSeasonWizard({ darkMode }) {
       return { ...prev, [teamId]: rule };
     });
   };
+
+  const getLeagueGuidelines = useCallback((leagueId) => {
+    const teamIds = assignedTeamsByLeague
+      .find((league) => league.id === leagueId)
+      ?.teams.map((team) => team.id) || [];
+    return filterScheduleGuidelinesForTeams(parsedScheduleGuidelines, teamIds);
+  }, [assignedTeamsByLeague, parsedScheduleGuidelines]);
+
+  const buildGuidelineAwarePlan = useCallback((leagueMatches, teamCount, leagueGuidelines) => {
+    const maxAttempts = 500;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const candidate = buildRegenerationPlan(leagueMatches, teamCount);
+      if (validatePlanAgainstGuidelines(candidate, leagueGuidelines)) {
+        return candidate;
+      }
+    }
+
+    if (leagueGuidelines?.blockedMatchups?.length) {
+      throw new Error("Nie udalo sie znalezc ukladu kolejek spelniajacego wskazane wytyczne.");
+    }
+
+    return buildRegenerationPlan(leagueMatches, teamCount);
+  }, []);
 
   const importTeams = async () => {
     const { data: s } = await supabase.from("seasons").select("id, year").lt("year", parseInt(seasonForm.year)).order("year", { ascending: false }).limit(1);
@@ -815,6 +767,11 @@ export default function AdminSeasonWizard({ darkMode }) {
     setGenLog(["Start..."]);
 
     try {
+      const guidelineWarnings = parsedScheduleGuidelines.warnings || [];
+      if (guidelineWarnings.length > 0) {
+        setGenLog((log) => [...log, ...guidelineWarnings.map((warning) => `UWAGA: ${warning}`)]);
+      }
+
       let sid;
 
       if (editSeasonId) {
@@ -908,6 +865,57 @@ export default function AdminSeasonWizard({ darkMode }) {
         setGenLog(l => [...l, `  ${data?.matches_created || 0} meczów`]);
 
         await supabase.rpc("initialize_standings", { p_season_id: sid, p_league_id: league.id });
+
+        const leagueGuidelines = getLeagueGuidelines(league.id);
+        const leagueGuidelineRounds = getGuidelineRounds(leagueGuidelines);
+        const totalRoundsForLeague = roundsPerRunda(count) * 2;
+        const invalidRound = leagueGuidelineRounds.find((roundNumber) => roundNumber > totalRoundsForLeague);
+        if (invalidRound) {
+          throw new Error(`${league.name}: wytyczna dotyczy kolejki ${invalidRound}, ale ta liga ma tylko ${totalRoundsForLeague} kolejek.`);
+        }
+
+        if (leagueGuidelines.blockedMatchups.length > 0) {
+          const { data: leagueMatches, error: leagueMatchesError } = await supabase
+            .from("matches")
+            .select("id, round, home_team_id, away_team_id, status, match_date, match_time")
+            .eq("season_id", sid)
+            .eq("league_id", league.id)
+            .order("round");
+
+          if (leagueMatchesError) {
+            throw new Error(`${league.name}: ${leagueMatchesError.message}`);
+          }
+
+          const plan = buildGuidelineAwarePlan(leagueMatches || [], count, leagueGuidelines);
+
+          if (plan.updates.length > 0) {
+            const { stageOne, stageTwo } = buildSafeRegenerationBatches(plan.updates, leagueMatches || []);
+
+            for (const update of stageOne) {
+              const { error: stageError } = await supabase
+                .from("matches")
+                .update(update.payload)
+                .eq("id", update.matchId);
+
+              if (stageError) {
+                throw new Error(`${league.name}: ${stageError.message}`);
+              }
+            }
+
+            for (const update of stageTwo) {
+              const { error: stageError } = await supabase
+                .from("matches")
+                .update(update.payload)
+                .eq("id", update.matchId);
+
+              if (stageError) {
+                throw new Error(`${league.name}: ${stageError.message}`);
+              }
+            }
+
+            setGenLog((log) => [...log, `  ${league.name}: dopasowano pary do wytycznych.`]);
+          }
+        }
       }
 
       // 5. Przypisz daty i godziny z timeline (uwzględniając rundy!)
@@ -936,6 +944,11 @@ export default function AdminSeasonWizard({ darkMode }) {
 
         const rpr = roundsPerRunda(tpl(league.id)); // kolejek w jednej rundzie
         const totalR = rpr * 2;
+        const leagueGuidelines = getLeagueGuidelines(league.id);
+        const invalidRound = getGuidelineRounds(leagueGuidelines).find((roundNumber) => roundNumber > totalR);
+        if (invalidRound) {
+          throw new Error(`${league.name}: wytyczna dotyczy kolejki ${invalidRound}, ale ta liga ma tylko ${totalR} kolejek.`);
+        }
 
         for (let r = 1; r <= totalR; r++) {
           // Mapowanie: kolejka → indeks weekendu
@@ -955,12 +968,17 @@ export default function AdminSeasonWizard({ darkMode }) {
           const roundLabel = r <= rpr
             ? `${league.name}, R1 kolejka ${r}`
             : `${league.name}, R2 kolejka ${r - rpr}`;
+          const effectiveDayRules = buildEffectiveDayRuleMap(teamDayRules, leagueGuidelines, r);
           const slotAssignments = assignMatchesToAllowedSlots(
             roundMatches,
             slots,
-            teamDayRules,
+            effectiveDayRules,
             teamNames,
-            roundLabel
+            roundLabel,
+            {
+              scoreMatchSlot: (match, slot) =>
+                scoreGuidelineSlotPreference(match, slot, leagueGuidelines, r),
+            }
           );
 
           for (const { match, slot } of slotAssignments) {
@@ -1060,9 +1078,35 @@ export default function AdminSeasonWizard({ darkMode }) {
       return;
     }
 
+    const leagueGuidelines = getLeagueGuidelines(previewLeague);
+    let basePlan;
+    try {
+      basePlan = buildRegenerationPlan(leagueMatches, teamCount);
+    } catch (err) {
+      addToast("error", err.message);
+      return;
+    }
+
+    const invalidRound = getGuidelineRounds(leagueGuidelines).find((roundNumber) => roundNumber > basePlan.totalRounds);
+    if (invalidRound) {
+      addToast("error", `Ta liga ma tylko ${basePlan.totalRounds} kolejek, a wytyczna dotyczy kolejki ${invalidRound}.`);
+      return;
+    }
+
+    const lockedGuidelineRounds = getGuidelineRounds(leagueGuidelines).filter((roundNumber) =>
+      basePlan.lockedRounds.includes(roundNumber)
+    );
+    if (lockedGuidelineRounds.length > 0) {
+      addToast(
+        "error",
+        `Nie moge zastosowac wytycznych dla zablokowanych kolejek: ${formatLockedRounds(lockedGuidelineRounds, basePlan.roundsInHalf)}.`
+      );
+      return;
+    }
+
     let plan;
     try {
-      plan = buildRegenerationPlan(leagueMatches, teamCount);
+      plan = buildGuidelineAwarePlan(leagueMatches, teamCount, leagueGuidelines);
     } catch (err) {
       addToast("error", err.message);
       return;
@@ -1079,7 +1123,7 @@ export default function AdminSeasonWizard({ darkMode }) {
     setRegeneratingPreviewLeague(true);
     try {
       let updatesToApply = plan.updates;
-      if (activeTeamRuleCount > 0) {
+      if (activeTeamRuleCount > 0 || leagueGuidelines.hasRules) {
         const matchById = new Map(leagueMatches.map((match) => [match.id, match]));
         const constrainedUpdates = [];
 
@@ -1097,15 +1141,22 @@ export default function AdminSeasonWizard({ darkMode }) {
             return {
               matchId: update.matchId,
               dayKey: getDayKeyFromDate(targetMatch?.match_date),
+              time: targetMatch?.match_time,
+              match_time: targetMatch?.match_time,
             };
           });
           const roundMeta = getLeagueRoundMeta(round, previewLeague);
+          const effectiveDayRules = buildEffectiveDayRuleMap(teamDayRules, leagueGuidelines, round);
           const assignments = assignMatchesToAllowedSlots(
             pairings,
             targetRows,
-            teamDayRules,
+            effectiveDayRules,
             teamNames,
-            `${leagues.find((league) => league.id === previewLeague)?.name || "Liga"}, ${roundMeta.stage} kolejka ${roundMeta.stageRound}`
+            `${leagues.find((league) => league.id === previewLeague)?.name || "Liga"}, ${roundMeta.stage} kolejka ${roundMeta.stageRound}`,
+            {
+              scoreMatchSlot: (match, slot) =>
+                scoreGuidelineSlotPreference(match, slot, leagueGuidelines, round),
+            }
           );
 
           for (const { match, slot } of assignments) {
@@ -1923,6 +1974,62 @@ export default function AdminSeasonWizard({ darkMode }) {
                         </span>
                       ))
                   )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className={`rounded-xl border p-4 mb-6 ${darkMode ? "border-cyan-500/20 bg-cyan-500/5" : "border-cyan-200 bg-cyan-50/70"}`}>
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <h3 className="font-semibold">Dodatkowe wytyczne do terminarza</h3>
+                <p className={`text-sm mt-1 ${muted}`}>
+                  Wpisuj uwagi po ludzku. Kazda linia to osobna wskazowka dla generatora.
+                </p>
+              </div>
+              <span className={`text-xs px-2 py-1 rounded-full ${parsedScheduleGuidelines.rules.length > 0 ? darkMode ? "bg-cyan-500/15 text-cyan-300" : "bg-cyan-100 text-cyan-800" : darkMode ? "bg-white/5 text-gray-400" : "bg-white text-gray-500 border border-gray-200"}`}>
+                Rozpoznane: {parsedScheduleGuidelines.rules.length}
+              </span>
+            </div>
+
+            <textarea
+              value={scheduleGuidelinesNotes}
+              onChange={(e) => setScheduleGuidelinesNotes(e.target.value)}
+              rows={5}
+              placeholder={"Przyklady:\nFC Faworyt w pierwszej kolejce moze grac tylko w niedziele\nStarszaki nie moga grac z Rebeliantami w drugiej kolejce\nChaos Team jesli ma grac w niedziele to jak najpozniejsza godzina"}
+              className={`w-full px-4 py-3 rounded-2xl border text-sm outline-none resize-y ${
+                darkMode ? "bg-white/5 border-white/10 text-white placeholder:text-gray-500" : "bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+              }`}
+            />
+
+            {parsedScheduleGuidelineLabels.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {parsedScheduleGuidelineLabels.map((label, index) => (
+                  <span
+                    key={`${label}-${index}`}
+                    className={`px-2.5 py-1 rounded-lg text-xs ${
+                      darkMode ? "bg-cyan-500/10 text-cyan-300" : "bg-cyan-100 text-cyan-800"
+                    }`}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {parsedScheduleGuidelineRounds.length > 0 && (
+              <div className={`mt-3 text-xs ${muted}`}>
+                Dotyczy kolejek: {parsedScheduleGuidelineRounds.join(", ")}
+              </div>
+            )}
+
+            {parsedScheduleGuidelines.warnings.length > 0 && (
+              <div className={`mt-3 rounded-xl border p-3 text-xs ${darkMode ? "border-yellow-500/20 bg-yellow-500/10 text-yellow-200" : "border-yellow-200 bg-yellow-50 text-yellow-900"}`}>
+                <div className="font-semibold mb-2">Tego jeszcze nie rozpoznalem:</div>
+                <div className="space-y-1">
+                  {parsedScheduleGuidelines.warnings.map((warning, index) => (
+                    <div key={`${warning}-${index}`}>{warning}</div>
+                  ))}
                 </div>
               </div>
             )}
