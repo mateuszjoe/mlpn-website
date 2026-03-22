@@ -22,6 +22,122 @@ const roundsPerRunda = (c) => {
   return c % 2 === 0 ? c - 1 : c;
 };
 const roundsForTeams = (c) => roundsPerRunda(c) * 2;
+const TEAM_DAY_RULE_OPTIONS = [
+  { value: "any", label: "Dowolny termin" },
+  { value: "only_sat", label: "Tylko sobota" },
+  { value: "only_sun", label: "Tylko niedziela" },
+  { value: "only_mon", label: "Tylko poniedzialek" },
+  { value: "no_sat", label: "Bez soboty" },
+  { value: "no_sun", label: "Bez niedzieli" },
+  { value: "no_mon", label: "Bez poniedzialku" },
+];
+const TEAM_DAY_RULE_LABELS = Object.fromEntries(
+  TEAM_DAY_RULE_OPTIONS.map((option) => [option.value, option.label])
+);
+
+function getDayKeyFromOffset(dayOffset) {
+  if (dayOffset === 0) return "sat";
+  if (dayOffset === 1) return "sun";
+  return "mon";
+}
+
+function getDayKeyFromDate(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(`${dateStr}T12:00:00`);
+  const day = date.getDay();
+  if (day === 6) return "sat";
+  if (day === 0) return "sun";
+  if (day === 1) return "mon";
+  return null;
+}
+
+function isRuleAllowedOnDay(rule = "any", dayKey) {
+  switch (rule) {
+    case "only_sat":
+      return dayKey === "sat";
+    case "only_sun":
+      return dayKey === "sun";
+    case "only_mon":
+      return dayKey === "mon";
+    case "no_sat":
+      return dayKey !== "sat";
+    case "no_sun":
+      return dayKey !== "sun";
+    case "no_mon":
+      return dayKey !== "mon";
+    default:
+      return true;
+  }
+}
+
+function describeMatchTeams(match, teamNames) {
+  const home = teamNames.get(match.home_team_id) || "Gospodarze";
+  const away = teamNames.get(match.away_team_id) || "Goscie";
+  return `${home} vs ${away}`;
+}
+
+function assignMatchesToAllowedSlots(matches, slots, teamDayRules, teamNames, contextLabel) {
+  if (!matches.length) return [];
+  if (matches.length > slots.length) {
+    throw new Error(`Nie ma wystarczajacej liczby slotow dla ${contextLabel}.`);
+  }
+
+  const normalizedSlots = slots.map((slot, index) => ({
+    ...slot,
+    slotIndex: index,
+    dayKey: slot.dayKey || getDayKeyFromOffset(slot.dayOffset),
+  }));
+  const slotByIndex = new Map(normalizedSlots.map((slot) => [slot.slotIndex, slot]));
+
+  const candidateEntries = matches.map((match, matchIndex) => {
+    const candidates = normalizedSlots
+      .filter((slot) => {
+        const homeRule = teamDayRules[match.home_team_id] || "any";
+        const awayRule = teamDayRules[match.away_team_id] || "any";
+        return isRuleAllowedOnDay(homeRule, slot.dayKey) && isRuleAllowedOnDay(awayRule, slot.dayKey);
+      })
+      .map((slot) => slot.slotIndex);
+
+    return { match, matchIndex, candidates };
+  });
+
+  const impossibleEntry = candidateEntries.find((entry) => entry.candidates.length === 0);
+  if (impossibleEntry) {
+    throw new Error(
+      `Nie da sie ulozyc ${contextLabel}. Mecz ${describeMatchTeams(impossibleEntry.match, teamNames)} nie miesci sie w zadnym dostepnym dniu tej kolejki.`
+    );
+  }
+
+  const orderedEntries = [...candidateEntries].sort((a, b) => a.candidates.length - b.candidates.length);
+  const usedSlots = new Set();
+  const assignments = new Array(matches.length);
+
+  const backtrack = (position) => {
+    if (position >= orderedEntries.length) return true;
+
+    const entry = orderedEntries[position];
+    for (const slotIndex of entry.candidates) {
+      if (usedSlots.has(slotIndex)) continue;
+      usedSlots.add(slotIndex);
+      assignments[entry.matchIndex] = slotByIndex.get(slotIndex);
+      if (backtrack(position + 1)) return true;
+      usedSlots.delete(slotIndex);
+      assignments[entry.matchIndex] = null;
+    }
+    return false;
+  };
+
+  if (!backtrack(0)) {
+    throw new Error(
+      `Nie da sie ulozyc ${contextLabel} zgodnie z ograniczeniami druzyn. Zmien ograniczenia albo rozklad slotow w kolejce.`
+    );
+  }
+
+  return matches.map((match, index) => ({
+    match,
+    slot: assignments[index],
+  }));
+}
 
 function normalizeTeamName(name) {
   return String(name || "")
@@ -199,6 +315,7 @@ export default function AdminSeasonWizard({ darkMode }) {
   const [allTeams, setAllTeams] = useState([]);
   const [leagues, setLeagues] = useState([]);
   const [teamAssignments, setTeamAssignments] = useState({});
+  const [teamDayRules, setTeamDayRules] = useState({});
   const [activeLeagueIdx, setActiveLeagueIdx] = useState(0);
   const [leagueTeamSearch, setLeagueTeamSearch] = useState("");
 
@@ -282,6 +399,7 @@ export default function AdminSeasonWizard({ darkMode }) {
     if (!season) { addToast("error", "Nie znaleziono sezonu"); return; }
 
     setEditSeasonId(seasonId);
+    setTeamDayRules({});
     setSeasonForm({ year: season.year, name: season.name, start_date: season.start_date || "" });
 
     const { data: sl } = await supabase.from("season_leagues").select("*").eq("season_id", seasonId);
@@ -347,6 +465,7 @@ export default function AdminSeasonWizard({ darkMode }) {
     setEditSeasonId(null); setEditHasResults(false);
     setSeasonForm({ year: new Date().getFullYear() + 1, name: "", start_date: "" });
     setTeamAssignments({}); setMatchWeekends([]); setStep(1);
+    setTeamDayRules({});
     setRosterDraft({}); setActiveRosterTeamIdx(0);
     setCreatedSeasonId(null); setGenLog([]); setPreviewMatches([]);
     setSatSlots([]); setSunSlots([]); setMonSlots([]);
@@ -407,10 +526,37 @@ export default function AdminSeasonWizard({ darkMode }) {
       return haystack.includes(query);
     });
   }, [availableTeamsOutsideCurrentLeague, leagueTeamSearch]);
+  const teamNames = useMemo(
+    () => new Map(allTeams.map((team) => [team.id, team.name])),
+    [allTeams]
+  );
+  const assignedTeamsByLeague = useMemo(
+    () => leagues.map((league) => ({
+      ...league,
+      teams: allTeams
+        .filter((team) => teamAssignments[team.id] === league.id)
+        .sort((a, b) => a.name.localeCompare(b.name, "pl")),
+    })).filter((league) => league.teams.length > 0),
+    [leagues, allTeams, teamAssignments]
+  );
+  const activeTeamRuleCount = useMemo(
+    () => Object.values(teamDayRules).filter((rule) => rule && rule !== "any").length,
+    [teamDayRules]
+  );
 
   const toggleTeam = (id) => {
     if (!curLeague) return;
     setTeamAssignments(p => { const c = { ...p }; c[id] === curLeague.id ? delete c[id] : c[id] = curLeague.id; return c; });
+  };
+  const updateTeamDayRule = (teamId, rule) => {
+    setTeamDayRules((prev) => {
+      if (!rule || rule === "any") {
+        const next = { ...prev };
+        delete next[teamId];
+        return next;
+      }
+      return { ...prev, [teamId]: rule };
+    });
   };
 
   const importTeams = async () => {
@@ -802,16 +948,25 @@ export default function AdminSeasonWizard({ darkMode }) {
           const monStr = addDaysToDateStr(satStr, 2);
 
           const { data: roundMatches } = await supabase.from("matches")
-            .select("id").eq("season_id", sid).eq("league_id", league.id).eq("round", r);
+            .select("id, home_team_id, away_team_id").eq("season_id", sid).eq("league_id", league.id).eq("round", r);
           if (!roundMatches) continue;
 
-          // Przypisz daty i godziny sekwencyjnie (niezawodne)
-          for (let i = 0; i < roundMatches.length; i++) {
-            const slot = slots[i % slots.length];
+          const roundLabel = r <= rpr
+            ? `${league.name}, R1 kolejka ${r}`
+            : `${league.name}, R2 kolejka ${r - rpr}`;
+          const slotAssignments = assignMatchesToAllowedSlots(
+            roundMatches,
+            slots,
+            teamDayRules,
+            teamNames,
+            roundLabel
+          );
+
+          for (const { match, slot } of slotAssignments) {
             const dateStr = slot.dayOffset === 0 ? satStr : slot.dayOffset === 1 ? sunStr : monStr;
             const { error: uErr } = await supabase.from("matches").update({
               match_date: dateStr, match_time: slot.time,
-            }).eq("id", roundMatches[i].id);
+            }).eq("id", match.id);
             if (uErr) updateErrors++;
           }
         }
@@ -922,12 +1077,55 @@ export default function AdminSeasonWizard({ darkMode }) {
 
     setRegeneratingPreviewLeague(true);
     try {
+      let updatesToApply = plan.updates;
+      if (activeTeamRuleCount > 0) {
+        const matchById = new Map(leagueMatches.map((match) => [match.id, match]));
+        const constrainedUpdates = [];
+
+        for (const round of plan.editableRounds) {
+          const roundUpdates = plan.updates.filter((update) => matchById.get(update.matchId)?.round === round);
+          if (!roundUpdates.length) continue;
+
+          const pairings = roundUpdates.map((update) => ({
+            home_team_id: update.payload.home_team_id,
+            away_team_id: update.payload.away_team_id,
+            payload: update.payload,
+          }));
+          const targetRows = roundUpdates.map((update) => {
+            const targetMatch = matchById.get(update.matchId);
+            return {
+              matchId: update.matchId,
+              dayKey: getDayKeyFromDate(targetMatch?.match_date),
+            };
+          });
+          const roundMeta = getLeagueRoundMeta(round, previewLeague);
+          const assignments = assignMatchesToAllowedSlots(
+            pairings,
+            targetRows,
+            teamDayRules,
+            teamNames,
+            `${leagues.find((league) => league.id === previewLeague)?.name || "Liga"}, ${roundMeta.stage} kolejka ${roundMeta.stageRound}`
+          );
+
+          for (const { match, slot } of assignments) {
+            constrainedUpdates.push({
+              matchId: slot.matchId,
+              payload: match.payload,
+            });
+          }
+        }
+
+        if (constrainedUpdates.length) {
+          updatesToApply = constrainedUpdates;
+        }
+      }
+
       if (plan.cleanupMatchIds.length) {
         await supabase.from("match_events").delete().in("match_id", plan.cleanupMatchIds);
         await supabase.from("match_lineups").delete().in("match_id", plan.cleanupMatchIds);
       }
 
-      for (const update of plan.updates) {
+      for (const update of updatesToApply) {
         const { error } = await supabase
           .from("matches")
           .update(update.payload)
@@ -1240,6 +1438,69 @@ export default function AdminSeasonWizard({ darkMode }) {
       {/* ═══ KROK 4: SKŁADY ═══ */}
       {step === 4 && (
         <div className={`rounded-2xl border p-6 ${card}`}>
+          <div className={`rounded-2xl border p-4 mb-6 ${darkMode ? "border-white/10 bg-white/[0.03]" : "border-gray-200 bg-gray-50/70"}`}>
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-base font-bold">Ograniczenia terminow druzyn</h3>
+                <p className={`text-sm mt-1 ${muted}`}>
+                  Ustaw tu konkretne zasady pod generator, np. tylko sobota albo bez poniedzialku.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs px-2 py-1 rounded-full ${activeTeamRuleCount > 0 ? darkMode ? "bg-yellow-500/15 text-yellow-300" : "bg-yellow-100 text-yellow-800" : darkMode ? "bg-white/5 text-gray-400" : "bg-white text-gray-500 border border-gray-200"}`}>
+                  Aktywnych ograniczen: {activeTeamRuleCount}
+                </span>
+                {activeTeamRuleCount > 0 && (
+                  <button type="button" onClick={() => setTeamDayRules({})} className={btnS}>
+                    Wyczysc wszystko
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {assignedTeamsByLeague.map((league) => (
+                <div key={league.id} className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-white/[0.03]" : "border-gray-200 bg-white"}`}>
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="font-semibold">{league.name}</div>
+                    <div className={`text-xs ${muted}`}>{league.teams.length} druzyn</div>
+                  </div>
+                  <div className="space-y-2">
+                    {league.teams.map((team) => {
+                      const currentRule = teamDayRules[team.id] || "any";
+                      return (
+                        <div key={team.id} className={`rounded-xl border px-3 py-2.5 ${darkMode ? "border-white/10 bg-white/[0.02]" : "border-gray-200 bg-gray-50/60"}`}>
+                          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <TeamAvatar team={team} size={26} darkMode={darkMode} />
+                              <div className="min-w-0">
+                                <div className="text-sm font-semibold truncate">{team.name}</div>
+                                {currentRule !== "any" && (
+                                  <div className={`text-xs mt-0.5 ${muted}`}>Aktywne: {TEAM_DAY_RULE_LABELS[currentRule]}</div>
+                                )}
+                              </div>
+                            </div>
+                            <select
+                              value={currentRule}
+                              onChange={(e) => updateTeamDayRule(team.id, e.target.value)}
+                              className={`md:w-56 px-3 py-2 rounded-xl border text-sm outline-none ${
+                                darkMode ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-300 text-gray-900"
+                              }`}
+                            >
+                              {TEAM_DAY_RULE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold flex items-center gap-2"><Users size={22} /> Składy drużyn</h2>
             <span className={`text-sm ${muted}`}>{rosterTeams.length} drużyn</span>
@@ -1629,6 +1890,27 @@ export default function AdminSeasonWizard({ darkMode }) {
               <div><span className={muted}>Terminów kolejki:</span> <strong>{matchWeekends.length}</strong></div>
               <div><span className={muted}>Mecz:</span> <strong>{matchDuration} min + {breakBetween} min</strong></div>
             </div>
+            {activeTeamRuleCount > 0 && (
+              <div className={`mt-3 pt-3 border-t ${darkMode ? "border-white/10" : "border-gray-200"}`}>
+                <div className="font-semibold mb-2">Aktywne ograniczenia druzyn</div>
+                <div className="flex flex-wrap gap-2">
+                  {assignedTeamsByLeague.flatMap((league) =>
+                    league.teams
+                      .filter((team) => (teamDayRules[team.id] || "any") !== "any")
+                      .map((team) => (
+                        <span
+                          key={team.id}
+                          className={`px-2.5 py-1 rounded-lg text-xs ${
+                            darkMode ? "bg-yellow-500/10 text-yellow-300" : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {team.name}: {TEAM_DAY_RULE_LABELS[teamDayRules[team.id]]}
+                        </span>
+                      ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {genLog.length > 0 && (
