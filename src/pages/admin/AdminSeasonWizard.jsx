@@ -12,7 +12,10 @@ const pad2 = (n) => String(n).padStart(2, "0");
 const fmtDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const dayLabels = ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Nie"];
 const monthLabels = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
-const roundsPerRunda = (c) => c >= 2 ? c - 1 : 0;
+const roundsPerRunda = (c) => {
+  if (c < 2) return 0;
+  return c % 2 === 0 ? c - 1 : c;
+};
 const roundsForTeams = (c) => roundsPerRunda(c) * 2;
 
 function genMonthDays(y, m) {

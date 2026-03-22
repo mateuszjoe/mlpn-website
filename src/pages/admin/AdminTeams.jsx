@@ -6,7 +6,7 @@ import AdminModal from "./components/AdminModal";
 import AdminAlert from "./components/AdminAlert";
 import AdminImageUpload from "./components/AdminImageUpload";
 import AdminTeamLogoCreator from "./components/AdminTeamLogoCreator";
-import { Plus, GitMerge, Trash2, Loader2 } from "lucide-react";
+import { Plus, GitMerge, Trash2, Loader2, Search } from "lucide-react";
 import AdminConfirmDanger from "./components/AdminConfirmDanger";
 
 function normalizeTeamKey(name) {
@@ -30,6 +30,7 @@ export default function AdminTeams({ darkMode }) {
   const [showMerge, setShowMerge] = useState(false);
   const [mergeSelectedTeamIds, setMergeSelectedTeamIds] = useState([]);
   const [mergePickerQuery, setMergePickerQuery] = useState("");
+  const [teamListQuery, setTeamListQuery] = useState("");
   const [mergeSource, setMergeSource] = useState("");
   const [mergeTarget, setMergeTarget] = useState("");
   const [mergeExtraSources, setMergeExtraSources] = useState([]);
@@ -101,8 +102,12 @@ export default function AdminTeams({ darkMode }) {
   );
 
   const visibleTeams = useMemo(
-    () => (hideInactiveTeams ? teams.filter((t) => t.is_active) : teams),
-    [teams, hideInactiveTeams]
+    () => {
+      const baseTeams = hideInactiveTeams ? teams.filter((t) => t.is_active) : teams;
+      if (!teamListQuery.trim()) return baseTeams;
+      return baseTeams.filter((team) => teamMatchesQuery(team, teamListQuery));
+    },
+    [teams, hideInactiveTeams, teamListQuery, teamMatchesQuery]
   );
 
   const mergePickerTeams = useMemo(() => {
@@ -713,6 +718,23 @@ export default function AdminTeams({ darkMode }) {
 
       <AdminAlert type={alert.type} message={alert.message} onClose={() => setAlert({ type: null, message: null })} />
 
+      <div className={`rounded-2xl border p-4 ${card}`}>
+        <div className="relative">
+          <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${textMuted}`} />
+          <input
+            type="text"
+            value={teamListQuery}
+            onChange={(e) => setTeamListQuery(e.target.value)}
+            placeholder="Szukaj druzyny po nazwie, skrocie albo dzielnicy..."
+            className={`w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none ${
+              darkMode
+                ? "bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-white/20"
+                : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-gray-300"
+            }`}
+          />
+        </div>
+      </div>
+
       {duplicateGroups.length > 0 && (
         <div className={`rounded-2xl border p-4 ${card}`}>
           <div className="font-semibold mb-1">Kandydaci do duplikatów drużyn</div>
@@ -781,7 +803,7 @@ export default function AdminTeams({ darkMode }) {
           darkMode={darkMode}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          emptyMessage="Brak drużyn - dodaj pierwszą!"
+          emptyMessage={teamListQuery.trim() ? `Brak druzyn dla frazy "${teamListQuery}".` : "Brak drużyn - dodaj pierwszą!"}
         />
       </div>
 
