@@ -3333,9 +3333,14 @@ export default function App() {
   useEffect(() => {
     const requestedSeason = routeSeasonRequest;
     if (!requestedSeason || !availableSeasons?.length) return;
-    if (!availableSeasons.includes(requestedSeason)) return;
-    if (currentSeason === requestedSeason) return;
-    setCurrentSeason(requestedSeason);
+    if (!availableSeasons.includes(requestedSeason)) {
+      setRouteSeasonRequest(null);
+      return;
+    }
+    if (currentSeason !== requestedSeason) {
+      setCurrentSeason(requestedSeason);
+    }
+    setRouteSeasonRequest(null);
   }, [availableSeasons, currentSeason, routeSeasonRequest, setCurrentSeason]);
 
   // Utrzymuj kolejkę w dozwolonym zakresie, ale nie nadpisuj ręcznego wyboru.
