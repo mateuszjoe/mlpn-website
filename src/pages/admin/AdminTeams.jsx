@@ -1072,6 +1072,10 @@ export default function AdminTeams({ darkMode }) {
             onUpload={(url) => setForm(f => ({ ...f, logo_url: url }))}
             darkMode={darkMode}
             label="Logo drużyny"
+            maxFileSizeMB={8}
+            convertToWebp
+            webpMaxSide={1024}
+            helperText="Nowe logo jest automatycznie konwertowane do formatu WEBP. Jesli stare logo wyswietla sie zle, wgraj je ponownie."
           />
           <div className={`rounded-2xl border p-3 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
             <div className="flex items-center justify-between gap-3">
