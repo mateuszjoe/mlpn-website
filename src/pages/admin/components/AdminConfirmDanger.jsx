@@ -1,6 +1,21 @@
 import React, { useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 import { supabase } from "../../../lib/supabase";
 import { ShieldAlert, Loader2 } from "lucide-react";
+
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || "";
+
+function createVerificationClient() {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: `mlpn-danger-check-${Date.now()}`,
+    },
+  });
+}
 
 /**
  * Modal wymagający hasła admina przed niebezpieczną operacją.
@@ -34,7 +49,9 @@ export default function AdminConfirmDanger({ isOpen, onClose, onConfirm, darkMod
       const email = session?.user?.email;
       if (!email) { setError("Brak sesji. Zaloguj się ponownie."); setLoading(false); return; }
 
-      const { error: authErr } = await supabase.auth.signInWithPassword({ email, password });
+      const verificationClient = createVerificationClient();
+      const { error: authErr } = await verificationClient.auth.signInWithPassword({ email, password });
+      await verificationClient.auth.signOut();
       if (authErr) { setError("Błędne hasło!"); setLoading(false); return; }
 
       // Hasło poprawne — wykonaj operację

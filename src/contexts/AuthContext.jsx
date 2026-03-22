@@ -8,6 +8,7 @@ import {
 } from '../lib/adminPermissions';
 
 const AuthContext = createContext(null);
+const AUTH_TIMEOUT_MS = 8000;
 
 function clearStoredAuth() {
   const shouldRemove = (key) => key === 'mlpn-auth' || key.startsWith('sb-');
@@ -38,41 +39,111 @@ async function fetchProfile(userId) {
   return data || null;
 }
 
+function withTimeout(promise, timeoutMs, label) {
+  let timeoutId;
+
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        reject(new Error(`${label} timeout`));
+      }, timeoutMs);
+    }),
+  ]).finally(() => {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
+  });
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const loadingTimeout = useRef(null);
   const initialized = useRef(false);
+  const isMounted = useRef(true);
+  const syncRequestId = useRef(0);
+
+  const stopLoading = () => {
+    if (loadingTimeout.current) {
+      window.clearTimeout(loadingTimeout.current);
+      loadingTimeout.current = null;
+    }
+    if (isMounted.current) {
+      setLoading(false);
+    }
+  };
+
+  const startLoadingGuard = () => {
+    if (loadingTimeout.current) {
+      window.clearTimeout(loadingTimeout.current);
+    }
+
+    loadingTimeout.current = window.setTimeout(() => {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }, AUTH_TIMEOUT_MS);
+  };
+
+  const syncSessionState = async (session, { blockUi = false, resetProfile = false } = {}) => {
+    const requestId = ++syncRequestId.current;
+
+    if (blockUi && isMounted.current) {
+      setLoading(true);
+      startLoadingGuard();
+    }
+
+    if (!session?.user) {
+      if (!isMounted.current || syncRequestId.current !== requestId) return;
+      setUser(null);
+      setProfile(null);
+      if (blockUi) stopLoading();
+      return;
+    }
+
+    if (isMounted.current) {
+      setUser(session.user);
+      if (resetProfile) {
+        setProfile((current) => (current?.id === session.user.id ? current : null));
+      }
+    }
+
+    try {
+      const nextProfile = await withTimeout(fetchProfile(session.user.id), AUTH_TIMEOUT_MS, 'profile fetch');
+      if (!isMounted.current || syncRequestId.current !== requestId) return;
+      setProfile(nextProfile);
+    } catch (err) {
+      console.error('Profile sync error:', err);
+      if (!isMounted.current || syncRequestId.current !== requestId) return;
+      setProfile((current) => (current?.id === session.user.id ? current : null));
+    } finally {
+      if (blockUi) {
+        stopLoading();
+      }
+    }
+  };
 
   useEffect(() => {
-    loadingTimeout.current = setTimeout(() => {
-      setLoading(false);
-    }, 6000);
+    isMounted.current = true;
+    startLoadingGuard();
 
     async function initAuth() {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session?.user) {
-          clearTimeout(loadingTimeout.current);
-          setLoading(false);
-          initialized.current = true;
-          return;
-        }
-
-        const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
-        const activeSession = !refreshErr && refreshed?.session ? refreshed.session : session;
-
-        setUser(activeSession.user);
-        setProfile(await fetchProfile(activeSession.user.id));
+        const sessionResponse = await withTimeout(supabase.auth.getSession(), AUTH_TIMEOUT_MS, 'auth session');
+        await syncSessionState(sessionResponse?.data?.session ?? null, {
+          blockUi: true,
+          resetProfile: true,
+        });
       } catch (err) {
         console.error('Auth init error:', err);
+        if (isMounted.current) {
+          setUser(null);
+          setProfile(null);
+        }
       } finally {
-        clearTimeout(loadingTimeout.current);
-        setLoading(false);
+        stopLoading();
         initialized.current = true;
       }
     }
@@ -81,51 +152,49 @@ export function AuthProvider({ children }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!initialized.current) return;
-
-      setLoading(true);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        setProfile(await fetchProfile(session.user.id));
-      } else {
-        setProfile(null);
-      }
-
-      setLoading(false);
+      syncSessionState(session, { blockUi: false, resetProfile: false });
     });
 
     return () => {
-      clearTimeout(loadingTimeout.current);
+      isMounted.current = false;
+      stopLoading();
       subscription.unsubscribe();
     };
   }, []);
 
   async function signIn(email, password) {
     setLoading(true);
+    startLoadingGuard();
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setLoading(false);
+    try {
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        AUTH_TIMEOUT_MS,
+        'sign in'
+      );
+      if (error) {
+        throw error;
+      }
+
+      const activeSession = data?.session || (data?.user ? { user: data.user } : null);
+      await syncSessionState(activeSession, { blockUi: false, resetProfile: true });
+
+      stopLoading();
+      return data;
+    } catch (error) {
+      stopLoading();
       throw error;
     }
-
-    const activeUser = data?.user || data?.session?.user || null;
-    if (activeUser) {
-      setUser(activeUser);
-      setProfile(await fetchProfile(activeUser.id));
-    }
-
-    setLoading(false);
-    return data;
   }
 
   async function signOut() {
     setLoading(true);
+    startLoadingGuard();
 
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await withTimeout(supabase.auth.signOut(), AUTH_TIMEOUT_MS, 'sign out');
       if (error) {
         throw error;
       }
@@ -135,7 +204,7 @@ export function AuthProvider({ children }) {
       clearStoredAuth();
       setUser(null);
       setProfile(null);
-      setLoading(false);
+      stopLoading();
     }
   }
 
