@@ -15,7 +15,6 @@ import {
   ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
-  MapPin,
   Phone,
   Mail,
   Video,
@@ -5395,8 +5394,7 @@ function LeagueHomePage({
                 darkMode ? "text-gray-400" : "text-gray-600"
               )}
             >
-              Kolejka {upcomingMatch.round} • {upcomingMatch.time} •{" "}
-              {upcomingMatch.venue}
+              Kolejka {upcomingMatch.round} • {upcomingMatch.time}
             </div>
           </Card>
 
@@ -6022,9 +6020,6 @@ function CalendarPage({
                           darkMode ? "text-gray-400" : "text-gray-600"
                         )}
                       >
-                        <MapPin size={14} className="e3d-ico" />
-                        <span className="font-semibold">{f.venue}</span>
-                        <span>•</span>
                         <span className="font-semibold">{leagueName}</span>
                       </div>
                     </Card>
@@ -7574,8 +7569,6 @@ function MatchDetailsInline({ darkMode, match, openTeam, openPlayer, openGallery
         <span className="font-semibold">
           {match.date} {match.time}
         </span>
-        <span> • </span>
-        <span className="font-semibold">{match.venue}</span>
         <MediaIcons
           darkMode={darkMode}
           videoUrl={match.videoUrl}
@@ -7790,8 +7783,6 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
         <span className="font-semibold">
           {match.date} {match.time}
         </span>
-        <span>•</span>
-        <span className="font-semibold">{match.venue}</span>
 
         <MediaIcons
           darkMode={darkMode}
@@ -7955,8 +7946,6 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
           <span className="font-semibold">
             {match.date} {match.time}
           </span>
-          <span>•</span>
-          <span className="font-semibold">{match.venue}</span>
           {match.referee && (
             <>
               <span>•</span>
@@ -12879,8 +12868,6 @@ function UpcomingMatchDetails({
           <span className="font-semibold">{leagueName}</span>
           <span>•</span>
           <span className="font-semibold">Kolejka {fixture.round}</span>
-          <span>•</span>
-          <span className="font-semibold">{fixture.venue}</span>
           <MediaIcons
             darkMode={darkMode}
             videoUrl={fixture.videoUrl}
