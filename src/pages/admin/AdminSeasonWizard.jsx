@@ -261,8 +261,30 @@ export default function AdminSeasonWizard({ darkMode }) {
   // Max kolejek w jednej rundzie (po wszystkich ligach) — wyznacza granicę R1/R2
   const maxRPR = useMemo(() => Math.max(...leagues.map(l => roundsPerRunda(tpl(l.id))), 0), [leagues, teamAssignments]);
   const totalRoundsNeeded = maxRPR * 2;
-  // Etykieta weekendu: R1K1, R1K2... R2K12, R2K13...
-  const rundaLabel = (wkIdx) => wkIdx < maxRPR ? `R1K${wkIdx + 1}` : `R2K${wkIdx + 1}`;
+  // Etykieta terminu: R1K1, R1K2... R2K1, R2K2...
+  const rundaLabel = (wkIdx) => wkIdx < maxRPR ? `R1K${wkIdx + 1}` : `R2K${wkIdx - maxRPR + 1}`;
+  const leaguesWithBye = useMemo(
+    () => leagues
+      .map((league) => ({
+        id: league.id,
+        name: league.name,
+        teamCount: tpl(league.id),
+      }))
+      .filter((league) => league.teamCount >= 3 && league.teamCount % 2 === 1),
+    [leagues, teamAssignments]
+  );
+
+  const getLeagueRoundMeta = (roundNumber, leagueId) => {
+    const roundsInFirstRound = roundsPerRunda(tpl(leagueId));
+    if (roundNumber <= roundsInFirstRound) {
+      return { stage: "R1", stageRound: roundNumber };
+    }
+
+    return {
+      stage: "R2",
+      stageRound: roundNumber - roundsInFirstRound,
+    };
+  };
 
   // Ile meczów per kolejkę per liga
   const matchesPerRound = (lid) => Math.floor(tpl(lid) / 2);
@@ -1248,7 +1270,17 @@ export default function AdminSeasonWizard({ darkMode }) {
             Kliknij w blok kolejki (sob+nie+pon), aby oznaczyć go jako termin.
             Potrzebujesz <strong>{totalRoundsNeeded}</strong> terminów kolejki ({maxRPR} kol. × 2 rundy).
             Wybrano: <strong className={matchWeekends.length >= totalRoundsNeeded ? "text-green-400" : "text-orange-400"}>{matchWeekends.length}</strong>.
-            {maxRPR > 0 && <><br/>Runda 1: terminy 1–{maxRPR} • Runda 2: terminy {maxRPR+1}–{maxRPR*2}</>}
+            {maxRPR > 0 && <><br/>Runda 1: K1–K{maxRPR} • Runda 2: K1–K{maxRPR}</>}
+            {leaguesWithBye.length > 0 && (
+              <>
+                <br />
+                W ligach z nieparzystą liczbą drużyn w każdej kolejce jedna drużyna pauzuje:
+                {" "}
+                <strong>
+                  {leaguesWithBye.map((league) => `${league.name} (${league.teamCount})`).join(", ")}
+                </strong>.
+              </>
+            )}
           </p>
 
           <div className="flex items-center justify-between mb-4">
@@ -1478,10 +1510,14 @@ export default function AdminSeasonWizard({ darkMode }) {
 
           {Object.keys(grouped).length === 0 ? <p className={muted}>Brak meczów.</p> : (
             <div className="space-y-4 max-h-[600px] overflow-y-auto">
-              {Object.entries(grouped).map(([round, matches]) => (
+              {Object.entries(grouped).map(([round, matches]) => {
+                const roundNumber = parseInt(round, 10);
+                const roundMeta = getLeagueRoundMeta(roundNumber, previewLeague);
+
+                return (
                 <div key={round} className={`rounded-xl border ${darkMode ? "border-white/10" : "border-gray-200"}`}>
                   <div className={`px-4 py-2 font-semibold text-sm ${darkMode ? "bg-white/5" : "bg-gray-50"} rounded-t-xl flex justify-between`}>
-                    <span>{parseInt(round) <= roundsPerRunda(tpl(previewLeague)) ? "R1" : "R2"} Kolejka {round}</span>
+                    <span>{roundMeta.stage} Kolejka {roundMeta.stageRound}</span>
                     <span className={muted}>{matches[0]?.match_date || "—"}</span>
                   </div>
                   <div className={`divide-y ${darkMode ? "divide-white/5" : "divide-gray-100"}`}>
@@ -1509,7 +1545,7 @@ export default function AdminSeasonWizard({ darkMode }) {
                     })}
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
 
