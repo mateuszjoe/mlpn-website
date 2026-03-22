@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "../../lib/supabase";
+import { logoByTeam } from "../../data/mockData";
 import AdminFormField from "./components/AdminFormField";
 import {
   Check, ChevronRight, ChevronLeft, Loader2, Sparkles, Copy,
@@ -21,6 +22,94 @@ const roundsPerRunda = (c) => {
   return c % 2 === 0 ? c - 1 : c;
 };
 const roundsForTeams = (c) => roundsPerRunda(c) * 2;
+
+function normalizeTeamName(name) {
+  return String(name || "")
+    .replace(/\s*\[MERGED[^\]]*\]\s*/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+const localTeamLogoFallbacks = new Map(
+  Object.entries(logoByTeam || {}).map(([name, url]) => [normalizeTeamName(name), url])
+);
+
+function resolveTeamLogoUrl(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return "";
+
+  const fixedValue = value.replace(
+    /^https?:\/\/mlpn\.plhttps?:\/\/mlpn\.pl/i,
+    "http://mlpn.pl"
+  );
+
+  if (/^(https?:|data:|blob:)/i.test(fixedValue)) return fixedValue;
+  return supabase.storage.from("team-logos").getPublicUrl(fixedValue).data?.publicUrl || fixedValue;
+}
+
+function buildTeamLogoFallbackMap(rows) {
+  const map = new Map();
+  const sorted = [...(rows || [])].sort((a, b) => Number(Boolean(b?.is_active)) - Number(Boolean(a?.is_active)));
+
+  for (const row of sorted) {
+    const resolvedLogo = resolveTeamLogoUrl(row?.logo_url);
+    if (!resolvedLogo) continue;
+
+    const keys = [
+      normalizeTeamName(row?.name),
+      row?.abbreviation ? `abbr:${String(row.abbreviation).trim().toLowerCase()}` : "",
+    ].filter(Boolean);
+
+    for (const key of keys) {
+      if (!map.has(key)) {
+        map.set(key, resolvedLogo);
+      }
+    }
+  }
+
+  return map;
+}
+
+function resolveBestTeamLogo(team, fallbackMap) {
+  const ownLogo = resolveTeamLogoUrl(team?.logo_url);
+  if (ownLogo) return ownLogo;
+
+  const normalizedName = normalizeTeamName(team?.name);
+  const abbreviationKey = team?.abbreviation ? `abbr:${String(team.abbreviation).trim().toLowerCase()}` : "";
+  const localFallback = localTeamLogoFallbacks.get(normalizedName);
+
+  if (localFallback) return localFallback;
+
+  return fallbackMap.get(normalizedName) || fallbackMap.get(abbreviationKey) || "";
+}
+
+function TeamAvatar({ team, size = 28, darkMode, hideFallback = false }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const initials = String(team?.abbreviation || "?").slice(0, 2).toUpperCase();
+  const hasLogo = Boolean(team?.logo_url) && !imgFailed;
+
+  if (!hasLogo && hideFallback) return null;
+
+  return hasLogo ? (
+    <img
+      src={encodeURI(team.logo_url)}
+      alt=""
+      className="object-contain rounded"
+      style={{ width: size, height: size }}
+      onError={() => setImgFailed(true)}
+    />
+  ) : (
+    <div
+      className={`rounded flex items-center justify-center text-xs font-bold ${
+        darkMode ? "bg-gray-700 text-gray-100" : "bg-gray-200 text-gray-700"
+      }`}
+      style={{ width: size, height: size }}
+    >
+      {initials}
+    </div>
+  );
+}
 
 function genMonthDays(y, m) {
   const first = new Date(y, m, 1);
@@ -158,11 +247,20 @@ export default function AdminSeasonWizard({ darkMode }) {
   // ── Load teams + leagues ──
   const loadBase = useCallback(async () => {
     const [{ data: t }, { data: l }, { data: es }] = await Promise.all([
-      supabase.from("teams").select("id, name, abbreviation, is_active, logo_url").eq("is_active", true).order("name"),
+      supabase.from("teams").select("id, name, abbreviation, is_active, logo_url").order("name"),
       supabase.from("leagues").select("*").order("display_order"),
       supabase.from("seasons").select("*").order("year", { ascending: false }),
     ]);
-    setAllTeams(t || []);
+    const allTeamRows = t || [];
+    const logoFallbackMap = buildTeamLogoFallbackMap(allTeamRows);
+    const activeTeams = allTeamRows
+      .filter((team) => team.is_active)
+      .map((team) => ({
+        ...team,
+        logo_url: resolveBestTeamLogo(team, logoFallbackMap),
+      }));
+
+    setAllTeams(activeTeams);
     setExistingSeasons(es || []);
     const lgs = l || [];
     setLeagues(lgs);
@@ -1098,8 +1196,7 @@ export default function AdminSeasonWizard({ darkMode }) {
                   {filteredAvailableTeams.map(t => (
                     <button key={t.id} onClick={() => toggleTeam(t.id)}
                       className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left ${darkMode ? "hover:bg-white/10" : "hover:bg-gray-100"}`}>
-                      {t.logo_url ? <img src={t.logo_url} alt="" className="w-7 h-7 object-contain rounded" />
-                        : <div className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold ${darkMode ? "bg-gray-700" : "bg-gray-200"}`}>{(t.abbreviation || "?").slice(0,2)}</div>}
+                      <TeamAvatar team={t} size={28} darkMode={darkMode} />
                       <span className="text-sm font-medium flex-1">{t.name}</span>
                       <ArrowRight size={14} className={muted} />
                     </button>
@@ -1119,8 +1216,7 @@ export default function AdminSeasonWizard({ darkMode }) {
                     <button key={t.id} onClick={() => toggleTeam(t.id)}
                       className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left ${darkMode ? "hover:bg-white/10 bg-white/5" : "hover:bg-yellow-100 bg-white"}`}>
                       <span className={`text-xs font-bold w-5 text-center ${muted}`}>{i+1}</span>
-                      {t.logo_url ? <img src={t.logo_url} alt="" className="w-7 h-7 object-contain rounded" />
-                        : <div className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold ${darkMode ? "bg-gray-700" : "bg-gray-200"}`}>{(t.abbreviation || "?").slice(0,2)}</div>}
+                      <TeamAvatar team={t} size={28} darkMode={darkMode} />
                       <span className="text-sm font-medium flex-1">{t.name}</span>
                       <span className="text-red-400 text-xs">✕</span>
                     </button>
@@ -1171,7 +1267,7 @@ export default function AdminSeasonWizard({ darkMode }) {
                           : total > 0 ? darkMode ? "bg-green-500/20 text-green-400" : "bg-green-100 text-green-700"
                             : darkMode ? "bg-white/5 text-gray-500" : "bg-gray-100 text-gray-400"
                       }`}>
-                      {t.logo_url ? <img src={t.logo_url} alt="" className="w-5 h-5 object-contain rounded" /> : null}
+                      <TeamAvatar team={t} size={20} darkMode={darkMode} hideFallback />
                       <span className="hidden md:inline">{t.name}</span>
                       <span className="md:hidden">{(t.abbreviation || t.name).slice(0, 3)}</span>
                       <span className={`text-[10px] px-1 rounded-full ${isActive ? "bg-black/20" : darkMode ? "bg-white/10" : "bg-gray-200"}`}>{total}</span>
