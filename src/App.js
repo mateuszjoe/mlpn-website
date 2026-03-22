@@ -4687,7 +4687,7 @@ export default function App() {
         {/* SIDEBAR - ukryty w trybie admin */}
         {activeContext !== "admin" && <aside
           className={classNames(
-            "hidden md:flex md:flex-col md:w-56 md:shrink-0 md:sticky md:self-start md:top-[72px] md:h-[calc(100vh-72px)] border-r",
+            "hidden md:flex md:flex-col md:fixed md:left-0 md:top-[72px] md:bottom-0 md:w-56 md:z-30 border-r",
             darkMode
               ? "bg-[#0d1117] border-gray-800"
               : "bg-gradient-to-b from-[#10203e]/95 via-[#1b315c]/95 to-[#1f3f7a]/95 border-white/10"
@@ -4755,7 +4755,7 @@ export default function App() {
         </aside>}
 
         {/* CONTENT */}
-        <main className="flex-1 p-3 sm:p-4 md:p-6 max-w-[1600px] mx-auto">
+        <main className="flex-1 w-full p-3 sm:p-4 md:p-6 md:ml-56 max-w-[1600px] mx-auto">
           {/* round jump only on calendar and league context */}
           {activeContext !== "home" &&
             activeSection === "calendar" &&
