@@ -125,6 +125,7 @@ export function buildRegenerationPlan(matches, teamCount, rng = Math.random) {
       cleanupMatchIds.push(targetMatch.id);
       updates.push({
         matchId: targetMatch.id,
+        targetRound,
         payload: {
           home_team_id: sourceMatch.home_team_id,
           away_team_id: sourceMatch.away_team_id,
@@ -150,5 +151,33 @@ export function buildRegenerationPlan(matches, teamCount, rng = Math.random) {
     editableRounds: [...roundMappings.keys()].sort((a, b) => a - b),
     cleanupMatchIds: [...new Set(cleanupMatchIds)],
     updates,
+  };
+}
+
+export function buildSafeRegenerationBatches(updates, matches) {
+  if (!updates?.length) {
+    return { stageOne: [], stageTwo: [] };
+  }
+
+  const maxRound = Math.max(
+    0,
+    ...((matches || []).map((match) => Number(match?.round) || 0))
+  );
+  const tempBaseRound = maxRound + 1000;
+
+  return {
+    stageOne: updates.map((update, index) => ({
+      matchId: update.matchId,
+      payload: {
+        round: tempBaseRound + index + 1,
+      },
+    })),
+    stageTwo: updates.map((update) => ({
+      matchId: update.matchId,
+      payload: {
+        ...update.payload,
+        round: update.targetRound,
+      },
+    })),
   };
 }

@@ -4,6 +4,7 @@ import AdminFormField from "./components/AdminFormField";
 import AdminAlert from "./components/AdminAlert";
 import { Calendar, Zap, Save, RefreshCw, Loader2 } from "lucide-react";
 import {
+  buildSafeRegenerationBatches,
   buildRegenerationPlan,
   formatLockedRounds,
 } from "./utils/scheduleRegeneration";
@@ -143,7 +144,20 @@ export default function AdminSchedule({ darkMode }) {
         if (eventError) throw eventError;
       }
 
-      for (const update of plan.updates) {
+      const { stageOne, stageTwo } = buildSafeRegenerationBatches(plan.updates, matches);
+
+      for (const update of stageOne) {
+        const { error } = await supabase
+          .from("matches")
+          .update(update.payload)
+          .eq("id", update.matchId);
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      for (const update of stageTwo) {
         const { error } = await supabase
           .from("matches")
           .update(update.payload)

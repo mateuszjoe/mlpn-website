@@ -8,6 +8,7 @@ import {
   Users, Search, UserPlus, UserMinus, Undo2,
 } from "lucide-react";
 import {
+  buildSafeRegenerationBatches,
   buildRegenerationPlan,
   formatLockedRounds,
 } from "./utils/scheduleRegeneration";
@@ -1110,6 +1111,7 @@ export default function AdminSeasonWizard({ darkMode }) {
           for (const { match, slot } of assignments) {
             constrainedUpdates.push({
               matchId: slot.matchId,
+              targetRound: round,
               payload: match.payload,
             });
           }
@@ -1125,7 +1127,20 @@ export default function AdminSeasonWizard({ darkMode }) {
         await supabase.from("match_lineups").delete().in("match_id", plan.cleanupMatchIds);
       }
 
-      for (const update of updatesToApply) {
+      const { stageOne, stageTwo } = buildSafeRegenerationBatches(updatesToApply, leagueMatches);
+
+      for (const update of stageOne) {
+        const { error } = await supabase
+          .from("matches")
+          .update(update.payload)
+          .eq("id", update.matchId);
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      for (const update of stageTwo) {
         const { error } = await supabase
           .from("matches")
           .update(update.payload)
