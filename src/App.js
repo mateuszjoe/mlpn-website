@@ -556,11 +556,19 @@ function makeUniqueAbbrMap(leagues) {
 }
 
 function displayTeamName(team) {
+  const normalizedTeam =
+    typeof team === "string"
+      ? team
+      : typeof team?.team === "string"
+      ? team.team
+      : typeof team?.name === "string"
+      ? team.name
+      : "";
   // Domyślnie pełna nazwa drużyny. Jedyny wyjątek: 1 Warszawska Brygada Pancerna.
-  if (team === "1 Warszawska Brygada Pancerna") return "I WBP";
+  if (normalizedTeam === "1 Warszawska Brygada Pancerna") return "I WBP";
   // Skróty drużynowe pisane wielkimi literami
   const abbreviations = ['fc', 'sc', 'stm', 'es', 'ks', 'lks', 'aks', 'gks', 'mks', 'rks', 'wks', 'bks', 'uks', 'ts'];
-  return (team || '').replace(/\b\w+\b/g, (word) => {
+  return normalizedTeam.replace(/\b\w+\b/g, (word) => {
     if (abbreviations.includes(word.toLowerCase())) return word.toUpperCase();
     return word;
   });
@@ -10453,6 +10461,15 @@ function HomeDashboard({
   const isExcludedFromUpcoming = (status) =>
     status === "cancelled" || status === "unplayed" || status === "postponed";
   const safeStats = stats || {};
+  const safeNews = Array.isArray(news)
+    ? news.filter((item) => item && typeof item === "object")
+    : [];
+  const safePolls = Array.isArray(polls)
+    ? polls.filter((item) => item && typeof item === "object")
+    : [];
+  const safeTyperMatches = Array.isArray(typerMatches)
+    ? typerMatches.filter((item) => item && typeof item === "object")
+    : [];
   const tableByLeague = safeStats.tableByLeague || {};
   const topScorers = Array.isArray(safeStats.topScorers) ? safeStats.topScorers : [];
   const topAssists = Array.isArray(safeStats.topAssists) ? safeStats.topAssists : [];
@@ -10478,7 +10495,17 @@ function HomeDashboard({
     return m;
   }, [matches]);
 
-  const latestNews = useMemo(() => (news || []).slice(0, 4), [news]);
+  const latestNews = useMemo(
+    () =>
+      safeNews.slice(0, 4).map((item) => ({
+        ...item,
+        title: typeof item.title === "string" ? item.title : "",
+        body: typeof item.body === "string" ? item.body : "",
+        category: typeof item.category === "string" ? item.category : "",
+        date: typeof item.date === "string" ? item.date : "",
+      })),
+    [safeNews]
+  );
 
   const quickStats = useMemo(() => {
     const totalGoals = (matches || []).reduce(
@@ -10535,10 +10562,10 @@ function HomeDashboard({
   const heroUpcoming = !isCompleted ? upcoming[0] || null : null;
   const heroRecent = lastMatches[0] || null;
   const latestPoll = useMemo(() => {
-    const all = Array.isArray(polls) ? polls : [];
+    const all = safePolls;
     return all.find((p) => p?.active) || all[0] || null;
-  }, [polls]);
-  const heroTyperMatches = useMemo(() => (Array.isArray(typerMatches) ? typerMatches.slice(0, 5) : []), [typerMatches]);
+  }, [safePolls]);
+  const heroTyperMatches = useMemo(() => safeTyperMatches.slice(0, 5), [safeTyperMatches]);
   const [heroTyperPicks, setHeroTyperPicks] = useState({});
   const [heroTyperSubmitted, setHeroTyperSubmitted] = useState(false);
   const heroTyperKey = useMemo(() => heroTyperMatches.map((m) => m.id).join("|"), [heroTyperMatches]);
@@ -10557,7 +10584,10 @@ function HomeDashboard({
   const heroCardRef = useRef(null);
 
   const latestPollOptions = useMemo(
-    () => (Array.isArray(latestPoll?.options) ? latestPoll.options.filter(Boolean) : []),
+    () =>
+      Array.isArray(latestPoll?.options)
+        ? latestPoll.options.filter((option) => typeof option === "string" && option.trim())
+        : [],
     [latestPoll]
   );
   const [heroPollCounts, setHeroPollCounts] = useState([]);
@@ -10579,14 +10609,14 @@ function HomeDashboard({
       kind: "typer",
       key: "typer",
       kicker: "Typer",
-      title: typerMatches?.length
+      title: heroTyperMatches.length
         ? `Typowanie kolejki ${currentRound || "?"}`
         : "Typer MLPN",
-      body: typerMatches?.length
-        ? `${typerMatches.length} meczów czeka na typy. Wejdź i obstaw najbliższe spotkania.`
+      body: heroTyperMatches.length
+        ? `${heroTyperMatches.length} meczów czeka na typy. Wejdź i obstaw najbliższe spotkania.`
         : "Sprawdź typer i oddaj typy na najbliższe spotkania.",
-      meta: typerMatches?.[0]
-        ? `${displayTeamName(typerMatches[0].home)} vs ${displayTeamName(typerMatches[0].away)}`
+      meta: heroTyperMatches[0]
+        ? `${displayTeamName(heroTyperMatches[0].home)} vs ${displayTeamName(heroTyperMatches[0].away)}`
         : "Panel typowania",
       ctaLabel: "Otwórz typer",
       onClick: () => openHomeTab("typer"),
@@ -10624,9 +10654,9 @@ function HomeDashboard({
         kind: "poll",
         key: `poll-${latestPoll.id}`,
         kicker: "Ankieta",
-        title: latestPoll.question || "Ostatnia ankieta",
-        body: latestPoll.options?.length
-          ? `Opcje: ${latestPoll.options.slice(0, 3).join(" • ")}${latestPoll.options.length > 3 ? "..." : ""}`
+        title: typeof latestPoll.question === "string" ? latestPoll.question : "Ostatnia ankieta",
+        body: latestPollOptions.length
+          ? `Opcje: ${latestPollOptions.slice(0, 3).join(" • ")}${latestPollOptions.length > 3 ? "..." : ""}`
           : "Kliknij, aby zagłosować lub zobaczyć wyniki.",
         meta: latestPoll.active ? "Aktywna ankieta" : "Archiwum ankiet",
         ctaLabel: "Otwórz ankiety",
@@ -10648,7 +10678,7 @@ function HomeDashboard({
     }
 
     return slides.filter(Boolean);
-  }, [typerMatches, currentRound, heroRecent, latestNews, latestPoll, heroUpcoming]);
+  }, [heroTyperMatches, currentRound, heroRecent, latestNews, latestPoll, latestPollOptions, heroUpcoming]);
 
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   useEffect(() => {
