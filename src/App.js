@@ -1867,83 +1867,168 @@ function FormDot({ v, title, small = false }) {
   );
 }
 
-function MobileLeagueTableRow({ row, darkMode, openTeam, showForm = true }) {
-  const position = row.displayPos ?? row.pos;
+function MobileLeagueScrollableTable({
+  rows,
+  darkMode,
+  openTeam,
+  showForm = true,
+  getRowBg,
+}) {
+  const statColumns = [
+    { key: "played", label: "M", width: "w-10" },
+    { key: "win", label: "W", width: "w-10" },
+    { key: "draw", label: "R", width: "w-10" },
+    { key: "loss", label: "P", width: "w-10" },
+    { key: "gf", label: "BZ", width: "w-12" },
+    { key: "ga", label: "BS", width: "w-12" },
+    { key: "gd", label: "+/-", width: "w-12" },
+    { key: "pts", label: "PKT", width: "w-14" },
+  ];
+
+  if (showForm) {
+    statColumns.push({ key: "form", label: "FORMA", width: "w-[108px]" });
+  }
+
+  const renderStatCell = (row, column) => {
+    if (column.key === "gd") {
+      const gd = row.gf - row.ga;
+      return (
+        <span className={classNames(gd > 0 ? "text-emerald-400" : gd < 0 ? "text-rose-400" : "")}>
+          {gd > 0 ? "+" : ""}
+          {gd}
+        </span>
+      );
+    }
+
+    if (column.key === "form") {
+      return (
+        <div className="flex items-center justify-start gap-1">
+          {(row.form5 || []).map((f, i) => (
+            <FormDot
+              key={`${row.team}-form-${i}`}
+              v={f.result}
+              title={`${f.score} ${displayTeamName(f.opponent)}`}
+              small
+            />
+          ))}
+          {row.nextOpponent && (
+            <FormDot
+              v="?"
+              title={`Następny mecz: ${displayTeamName(row.nextOpponent)}`}
+              small
+            />
+          )}
+        </div>
+      );
+    }
+
+    return row[column.key] ?? "";
+  };
 
   return (
-    <div
-      className={classNames(
-        "px-2 py-2 border-t",
-        darkMode ? "border-white/10 hover:bg-white/5" : "border-gray-100 hover:bg-gray-50"
-      )}
-    >
-      <div className="grid grid-cols-[20px_minmax(0,1fr)_32px_58px] gap-2 items-center">
-        <div className="font-extrabold text-[12px] leading-none text-center">{position}</div>
-
-        <div className="flex items-center gap-2 min-w-0">
-          <TeamLogo
-            team={row.team}
-            darkMode={darkMode}
-            size={22}
-            onClick={() => openTeam(row.team)}
-          />
-          <button
-            onClick={() => openTeam(row.team)}
-            className="font-bold hover:underline truncate text-[12px] leading-tight text-left min-w-0 block w-full"
-          >
-            {displayTeamName(row.team)}
-          </button>
-        </div>
-
-        <div className="font-black text-[12px] text-right leading-none">{row.pts}</div>
-
-        <div className="flex gap-1 justify-end">
-          {showForm
-            ? (
-              <>
-                {(row.form5 || []).slice(0, 4).map((f, i) => (
-                  <FormDot
-                    key={i}
-                    v={f.result}
-                    title={`${f.score} ${displayTeamName(f.opponent)}`}
-                    small
-                  />
-                ))}
-                {row.nextOpponent && (
-                  <FormDot
-                    v="?"
-                    title={`Następny mecz: ${displayTeamName(row.nextOpponent)}`}
-                    small
-                  />
-                )}
-              </>
-            ) : (
-              <div className={classNames("text-[9px] font-bold uppercase tracking-wide", darkMode ? "text-gray-500" : "text-gray-400")}>
-                Stat
-              </div>
+    <div className="md:hidden -mx-4">
+      <div className="overflow-x-auto touch-pan-x px-4 pb-1">
+        <div className="min-w-[640px]">
+          <div
+            className={classNames(
+              "flex text-[10px] font-bold uppercase tracking-wide border-b",
+              darkMode ? "text-gray-300 border-white/10" : "text-gray-600 border-gray-200"
             )}
-        </div>
-      </div>
+          >
+            <div
+              className={classNames(
+                "sticky left-0 z-20 shrink-0 w-[182px] px-2 py-2 border-r shadow-[10px_0_18px_rgba(15,23,42,0.08)]",
+                darkMode ? "bg-[#0b1220] border-white/10" : "bg-white border-gray-200"
+              )}
+            >
+              <div className="grid grid-cols-[20px_28px_minmax(0,1fr)] gap-2 items-center">
+                <div>#</div>
+                <div></div>
+                <div>Drużyna</div>
+              </div>
+            </div>
 
-      <div
-        className={classNames(
-          "mt-1.5 grid grid-cols-7 gap-1 text-[9px] leading-tight",
-          darkMode ? "text-gray-400" : "text-gray-600"
-        )}
-      >
-        <div className="text-center"><span className="font-bold block">M</span>{row.played}</div>
-        <div className="text-center"><span className="font-bold block">W</span>{row.win}</div>
-        <div className="text-center"><span className="font-bold block">R</span>{row.draw}</div>
-        <div className="text-center"><span className="font-bold block">P</span>{row.loss}</div>
-        <div className="text-center"><span className="font-bold block">BZ</span>{row.gf}</div>
-        <div className="text-center"><span className="font-bold block">BS</span>{row.ga}</div>
-        <div className={classNames(
-          "text-center",
-          row.gf - row.ga > 0 ? "text-emerald-400" : row.gf - row.ga < 0 ? "text-rose-400" : ""
-        )}>
-          <span className="font-bold block">+/-</span>
-          {row.gf - row.ga > 0 ? "+" : ""}
-          {row.gf - row.ga}
+            <div
+              className={classNames(
+                "shrink-0 flex items-center gap-0 px-2 py-2",
+                darkMode ? "bg-black/20" : "bg-gray-50"
+              )}
+            >
+              {statColumns.map((column) => (
+                <div
+                  key={column.key}
+                  className={classNames(
+                    "shrink-0 text-center",
+                    column.width,
+                    column.key === "form" ? "text-left" : ""
+                  )}
+                >
+                  {column.label}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {rows.map((row) => {
+            const position = row.displayPos ?? row.pos;
+            const rowBg = getRowBg?.(position) || "";
+            const baseRowTone = darkMode
+              ? "border-white/10 bg-white/[0.03]"
+              : "border-gray-100 bg-white";
+
+            return (
+              <div
+                key={`mobile-scroll-${row.team}-${position}`}
+                className={classNames("flex border-b", baseRowTone, rowBg)}
+              >
+                <div
+                  className={classNames(
+                    "sticky left-0 z-10 shrink-0 w-[182px] px-2 py-2 border-r shadow-[10px_0_18px_rgba(15,23,42,0.08)]",
+                    darkMode ? "bg-[#0b1220] border-white/10" : "bg-white border-gray-100",
+                    rowBg
+                  )}
+                >
+                  <div className="grid grid-cols-[20px_28px_minmax(0,1fr)] gap-2 items-center">
+                    <div className="font-extrabold text-[12px] leading-none">{position}</div>
+                    <TeamLogo
+                      team={row.team}
+                      darkMode={darkMode}
+                      size={20}
+                      onClick={() => openTeam(row.team)}
+                    />
+                    <button
+                      onClick={() => openTeam(row.team)}
+                      className="font-bold hover:underline truncate text-[11px] leading-tight text-left min-w-0 block w-full"
+                    >
+                      {displayTeamName(row.team)}
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  className={classNames(
+                    "shrink-0 flex items-center gap-0 px-2 py-2 text-[11px]",
+                    darkMode ? "text-gray-100" : "text-gray-700",
+                    rowBg
+                  )}
+                >
+                  {statColumns.map((column) => (
+                    <div
+                      key={`${row.team}-${column.key}`}
+                      className={classNames(
+                        "shrink-0 text-center font-semibold",
+                        column.width,
+                        column.key === "pts" ? "font-black" : "",
+                        column.key === "form" ? "text-left font-normal" : ""
+                      )}
+                    >
+                      {renderStatCell(row, column)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -5530,31 +5615,13 @@ function LeagueHomePage({
           <Card darkMode={darkMode}>
             <div className="font-extrabold mb-3 text-lg">Tabela końcowa sezonu {currentSeason}</div>
 
-            <div className="md:hidden">
-              <div
-                className={classNames(
-                  "px-2 py-2 text-[10px] font-bold tracking-wide",
-                  darkMode ? "text-gray-300 bg-black/20" : "text-gray-600 bg-gray-50"
-                )}
-              >
-                <div className="grid grid-cols-[20px_minmax(0,1fr)_32px_58px] gap-2 items-center">
-                  <div>#</div>
-                  <div>Druzyna</div>
-                  <div className="text-right">Pkt</div>
-                  <div className="text-center">Stat</div>
-                </div>
-              </div>
-
-              {table.map((r) => (
-                <MobileLeagueTableRow
-                  key={`archive-mobile-${r.team}`}
-                  row={r}
-                  darkMode={darkMode}
-                  openTeam={openTeam}
-                  showForm={false}
-                />
-              ))}
-            </div>
+            <MobileLeagueScrollableTable
+              rows={table}
+              darkMode={darkMode}
+              openTeam={openTeam}
+              showForm={false}
+              getRowBg={getPositionBg}
+            />
 
             {/* Nagłówki kolumn - bez Formy */}
             <div
@@ -6072,31 +6139,13 @@ function LeagueHomePage({
         <Card darkMode={darkMode}>
           <div className="font-extrabold mb-3 text-lg">Tabela ligowa</div>
 
-          <div className="md:hidden">
-            <div
-              className={classNames(
-                "px-2 py-2 text-[10px] font-bold tracking-wide",
-                darkMode ? "text-gray-300 bg-black/20" : "text-gray-600 bg-gray-50"
-              )}
-            >
-              <div className="grid grid-cols-[20px_minmax(0,1fr)_32px_58px] gap-2 items-center">
-                <div>#</div>
-                <div>Druzyna</div>
-                <div className="text-right">Pkt</div>
-                <div className="text-center">Forma</div>
-              </div>
-            </div>
-
-            {simpleTable.map((r) => (
-              <MobileLeagueTableRow
-                key={`current-mobile-${r.team}`}
-                row={r}
-                darkMode={darkMode}
-                openTeam={openTeam}
-                showForm
-              />
-            ))}
-          </div>
+          <MobileLeagueScrollableTable
+            rows={simpleTable}
+            darkMode={darkMode}
+            openTeam={openTeam}
+            showForm
+            getRowBg={getPositionBg}
+          />
 
           {/* Nagłówki kolumn */}
           <div
@@ -6355,95 +6404,13 @@ function LeagueTablePage({
           darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-white"
         )}
       >
-        <div className="md:hidden">
-          <div
-            className={classNames(
-              "px-2 py-2 text-[10px] font-bold tracking-wide",
-              darkMode ? "text-gray-300 bg-black/20" : "text-gray-600 bg-gray-50"
-            )}
-          >
-            <div className="grid grid-cols-[22px_minmax(0,1fr)_34px_62px] gap-2 items-center">
-              <div>#</div>
-              <div>Drużyna</div>
-              <div className="text-right">Pkt</div>
-              <div className="text-center">Forma</div>
-            </div>
-          </div>
-
-          {sortedTable.map((r) => (
-            <div
-              key={`mobile-${r.team}`}
-              className={classNames(
-                "px-2 py-2 border-t",
-                getPositionBg(r.displayPos),
-                darkMode
-                  ? "border-white/10 hover:bg-white/5"
-                  : "border-gray-100 hover:bg-gray-50"
-              )}
-            >
-              <div className="grid grid-cols-[22px_minmax(0,1fr)_34px_62px] gap-2 items-center">
-                <div className="font-extrabold text-[13px] leading-none">{r.displayPos}</div>
-
-                <div className="flex items-center gap-2 min-w-0">
-                  <TeamLogo
-                    team={r.team}
-                    darkMode={darkMode}
-                    size={24}
-                    onClick={() => openTeam(r.team)}
-                  />
-                  <button
-                    onClick={() => openTeam(r.team)}
-                    className="font-bold hover:underline truncate text-[12px] leading-tight text-left min-w-0 block w-full"
-                  >
-                    {displayTeamName(r.team)}
-                  </button>
-                </div>
-
-                <div className="font-black text-[13px] text-right leading-none">{r.pts}</div>
-
-                <div className="flex gap-1 justify-end">
-                  {(r.form5 || []).slice(0, 4).map((f, i) => (
-                    <FormDot
-                      key={i}
-                      v={f.result}
-                      title={`${f.score} ${displayTeamName(f.opponent)}`}
-                      small
-                    />
-                  ))}
-                  {r.nextOpponent && (
-                    <FormDot
-                      v="?"
-                      title={`Następny mecz: ${displayTeamName(r.nextOpponent)}`}
-                      small
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div
-                className={classNames(
-                  "mt-1.5 grid grid-cols-7 gap-1 text-[9px] leading-tight",
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                )}
-              >
-                <div className="text-center"><span className="font-bold block">M</span>{r.played}</div>
-                <div className="text-center"><span className="font-bold block">W</span>{r.win}</div>
-                <div className="text-center"><span className="font-bold block">R</span>{r.draw}</div>
-                <div className="text-center"><span className="font-bold block">P</span>{r.loss}</div>
-                <div className="text-center"><span className="font-bold block">BZ</span>{r.gf}</div>
-                <div className="text-center"><span className="font-bold block">BS</span>{r.ga}</div>
-                <div className={classNames(
-                  "text-center",
-                  r.gf - r.ga > 0 ? "text-emerald-400" : r.gf - r.ga < 0 ? "text-rose-400" : ""
-                )}>
-                  <span className="font-bold block">+/-</span>
-                  {r.gf - r.ga > 0 ? "+" : ""}
-                  {r.gf - r.ga}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <MobileLeagueScrollableTable
+          rows={sortedTable}
+          darkMode={darkMode}
+          openTeam={openTeam}
+          showForm
+          getRowBg={getPositionBg}
+        />
 
         <div
           className={classNames(
