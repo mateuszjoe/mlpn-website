@@ -6354,7 +6354,65 @@ function LeagueHomePage({
                         : "border-gray-200 bg-gray-50"
                     )}
                   >
-                    <div className="grid grid-cols-[minmax(0,1fr)_240px_minmax(0,1fr)] gap-2 items-center">
+                    <div className="sm:hidden space-y-2">
+                      <div className="grid grid-cols-[24px_minmax(0,1fr)_auto] grid-rows-2 gap-x-2 gap-y-2 items-center">
+                        <TeamLogo
+                          team={m.home}
+                          darkMode={darkMode}
+                          size={24}
+                          onClick={() => openTeam(m.home)}
+                        />
+                        <button
+                          onClick={() => openTeam(m.home)}
+                          className="font-extrabold text-[12px] truncate text-left hover:underline min-w-0"
+                        >
+                          {displayTeamName(m.home)}
+                        </button>
+                        <div className="row-span-2 min-w-[98px] flex items-center justify-center">
+                          <ScorePill
+                            homeGoals={m.homeGoals}
+                            awayGoals={m.awayGoals}
+                            darkMode={darkMode}
+                            onClick={() => openMatch(m.id)}
+                            status={m.status}
+                          />
+                        </div>
+
+                        <TeamLogo
+                          team={m.away}
+                          darkMode={darkMode}
+                          size={24}
+                          onClick={() => openTeam(m.away)}
+                        />
+                        <button
+                          onClick={() => openTeam(m.away)}
+                          className="font-extrabold text-[12px] truncate text-left hover:underline min-w-0"
+                        >
+                          {displayTeamName(m.away)}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <div
+                          className={classNames(
+                            "text-[11px]",
+                            darkMode ? "text-gray-400" : "text-gray-600"
+                          )}
+                        >
+                          Kolejka {m.round}
+                        </div>
+                        <MediaIcons
+                          darkMode={darkMode}
+                          videoUrl={m.videoUrl}
+                          galleryUrl={m.galleryUrl}
+                          onOpenGallery={m.hasGallery ? () => openGallery?.(m) : undefined}
+                          galleryCount={m.galleryCount}
+                          size={14}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_240px_minmax(0,1fr)] gap-2 items-center">
                       <div className="flex items-center gap-2 justify-start min-w-0">
                         <TeamLogo
                           team={m.home}
