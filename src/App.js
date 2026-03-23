@@ -1886,7 +1886,9 @@ function MobileLeagueScrollableTable({
   showForm = true,
   getRowBg,
 }) {
-  const leftColumnWidth = showForm ? 140 : 132;
+  const leftColumnWidth = showForm ? 142 : 132;
+  const headerHeight = "h-9";
+  const rowHeight = "h-[52px]";
   const statColumns = [
     { key: "played", label: "M", width: "w-8" },
     { key: "win", label: "W", width: "w-8" },
@@ -1940,32 +1942,64 @@ function MobileLeagueScrollableTable({
 
   return (
     <div className="md:hidden w-full max-w-full overflow-hidden rounded-xl border border-white/10">
-      <div className="w-full overflow-x-auto overscroll-x-contain touch-pan-x">
-        <div className="min-w-max">
+      <div className="flex w-full">
+        <div
+          className={classNames(
+            "shrink-0 border-r",
+            darkMode ? "bg-[#0b1220] border-white/10" : "bg-white border-gray-200"
+          )}
+          style={{ width: leftColumnWidth }}
+        >
           <div
             className={classNames(
-              "flex text-[9px] font-bold uppercase tracking-wide border-b",
+              headerHeight,
+              "grid grid-cols-[14px_20px_minmax(0,1fr)] gap-1 items-center px-2 text-[9px] font-bold uppercase tracking-wide border-b",
               darkMode ? "text-gray-300 border-white/10" : "text-gray-600 border-gray-200"
             )}
           >
-            <div
-              className={classNames(
-                "sticky left-0 z-20 shrink-0 px-2 py-2 border-r shadow-[6px_0_12px_rgba(15,23,42,0.08)]",
-                darkMode ? "bg-[#0b1220] border-white/10" : "bg-white border-gray-200"
-              )}
-              style={{ width: leftColumnWidth }}
-            >
-              <div className="grid grid-cols-[16px_22px_minmax(0,1fr)] gap-1.5 items-center">
-                <div>#</div>
-                <div></div>
-                <div>Drużyna</div>
-              </div>
-            </div>
+            <div>#</div>
+            <div></div>
+            <div>Drużyna</div>
+          </div>
 
+          {rows.map((row) => {
+            const position = row.displayPos ?? row.pos;
+            const rowBg = getRowBg?.(position) || "";
+            return (
+              <div
+                key={`mobile-fixed-${row.team}-${position}`}
+                className={classNames(
+                  rowHeight,
+                  "grid grid-cols-[14px_20px_minmax(0,1fr)] gap-1 items-center px-2 border-b",
+                  darkMode ? "border-white/10 text-gray-100" : "border-gray-100 text-gray-700",
+                  rowBg
+                )}
+              >
+                <div className="font-extrabold text-[11px] leading-none">{position}</div>
+                <TeamLogo
+                  team={row.team}
+                  darkMode={darkMode}
+                  size={15}
+                  onClick={() => openTeam(row.team)}
+                />
+                <button
+                  onClick={() => openTeam(row.team)}
+                  className="font-bold hover:underline truncate text-[10px] leading-tight text-left min-w-0 block w-full"
+                >
+                  {displayTeamName(row.team)}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain touch-pan-x">
+          <div className="min-w-max">
             <div
               className={classNames(
-                "shrink-0 flex items-center gap-0 px-1.5 py-2",
-                darkMode ? "bg-black/20" : "bg-gray-50"
+                headerHeight,
+                "flex items-center gap-0 px-1.5 text-[9px] font-bold uppercase tracking-wide border-b",
+                darkMode ? "text-gray-300 border-white/10 bg-black/20" : "text-gray-600 border-gray-200 bg-gray-50"
               )}
             >
               {statColumns.map((column) => (
@@ -1981,49 +2015,17 @@ function MobileLeagueScrollableTable({
                 </div>
               ))}
             </div>
-          </div>
 
-          {rows.map((row) => {
-            const position = row.displayPos ?? row.pos;
-            const rowBg = getRowBg?.(position) || "";
-            const baseRowTone = darkMode
-              ? "border-white/10 bg-white/[0.03]"
-              : "border-gray-100 bg-white";
-
-            return (
-              <div
-                key={`mobile-scroll-${row.team}-${position}`}
-                className={classNames("flex border-b", baseRowTone, rowBg)}
-              >
+            {rows.map((row) => {
+              const position = row.displayPos ?? row.pos;
+              const rowBg = getRowBg?.(position) || "";
+              return (
                 <div
+                  key={`mobile-scroll-${row.team}-${position}`}
                   className={classNames(
-                    "sticky left-0 z-10 shrink-0 px-2 py-1.5 border-r shadow-[6px_0_12px_rgba(15,23,42,0.08)]",
-                    darkMode ? "bg-[#0b1220] border-white/10" : "bg-white border-gray-100",
-                    rowBg
-                  )}
-                  style={{ width: leftColumnWidth }}
-                >
-                  <div className="grid grid-cols-[16px_22px_minmax(0,1fr)] gap-1.5 items-center">
-                    <div className="font-extrabold text-[11px] leading-none">{position}</div>
-                    <TeamLogo
-                      team={row.team}
-                      darkMode={darkMode}
-                      size={16}
-                      onClick={() => openTeam(row.team)}
-                    />
-                    <button
-                      onClick={() => openTeam(row.team)}
-                      className="font-bold hover:underline truncate text-[10px] leading-tight text-left min-w-0 block w-full"
-                    >
-                      {displayTeamName(row.team)}
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  className={classNames(
-                    "shrink-0 flex items-center gap-0 px-1.5 py-1.5 text-[10px]",
-                    darkMode ? "text-gray-100" : "text-gray-700",
+                    rowHeight,
+                    "flex items-center gap-0 px-1.5 border-b",
+                    darkMode ? "border-white/10 text-gray-100" : "border-gray-100 text-gray-700",
                     rowBg
                   )}
                 >
@@ -2031,7 +2033,7 @@ function MobileLeagueScrollableTable({
                     <div
                       key={`${row.team}-${column.key}`}
                       className={classNames(
-                        "shrink-0 text-center font-semibold",
+                        "shrink-0 text-center font-semibold text-[10px]",
                         column.width,
                         column.key === "pts" ? "font-black" : "",
                         column.key === "form" ? "text-left font-normal pl-1" : ""
@@ -2041,9 +2043,9 @@ function MobileLeagueScrollableTable({
                     </div>
                   ))}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -5139,7 +5141,7 @@ export default function App() {
             darkMode={darkMode}
             resetKey={`${activeContext}:${activeSection}:${currentSeason || "no-season"}:${selectedTeam || "no-team"}:${selectedMatchId || "no-match"}:${selectedPlayerId || "no-player"}`}
           >
-            {renderPage()}
+            <PageRenderer renderPage={renderPage} />
           </PageRenderErrorBoundary>
         </main>
       </div>
@@ -10402,6 +10404,10 @@ class PageRenderErrorBoundary extends React.Component {
 
     return this.props.children;
   }
+}
+
+function PageRenderer({ renderPage }) {
+  return renderPage();
 }
 
 function HomeDashboard({
