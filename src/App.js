@@ -4455,31 +4455,43 @@ export default function App() {
           return (
             <HomePageErrorBoundary
               darkMode={darkMode}
-              resetKey={`${currentSeason || "none"}:${activeContext}:${activeSection}:${selectedMatchId || "no-match"}`}
+              resetKey={`${currentSeason || "none"}:${activeContext}:${activeSection}:${selectedMatchId || "no-match"}:${dataLoading ? "loading" : "ready"}:${matches.length}:${fixtures.length}:${news.length}:${polls.length}:${typerMatches.length}:${currentRound || 0}`}
             >
-              <HomeDashboard
-                darkMode={darkMode}
-                fixtures={fixtures}
-                matches={matches}
-                stats={stats}
-                news={news}
-                polls={polls}
-                typerMatches={typerMatches}
-                openTeam={openTeam}
-                openMatch={openMatchInline}
-                openGallery={openMatchGallery}
-                expandedMatchId={selectedMatchId}
-                playersByTeam={playersByTeam}
-                openPlayer={openPlayer}
-                currentLeagues={currentLeagues}
-                goToLeague={goToLeague}
-                setHomeSection={setActiveSection}
-                currentRound={currentRound}
-                playedRounds={_playedRounds}
-                seasonStatus={seasonStatus}
-                seasonSummary={seasonSummary}
-                currentSeason={currentSeason}
-              />
+              {dataLoading ? (
+                <Card darkMode={darkMode}>
+                  <div className="space-y-2 py-6 text-center">
+                    <div className="w-10 h-10 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                    <div className="text-xl font-extrabold">Odświeżam stronę główną</div>
+                    <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+                      Ładuję najnowsze dane po zmianach w sezonie i wynikach.
+                    </div>
+                  </div>
+                </Card>
+              ) : (
+                <HomeDashboard
+                  darkMode={darkMode}
+                  fixtures={fixtures}
+                  matches={matches}
+                  stats={stats}
+                  news={news}
+                  polls={polls}
+                  typerMatches={typerMatches}
+                  openTeam={openTeam}
+                  openMatch={openMatchInline}
+                  openGallery={openMatchGallery}
+                  expandedMatchId={selectedMatchId}
+                  playersByTeam={playersByTeam}
+                  openPlayer={openPlayer}
+                  currentLeagues={currentLeagues}
+                  goToLeague={goToLeague}
+                  setHomeSection={setActiveSection}
+                  currentRound={currentRound}
+                  playedRounds={_playedRounds}
+                  seasonStatus={seasonStatus}
+                  seasonSummary={seasonSummary}
+                  currentSeason={currentSeason}
+                />
+              )}
             </HomePageErrorBoundary>
           );
       }
@@ -10328,11 +10340,14 @@ function TournamentsPage({ darkMode, tournaments, openTeam }) {
 class HomePageErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, errorMessage: "" };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error) {
+    return {
+      hasError: true,
+      errorMessage: error?.message || "Nieznany błąd renderowania.",
+    };
   }
 
   componentDidCatch(error, info) {
@@ -10345,7 +10360,7 @@ class HomePageErrorBoundary extends React.Component {
       (prevProps.resetKey !== this.props.resetKey ||
         prevProps.darkMode !== this.props.darkMode)
     ) {
-      this.setState({ hasError: false });
+      this.setState({ hasError: false, errorMessage: "" });
     }
   }
 
@@ -10359,6 +10374,11 @@ class HomePageErrorBoundary extends React.Component {
             <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
               Odśwież widok albo wróć tutaj ponownie. Zabezpieczyłem ekran, żeby aplikacja nie przechodziła już w czarne tło.
             </div>
+            {this.state.errorMessage && (
+              <div className={classNames("text-xs break-words", darkMode ? "text-rose-300" : "text-rose-600")}>
+                Szczegół błędu: {this.state.errorMessage}
+              </div>
+            )}
             <button
               type="button"
               onClick={() => window.location.reload()}
@@ -10371,6 +10391,59 @@ class HomePageErrorBoundary extends React.Component {
             >
               Odśwież stronę
             </button>
+          </div>
+        </Card>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+class HomeSectionErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, errorMessage: "" };
+  }
+
+  static getDerivedStateFromError(error) {
+    return {
+      hasError: true,
+      errorMessage: error?.message || "Nieznany błąd sekcji.",
+    };
+  }
+
+  componentDidCatch(error, info) {
+    console.error(`Błąd sekcji strony głównej (${this.props.sectionTitle || "sekcja"}):`, error, info);
+  }
+
+  componentDidUpdate(prevProps) {
+    if (
+      this.state.hasError &&
+      (prevProps.resetKey !== this.props.resetKey ||
+        prevProps.darkMode !== this.props.darkMode)
+    ) {
+      this.setState({ hasError: false, errorMessage: "" });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const { darkMode, sectionTitle } = this.props;
+      return (
+        <Card darkMode={darkMode}>
+          <div className="space-y-2 py-4 text-center">
+            <div className="text-lg font-extrabold">
+              Nie udało się załadować sekcji: {sectionTitle || "strona główna"}
+            </div>
+            <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+              Reszta strony działa dalej. Tę sekcję można odświeżyć po kolejnej zmianie danych lub odświeżeniu strony.
+            </div>
+            {this.state.errorMessage && (
+              <div className={classNames("text-xs break-words", darkMode ? "text-rose-300" : "text-rose-600")}>
+                Szczegół błędu: {this.state.errorMessage}
+              </div>
+            )}
           </div>
         </Card>
       );
@@ -10463,7 +10536,12 @@ function HomeDashboard({
   const leagueLabel = (id) => ({ "1st": "I Liga", "2nd": "II Liga", "3rd": "III Liga" }[id] || id);
   const isExcludedFromProgress = (status) => status === "cancelled" || status === "unplayed";
   const isExcludedFromUpcoming = (status) =>
-    status === "cancelled" || status === "unplayed" || status === "postponed";
+    status === "cancelled" ||
+    status === "unplayed" ||
+    status === "postponed" ||
+    status === "completed" ||
+    status === "walkover_home" ||
+    status === "walkover_away";
   const safeStats = stats || {};
   const safeNews = Array.isArray(news)
     ? news.filter((item) => item && typeof item === "object")
@@ -10822,6 +10900,11 @@ function HomeDashboard({
 
   return (
     <div className="space-y-4">
+      <HomeSectionErrorBoundary
+        darkMode={darkMode}
+        resetKey={`hero:${currentSeason}:${currentRound}:${matches.length}:${fixtures.length}:${latestNews.length}:${latestPoll?.id || "no-poll"}:${heroTyperMatches.length}`}
+        sectionTitle="Pulpit główny"
+      >
       <div className="grid xl:grid-cols-[1.35fr_0.95fr] gap-3">
         <Card darkMode={darkMode} className="mlpn-home-hero p-0 overflow-hidden">
           <div ref={heroCardRef} className="relative p-4 lg:p-6 min-h-[340px] h-auto lg:min-h-[540px] lg:h-[600px]">
@@ -11463,6 +11546,7 @@ function HomeDashboard({
           </Card>
         </div>
       </div>
+      </HomeSectionErrorBoundary>
 
       <div className="hidden">
       <div>
@@ -11482,6 +11566,11 @@ function HomeDashboard({
 
       {/* WIDOK ZAMKNIĘTEGO SEZONU */}
       </div>
+      <HomeSectionErrorBoundary
+        darkMode={darkMode}
+        resetKey={`season:${currentSeason}:${seasonStatus}:${currentRound}:${matches.length}:${fixtures.length}:${currentLeagues.length}:${topScorers.length}:${topAssists.length}`}
+        sectionTitle={isCompleted ? "Podsumowanie sezonu" : "Mecze i liderzy sezonu"}
+      >
       {isCompleted && (
         <div className="grid lg:grid-cols-2 gap-3">
           {/* Mistrzowie lig */}
@@ -11960,7 +12049,13 @@ function HomeDashboard({
           </Card>
         </div>
       )}
+      </HomeSectionErrorBoundary>
 
+      <HomeSectionErrorBoundary
+        darkMode={darkMode}
+        resetKey={`bottom:${currentSeason}:${currentRound}:${latestNews.length}:${leagueOverview.length}:${matches.length}:${fixtures.length}`}
+        sectionTitle="Aktualności i dashboard lig"
+      >
       <div className="grid xl:grid-cols-[1.2fr_1.8fr] gap-3">
         <Card darkMode={darkMode}>
           <div className="flex items-center justify-between gap-2 mb-3">
@@ -12237,6 +12332,7 @@ function HomeDashboard({
           </div>
         </div>
       </div>
+      </HomeSectionErrorBoundary>
 
     </div>
   );
