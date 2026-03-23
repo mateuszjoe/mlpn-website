@@ -4426,29 +4426,34 @@ export default function App() {
           );
         default:
           return (
-            <HomeDashboard
+            <HomePageErrorBoundary
               darkMode={darkMode}
-              fixtures={fixtures}
-              matches={matches}
-              stats={stats}
-              news={news}
-              polls={polls}
-              typerMatches={typerMatches}
-              openTeam={openTeam}
-              openMatch={openMatchInline}
-              openGallery={openMatchGallery}
-              expandedMatchId={selectedMatchId}
-              playersByTeam={playersByTeam}
-              openPlayer={openPlayer}
-              currentLeagues={currentLeagues}
-              goToLeague={goToLeague}
-              setHomeSection={setActiveSection}
-              currentRound={currentRound}
-              playedRounds={_playedRounds}
-              seasonStatus={seasonStatus}
-              seasonSummary={seasonSummary}
-              currentSeason={currentSeason}
-            />
+              resetKey={`${currentSeason || "none"}:${activeContext}:${activeSection}:${selectedMatchId || "no-match"}`}
+            >
+              <HomeDashboard
+                darkMode={darkMode}
+                fixtures={fixtures}
+                matches={matches}
+                stats={stats}
+                news={news}
+                polls={polls}
+                typerMatches={typerMatches}
+                openTeam={openTeam}
+                openMatch={openMatchInline}
+                openGallery={openMatchGallery}
+                expandedMatchId={selectedMatchId}
+                playersByTeam={playersByTeam}
+                openPlayer={openPlayer}
+                currentLeagues={currentLeagues}
+                goToLeague={goToLeague}
+                setHomeSection={setActiveSection}
+                currentRound={currentRound}
+                playedRounds={_playedRounds}
+                seasonStatus={seasonStatus}
+                seasonSummary={seasonSummary}
+                currentSeason={currentSeason}
+              />
+            </HomePageErrorBoundary>
           );
       }
     }
@@ -10221,11 +10226,66 @@ function TournamentsPage({ darkMode, tournaments, openTeam }) {
   );
 }
 
+class HomePageErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("Błąd renderowania strony głównej:", error, info);
+  }
+
+  componentDidUpdate(prevProps) {
+    if (
+      this.state.hasError &&
+      (prevProps.resetKey !== this.props.resetKey ||
+        prevProps.darkMode !== this.props.darkMode)
+    ) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const { darkMode } = this.props;
+      return (
+        <Card darkMode={darkMode}>
+          <div className="space-y-3 text-center py-6">
+            <div className="text-xl font-extrabold">Strona główna chwilowo nie mogła się załadować</div>
+            <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+              Odśwież widok albo wróć tutaj ponownie. Zabezpieczyłem ekran, żeby aplikacja nie przechodziła już w czarne tło.
+            </div>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className={classNames(
+                "mx-auto px-4 py-2 rounded-xl border font-bold e3d-btn",
+                darkMode
+                  ? "bg-white/5 border-white/10 hover:bg-white/10"
+                  : "bg-white border-gray-200 hover:bg-gray-50"
+              )}
+            >
+              Odśwież stronę
+            </button>
+          </div>
+        </Card>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 function HomeDashboard({
   darkMode,
-  fixtures,
-  matches,
-  stats,
+  fixtures = [],
+  matches = [],
+  stats = {},
   news = [],
   polls = [],
   typerMatches = [],
@@ -10235,7 +10295,7 @@ function HomeDashboard({
   expandedMatchId,
   playersByTeam,
   openPlayer,
-  currentLeagues,
+  currentLeagues = [],
   goToLeague,
   setHomeSection,
   currentRound,
