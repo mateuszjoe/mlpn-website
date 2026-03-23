@@ -10238,6 +10238,11 @@ function HomeDashboard({
   const isExcludedFromProgress = (status) => status === "cancelled" || status === "unplayed";
   const isExcludedFromUpcoming = (status) =>
     status === "cancelled" || status === "unplayed" || status === "postponed";
+  const safeStats = stats || {};
+  const tableByLeague = safeStats.tableByLeague || {};
+  const topScorers = Array.isArray(safeStats.topScorers) ? safeStats.topScorers : [];
+  const topAssists = Array.isArray(safeStats.topAssists) ? safeStats.topAssists : [];
+  const topYellow = Array.isArray(safeStats.topYellow) ? safeStats.topYellow : [];
 
   // last results (global) and upcoming
   const lastMatches = useMemo(() => {
@@ -10275,16 +10280,16 @@ function HomeDashboard({
       { label: "Mecze", value: matches.length, sub: countableFixtures.length ? `z ${countableFixtures.length}` : "sezon" },
       { label: "Gole", value: totalGoals, sub: matches.length ? `${(totalGoals / Math.max(matches.length, 1)).toFixed(1)} / mecz` : "brak" },
       { label: "Drużyny", value: totalTeams, sub: `${currentLeagues.length} ligi` },
-      { label: "Strzelcy", value: stats.topScorers?.length || 0, sub: "aktywny ranking" },
+      { label: "Strzelcy", value: topScorers.length || 0, sub: "aktywny ranking" },
     ];
-  }, [matches, fixtures, currentLeagues, stats.topScorers]);
+  }, [matches, fixtures, currentLeagues, topScorers]);
 
   const leagueOverview = useMemo(() => {
     return (currentLeagues || []).map((lg) => {
-      const table = stats.tableByLeague[lg.id] || [];
+      const table = tableByLeague[lg.id] || [];
       const leader = table[0] || null;
       const top3 = table.slice(0, 3);
-      const topScorer = (stats.topScorers || []).find((p) => p.league === lg.id);
+      const topScorer = topScorers.find((p) => p.league === lg.id);
       const leagueFixturesAll = (fixtures || []).filter((f) => f.league === lg.id);
       const leagueFixtures = leagueFixturesAll.filter((f) => !isExcludedFromProgress(f.status));
       const leagueMatches = (matches || []).filter((m) => m.league === lg.id);
@@ -10295,19 +10300,19 @@ function HomeDashboard({
       const playedPct = leagueFixtures.length ? Math.round((leagueMatches.length / leagueFixtures.length) * 100) : 0;
       return { ...lg, table, leader, top3, topScorer, leagueFixtures, leagueMatches, nextMatch, playedPct };
     });
-  }, [currentLeagues, stats.tableByLeague, stats.topScorers, fixtures, matches, matchById]);
+  }, [currentLeagues, tableByLeague, topScorers, fixtures, matches, matchById]);
 
   const globalLeaders = useMemo(() => ([
-    stats.topScorers?.[0]
-      ? { key: "g", title: "Top strzelec", value: stats.topScorers[0].goals, suffix: "goli", row: stats.topScorers[0] }
+    topScorers[0]
+      ? { key: "g", title: "Top strzelec", value: topScorers[0].goals, suffix: "goli", row: topScorers[0] }
       : null,
-    stats.topAssists?.[0]
-      ? { key: "a", title: "Top asystent", value: stats.topAssists[0].assists, suffix: "asyst", row: stats.topAssists[0] }
+    topAssists[0]
+      ? { key: "a", title: "Top asystent", value: topAssists[0].assists, suffix: "asyst", row: topAssists[0] }
       : null,
-    stats.topYellow?.[0]
-      ? { key: "y", title: "Najwięcej kartek", value: stats.topYellow[0].yellow, suffix: "żółtych", row: stats.topYellow[0] }
+    topYellow[0]
+      ? { key: "y", title: "Najwięcej kartek", value: topYellow[0].yellow, suffix: "żółtych", row: topYellow[0] }
       : null,
-  ].filter(Boolean)), [stats.topScorers, stats.topAssists, stats.topYellow]);
+  ].filter(Boolean)), [topScorers, topAssists, topYellow]);
 
   const openHomeTab = (tab) => {
     if (typeof setHomeSection === "function") setHomeSection(tab);
@@ -10499,14 +10504,17 @@ function HomeDashboard({
   const [showHeroFloatingNav, setShowHeroFloatingNav] = useState(false);
   const [heroTyperAnimatingPick, setHeroTyperAnimatingPick] = useState(null);
   const [heroTyperCardPhase, setHeroTyperCardPhase] = useState("idle");
-  const heroTyperMobileActivePick =
-    heroTyperAnimatingPick &&
-    heroTyperCurrentMatch &&
-    heroTyperAnimatingPick.matchId === heroTyperCurrentMatch.id
-      ? heroTyperAnimatingPick.value
-      : heroTyperCurrentMatch
-      ? heroTyperPicks[heroTyperCurrentMatch.id]
-      : null;
+  const heroTyperMobileActivePick = useMemo(() => {
+    if (
+      heroTyperAnimatingPick &&
+      heroTyperCurrentMatch &&
+      heroTyperAnimatingPick.matchId === heroTyperCurrentMatch.id
+    ) {
+      return heroTyperAnimatingPick?.value ?? null;
+    }
+    if (!heroTyperCurrentMatch) return null;
+    return heroTyperPicks[heroTyperCurrentMatch.id] ?? null;
+  }, [heroTyperAnimatingPick, heroTyperCurrentMatch, heroTyperPicks]);
   const heroTyperMobileBusy = heroTyperCardPhase !== "idle" || !!heroTyperAnimatingPick;
 
   const selectHeroTyperPickAnimated = (matchId, value) => {
@@ -11233,7 +11241,7 @@ function HomeDashboard({
             <div className="font-extrabold mb-3 text-lg">Mistrzowie lig</div>
             <div className="space-y-3">
               {currentLeagues.map((lg) => {
-                const champion = (stats.tableByLeague[lg.id] || [])[0];
+                const champion = (tableByLeague[lg.id] || [])[0];
                 if (!champion) return null;
                 return (
                   <div
@@ -11290,7 +11298,7 @@ function HomeDashboard({
             <div className="font-extrabold mb-3 text-lg">Wyróżnienia sezonu</div>
             <div className="space-y-3">
               {/* Król strzelców */}
-              {stats.topScorers?.[0] && (
+              {topScorers[0] && (
                 <div
                   className={classNames(
                     "p-3 rounded-xl border flex items-center gap-3",
@@ -11303,7 +11311,7 @@ function HomeDashboard({
                     "w-14 h-14 rounded-full flex items-center justify-center text-2xl font-black flex-shrink-0",
                     darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-700"
                   )}>
-                    {stats.topScorers[0].goals}
+                    {topScorers[0].goals}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={classNames(
@@ -11313,20 +11321,20 @@ function HomeDashboard({
                       KRÓL STRZELCÓW
                     </div>
                     <div className="font-bold text-sm truncate">
-                      {stats.topScorers[0].name}
+                      {topScorers[0].name}
                     </div>
                     <div className="flex items-center gap-1">
                       <span className={classNames(
                         "text-xs",
                         darkMode ? "text-gray-400" : "text-gray-600"
                       )}>
-                        {displayTeamName(stats.topScorers[0].team)}
+                        {displayTeamName(topScorers[0].team)}
                       </span>
                       <TeamLogo
-                        team={stats.topScorers[0].team}
+                        team={topScorers[0].team}
                         darkMode={darkMode}
                         size={16}
-                        onClick={() => openTeam(stats.topScorers[0].team)}
+                        onClick={() => openTeam(topScorers[0].team)}
                       />
                     </div>
                   </div>
@@ -11334,7 +11342,7 @@ function HomeDashboard({
               )}
 
               {/* Najlepszy asystent */}
-              {stats.topAssists?.[0] && (
+              {topAssists[0] && (
                 <div
                   className={classNames(
                     "p-3 rounded-xl border flex items-center gap-3",
@@ -11347,7 +11355,7 @@ function HomeDashboard({
                     "w-14 h-14 rounded-full flex items-center justify-center text-2xl font-black flex-shrink-0",
                     darkMode ? "bg-blue-500/20 text-blue-400" : "bg-blue-100 text-blue-700"
                   )}>
-                    {stats.topAssists[0].assists}
+                    {topAssists[0].assists}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={classNames(
@@ -11357,20 +11365,20 @@ function HomeDashboard({
                       NAJLEPSZY ASYSTENT
                     </div>
                     <div className="font-bold text-sm truncate">
-                      {stats.topAssists[0].name}
+                      {topAssists[0].name}
                     </div>
                     <div className="flex items-center gap-1">
                       <span className={classNames(
                         "text-xs",
                         darkMode ? "text-gray-400" : "text-gray-600"
                       )}>
-                        {displayTeamName(stats.topAssists[0].team)}
+                        {displayTeamName(topAssists[0].team)}
                       </span>
                       <TeamLogo
-                        team={stats.topAssists[0].team}
+                        team={topAssists[0].team}
                         darkMode={darkMode}
                         size={16}
-                        onClick={() => openTeam(stats.topAssists[0].team)}
+                        onClick={() => openTeam(topAssists[0].team)}
                       />
                     </div>
                   </div>
@@ -11380,7 +11388,7 @@ function HomeDashboard({
               {/* Najlepsza obrona */}
               {currentLeagues.length > 0 && (() => {
                 // Drużyna z najmniejszą liczbą straconych bramek (z I Ligi)
-                const firstLeague = stats.tableByLeague['1st'] || stats.tableByLeague[currentLeagues[0]?.id] || [];
+                const firstLeague = tableByLeague['1st'] || tableByLeague[currentLeagues[0]?.id] || [];
                 const bestDefense = [...firstLeague].sort((a, b) => a.ga - b.ga)[0];
                 if (!bestDefense) return null;
                 return (
@@ -11987,7 +11995,7 @@ function HomeDashboard({
           <Card key={lg.id} darkMode={darkMode}>
             <div className="font-extrabold mb-2">{lg.name} – TOP 3</div>
             <div className="space-y-2">
-              {(stats.tableByLeague[lg.id] || []).slice(0, 3).map((r) => (
+              {(tableByLeague[lg.id] || []).slice(0, 3).map((r) => (
                 <div
                   key={r.team}
                   className={classNames(
