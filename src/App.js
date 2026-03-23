@@ -2177,6 +2177,10 @@ function fixtureDateHeaderParts(dateStr) {
   };
 }
 
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
 function compactDateLabel(dateStr) {
   if (!dateStr) return "";
   const [y, m, d] = String(dateStr).split("-").map(Number);
