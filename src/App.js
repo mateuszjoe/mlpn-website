@@ -1767,6 +1767,14 @@ function TeamLogo({
 }) {
   const [imgFailed, setImgFailed] = useState(false);
   const resolvedSrc = src || activeTeamLogoRegistry[team] || logoByTeam[team] || "";
+  const logoFilter = [
+    darkMode
+      ? "drop-shadow(0 0 1.5px rgba(255,255,255,0.98)) drop-shadow(0 0 4px rgba(255,255,255,0.55))"
+      : "",
+    !framed ? "drop-shadow(0 6px 12px rgba(0,0,0,0.35))" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   useEffect(() => {
     setImgFailed(false);
@@ -1788,11 +1796,12 @@ function TeamLogo({
         <img
           src={encodeURI(resolvedSrc)}
           alt={team}
-          className={classNames(
-            "object-contain e3d-logo",
-            framed ? "" : "drop-shadow-[0_6px_12px_rgba(0,0,0,0.35)]"
-          )}
-          style={{ width: `${imgScale * 100}%`, height: `${imgScale * 100}%` }}
+          className="object-contain e3d-logo"
+          style={{
+            width: `${imgScale * 100}%`,
+            height: `${imgScale * 100}%`,
+            filter: logoFilter || undefined,
+          }}
           onError={() => setImgFailed(true)}
         />
       ) : (
@@ -1802,6 +1811,9 @@ function TeamLogo({
           style={{
             width: framed ? "60%" : "88%",
             height: framed ? "60%" : "88%",
+            filter: darkMode
+              ? "drop-shadow(0 0 1.5px rgba(255,255,255,0.95)) drop-shadow(0 0 4px rgba(255,255,255,0.45))"
+              : undefined,
           }}
           fill="#6b7280"
         >
