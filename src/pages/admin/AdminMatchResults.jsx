@@ -181,6 +181,18 @@ function teamTotals(playerIds, playerStatsForm) {
   );
 }
 
+function hasAnyPlayerStats(playerStatsForm) {
+  return Object.values(playerStatsForm || {}).some((stats) => {
+    const current = stats || createEmptyPlayerStats();
+    return (
+      parseCount(current.goals) > 0 ||
+      parseCount(current.assists) > 0 ||
+      parseCount(current.yellow) > 0 ||
+      parseCount(current.red) > 0
+    );
+  });
+}
+
 function buildGoalEvents(matchId, teamId, playerIds, playerStatsForm, teamLabel) {
   const goals = [];
   const assists = [];
@@ -1058,32 +1070,38 @@ export default function AdminMatchResults({ darkMode }) {
           throw new Error("Przy zakonczonym meczu wpisz wynik dla obu druzyn.");
         }
 
-        if (participantSelection.home.length === 0 || participantSelection.away.length === 0) {
-          throw new Error("Wybierz zawodnikow uczestniczacych w meczu dla obu druzyn.");
+        const hasSelectedParticipants =
+          participantSelection.home.length > 0 || participantSelection.away.length > 0;
+        const hasPlayerStats = hasAnyPlayerStats(playerStatsForm);
+
+        if (!hasSelectedParticipants && (hasPlayerStats || mvpPlayerId)) {
+          throw new Error("Aby zapisac statystyki zawodnikow lub MVP, najpierw wybierz uczestnikow meczu.");
         }
 
         const homeTotals = teamTotals(participantSelection.home, playerStatsForm);
         const awayTotals = teamTotals(participantSelection.away, playerStatsForm);
 
-        if (homeTotals.goals !== homeGoals) {
-          throw new Error(`Liczba goli zawodnikow druzyny ${match.home_team_name} musi zgadzac sie z wynikiem meczu.`);
-        }
-        if (awayTotals.goals !== awayGoals) {
-          throw new Error(`Liczba goli zawodnikow druzyny ${match.away_team_name} musi zgadzac sie z wynikiem meczu.`);
-        }
-        if (homeTotals.assists > homeTotals.goals) {
-          throw new Error(`Za duzo asyst wpisano dla druzyny ${match.home_team_name}.`);
-        }
-        if (awayTotals.assists > awayTotals.goals) {
-          throw new Error(`Za duzo asyst wpisano dla druzyny ${match.away_team_name}.`);
-        }
-        if (mvpPlayerId && !allSelectedPlayerIds.includes(mvpPlayerId)) {
-          throw new Error("MVP musi byc wybrany sposrod zawodnikow uczestniczacych w meczu.");
-        }
+        if (hasSelectedParticipants) {
+          if (homeTotals.goals !== homeGoals) {
+            throw new Error(`Liczba goli zawodnikow druzyny ${match.home_team_name} musi zgadzac sie z wynikiem meczu.`);
+          }
+          if (awayTotals.goals !== awayGoals) {
+            throw new Error(`Liczba goli zawodnikow druzyny ${match.away_team_name} musi zgadzac sie z wynikiem meczu.`);
+          }
+          if (homeTotals.assists > homeTotals.goals) {
+            throw new Error(`Za duzo asyst wpisano dla druzyny ${match.home_team_name}.`);
+          }
+          if (awayTotals.assists > awayTotals.goals) {
+            throw new Error(`Za duzo asyst wpisano dla druzyny ${match.away_team_name}.`);
+          }
+          if (mvpPlayerId && !allSelectedPlayerIds.includes(mvpPlayerId)) {
+            throw new Error("MVP musi byc wybrany sposrod zawodnikow uczestniczacych w meczu.");
+          }
 
-        lineupsPayload = buildLineupsPayload(match, participantSelection, homeRoster, awayRoster);
-        eventsPayload = buildMatchEventsPayload(match, participantSelection, playerStatsForm);
-        nextMvpPlayerId = mvpPlayerId || null;
+          lineupsPayload = buildLineupsPayload(match, participantSelection, homeRoster, awayRoster);
+          eventsPayload = buildMatchEventsPayload(match, participantSelection, playerStatsForm);
+          nextMvpPlayerId = mvpPlayerId || null;
+        }
       }
 
       const updatePayload = {
@@ -1413,7 +1431,7 @@ export default function AdminMatchResults({ darkMode }) {
                         <div className={`rounded-xl border p-4 ${darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"}`}>
                           <div className="font-semibold text-sm">Dobor zawodnikow i statystyki meczu</div>
                           <p className={`text-xs mt-1 ${textMuted}`}>
-                            Najpierw wybierz zawodnikow uczestniczacych w meczu, a potem wpisz ich statystyki.
+                            Wynik meczu mozesz zapisac bez skladu. Zawodnikow wybieraj tylko wtedy, gdy chcesz dopisac statystyki lub MVP.
                             Puste pola i zera sa traktowane tak samo.
                           </p>
 
