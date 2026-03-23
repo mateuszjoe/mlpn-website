@@ -1694,7 +1694,7 @@ function SeasonNavigation({
   const canJumpLast = canGoNext;
 
   const btnClass = (enabled) => classNames(
-    "w-8 h-8 rounded-lg border flex items-center justify-center e3d-btn transition-colors",
+    "w-7 h-7 sm:w-8 sm:h-8 rounded-lg border flex items-center justify-center e3d-btn transition-colors shrink-0",
     enabled
       ? darkMode
         ? "bg-white/5 border-white/10 hover:bg-white/15 hover:border-white/20"
@@ -1703,14 +1703,14 @@ function SeasonNavigation({
   );
 
   return (
-    <div className="flex items-center gap-1.5 text-sm">
+    <div className="flex items-center gap-1 text-xs sm:text-sm max-w-full overflow-x-auto pb-1">
       <button
         onClick={() => canJumpFirst && onSeasonChange(availableSeasons[firstIndex])}
         disabled={!canJumpFirst}
         className={btnClass(canJumpFirst)}
         title={canJumpFirst ? `Pierwszy sezon (${availableSeasons[firstIndex]})` : ""}
       >
-        <ChevronsLeft size={16} strokeWidth={2.5} />
+        <ChevronsLeft size={14} strokeWidth={2.5} />
       </button>
       <button
         onClick={() => canGoPrev && onSeasonChange(availableSeasons[currentIndex - 1])}
@@ -1718,12 +1718,12 @@ function SeasonNavigation({
         className={btnClass(canGoPrev)}
         title={canGoPrev ? `Poprzedni sezon (${availableSeasons[currentIndex - 1]})` : "Brak starszych sezonów"}
       >
-        <ChevronLeft size={16} strokeWidth={2.5} />
+        <ChevronLeft size={14} strokeWidth={2.5} />
       </button>
 
       <div
         className={classNames(
-          "px-4 py-1 rounded-lg border text-sm font-bold min-w-[60px] text-center",
+          "px-3 sm:px-4 py-1 rounded-lg border text-xs sm:text-sm font-bold min-w-[58px] sm:min-w-[60px] text-center shrink-0",
           darkMode
             ? "bg-white/5 border-white/10 text-gray-200"
             : "bg-black/5 border-black/10 text-gray-700"
@@ -1738,7 +1738,7 @@ function SeasonNavigation({
         className={btnClass(canGoNext)}
         title={canGoNext ? `Następny sezon (${availableSeasons[currentIndex + 1]})` : "To jest aktualny sezon"}
       >
-        <ChevronRight size={16} strokeWidth={2.5} />
+        <ChevronRight size={14} strokeWidth={2.5} />
       </button>
       <button
         onClick={() => canJumpLast && onSeasonChange(availableSeasons[lastIndex])}
@@ -1746,7 +1746,7 @@ function SeasonNavigation({
         className={btnClass(canJumpLast)}
         title={canJumpLast ? `Najnowszy sezon (${availableSeasons[lastIndex]})` : ""}
       >
-        <ChevronsRight size={16} strokeWidth={2.5} />
+        <ChevronsRight size={14} strokeWidth={2.5} />
       </button>
     </div>
   );
@@ -1886,19 +1886,20 @@ function MobileLeagueScrollableTable({
   showForm = true,
   getRowBg,
 }) {
+  const leftColumnWidth = showForm ? 140 : 132;
   const statColumns = [
-    { key: "played", label: "M", width: "w-10" },
-    { key: "win", label: "W", width: "w-10" },
-    { key: "draw", label: "R", width: "w-10" },
-    { key: "loss", label: "P", width: "w-10" },
-    { key: "gf", label: "BZ", width: "w-12" },
-    { key: "ga", label: "BS", width: "w-12" },
-    { key: "gd", label: "+/-", width: "w-12" },
-    { key: "pts", label: "PKT", width: "w-14" },
+    { key: "played", label: "M", width: "w-8" },
+    { key: "win", label: "W", width: "w-8" },
+    { key: "draw", label: "R", width: "w-8" },
+    { key: "loss", label: "P", width: "w-8" },
+    { key: "gf", label: "BZ", width: "w-9" },
+    { key: "ga", label: "BS", width: "w-9" },
+    { key: "gd", label: "+/-", width: "w-10" },
+    { key: "pts", label: "PKT", width: "w-11" },
   ];
 
   if (showForm) {
-    statColumns.push({ key: "form", label: "FORMA", width: "w-[108px]" });
+    statColumns.push({ key: "form", label: "FORMA", width: "w-[92px]" });
   }
 
   const renderStatCell = (row, column) => {
@@ -1938,22 +1939,23 @@ function MobileLeagueScrollableTable({
   };
 
   return (
-    <div className="md:hidden -mx-4">
-      <div className="overflow-x-auto touch-pan-x px-4 pb-1">
-        <div className="min-w-[640px]">
+    <div className="md:hidden w-full max-w-full overflow-hidden rounded-xl border border-white/10">
+      <div className="w-full overflow-x-auto overscroll-x-contain touch-pan-x">
+        <div className="min-w-max">
           <div
             className={classNames(
-              "flex text-[10px] font-bold uppercase tracking-wide border-b",
+              "flex text-[9px] font-bold uppercase tracking-wide border-b",
               darkMode ? "text-gray-300 border-white/10" : "text-gray-600 border-gray-200"
             )}
           >
             <div
               className={classNames(
-                "sticky left-0 z-20 shrink-0 w-[182px] px-2 py-2 border-r shadow-[10px_0_18px_rgba(15,23,42,0.08)]",
+                "sticky left-0 z-20 shrink-0 px-2 py-2 border-r shadow-[6px_0_12px_rgba(15,23,42,0.08)]",
                 darkMode ? "bg-[#0b1220] border-white/10" : "bg-white border-gray-200"
               )}
+              style={{ width: leftColumnWidth }}
             >
-              <div className="grid grid-cols-[20px_28px_minmax(0,1fr)] gap-2 items-center">
+              <div className="grid grid-cols-[16px_22px_minmax(0,1fr)] gap-1.5 items-center">
                 <div>#</div>
                 <div></div>
                 <div>Drużyna</div>
@@ -1962,7 +1964,7 @@ function MobileLeagueScrollableTable({
 
             <div
               className={classNames(
-                "shrink-0 flex items-center gap-0 px-2 py-2",
+                "shrink-0 flex items-center gap-0 px-1.5 py-2",
                 darkMode ? "bg-black/20" : "bg-gray-50"
               )}
             >
@@ -1972,7 +1974,7 @@ function MobileLeagueScrollableTable({
                   className={classNames(
                     "shrink-0 text-center",
                     column.width,
-                    column.key === "form" ? "text-left" : ""
+                    column.key === "form" ? "text-left pl-1" : ""
                   )}
                 >
                   {column.label}
@@ -1995,22 +1997,23 @@ function MobileLeagueScrollableTable({
               >
                 <div
                   className={classNames(
-                    "sticky left-0 z-10 shrink-0 w-[182px] px-2 py-2 border-r shadow-[10px_0_18px_rgba(15,23,42,0.08)]",
+                    "sticky left-0 z-10 shrink-0 px-2 py-1.5 border-r shadow-[6px_0_12px_rgba(15,23,42,0.08)]",
                     darkMode ? "bg-[#0b1220] border-white/10" : "bg-white border-gray-100",
                     rowBg
                   )}
+                  style={{ width: leftColumnWidth }}
                 >
-                  <div className="grid grid-cols-[20px_28px_minmax(0,1fr)] gap-2 items-center">
-                    <div className="font-extrabold text-[12px] leading-none">{position}</div>
+                  <div className="grid grid-cols-[16px_22px_minmax(0,1fr)] gap-1.5 items-center">
+                    <div className="font-extrabold text-[11px] leading-none">{position}</div>
                     <TeamLogo
                       team={row.team}
                       darkMode={darkMode}
-                      size={20}
+                      size={16}
                       onClick={() => openTeam(row.team)}
                     />
                     <button
                       onClick={() => openTeam(row.team)}
-                      className="font-bold hover:underline truncate text-[11px] leading-tight text-left min-w-0 block w-full"
+                      className="font-bold hover:underline truncate text-[10px] leading-tight text-left min-w-0 block w-full"
                     >
                       {displayTeamName(row.team)}
                     </button>
@@ -2019,7 +2022,7 @@ function MobileLeagueScrollableTable({
 
                 <div
                   className={classNames(
-                    "shrink-0 flex items-center gap-0 px-2 py-2 text-[11px]",
+                    "shrink-0 flex items-center gap-0 px-1.5 py-1.5 text-[10px]",
                     darkMode ? "text-gray-100" : "text-gray-700",
                     rowBg
                   )}
@@ -2031,7 +2034,7 @@ function MobileLeagueScrollableTable({
                         "shrink-0 text-center font-semibold",
                         column.width,
                         column.key === "pts" ? "font-black" : "",
-                        column.key === "form" ? "text-left font-normal" : ""
+                        column.key === "form" ? "text-left font-normal pl-1" : ""
                       )}
                     >
                       {renderStatCell(row, column)}
@@ -5132,7 +5135,12 @@ export default function App() {
               );
             })()}
 
-          {renderPage()}
+          <PageRenderErrorBoundary
+            darkMode={darkMode}
+            resetKey={`${activeContext}:${activeSection}:${currentSeason || "no-season"}:${selectedTeam || "no-team"}:${selectedMatchId || "no-match"}:${selectedPlayerId || "no-player"}`}
+          >
+            {renderPage()}
+          </PageRenderErrorBoundary>
         </main>
       </div>
 
@@ -5604,25 +5612,27 @@ function LeagueHomePage({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-2xl font-extrabold">{leagueName}</div>
+          <div className="text-xl sm:text-2xl font-extrabold">{leagueName}</div>
           <div
             className={classNames(
-              "text-sm",
+              "text-sm leading-snug",
               darkMode ? "text-gray-400" : "text-gray-600"
             )}
           >
             Sezon {leaguePlayedRounds}/{leagueTotalRounds} kolejek
           </div>
         </div>
-        <SeasonNavigation
-          currentSeason={currentSeason}
-          availableSeasons={availableSeasons}
-          onSeasonChange={onSeasonChange}
-          darkMode={darkMode}
-          minSeason={leagueId === '3rd' ? 2007 : undefined}
-        />
+        <div className="w-full sm:w-auto self-stretch sm:self-auto">
+          <SeasonNavigation
+            currentSeason={currentSeason}
+            availableSeasons={availableSeasons}
+            onSeasonChange={onSeasonChange}
+            darkMode={darkMode}
+            minSeason={leagueId === '3rd' ? 2007 : undefined}
+          />
+        </div>
       </div>
 
       {/* WIDOK ARCHIWALNY SEZONU - Tabela + Kafle */}
@@ -6050,7 +6060,7 @@ function LeagueHomePage({
               NAJBLIŻSZE SPOTKANIE
             </div>
 
-            <div className="grid grid-cols-[60px_minmax(0,1fr)_auto_minmax(0,1fr)_60px] gap-3 items-center">
+            <div className="hidden sm:grid grid-cols-[60px_minmax(0,1fr)_auto_minmax(0,1fr)_60px] gap-3 items-center">
               <TeamLogo
                 team={upcomingMatch.home}
                 darkMode={darkMode}
@@ -6113,9 +6123,71 @@ function LeagueHomePage({
               />
             </div>
 
+            <div className="sm:hidden grid grid-cols-[34px_minmax(0,1fr)_auto_34px] gap-2 items-center">
+              <TeamLogo
+                team={upcomingMatch.home}
+                darkMode={darkMode}
+                size={28}
+                onClick={() => openTeam(upcomingMatch.home)}
+              />
+              <button
+                onClick={() => openTeam(upcomingMatch.home)}
+                className="font-extrabold text-sm truncate text-left hover:underline"
+              >
+                {displayTeamName(upcomingMatch.home)}
+              </button>
+              <button
+                onClick={() => openMatch(upcomingMatch.id)}
+                className={classNames(
+                  "px-3 py-2 rounded-xl border font-black text-sm e3d-pill whitespace-nowrap",
+                  darkMode
+                    ? "bg-white/5 border-white/10 hover:bg-white/10"
+                    : "bg-black/5 border-black/10 hover:bg-black/10"
+                )}
+                title="Kliknij aby rozwinąć szczegóły"
+              >
+                {upcomingMatch.date || "Termin"}
+              </button>
+              <TeamLogo
+                team={upcomingMatch.away}
+                darkMode={darkMode}
+                size={28}
+                onClick={() => openTeam(upcomingMatch.away)}
+              />
+
+              <div></div>
+              <button
+                onClick={() => openTeam(upcomingMatch.away)}
+                className="font-extrabold text-sm truncate text-right hover:underline"
+              >
+                {displayTeamName(upcomingMatch.away)}
+              </button>
+              <div className="flex items-center justify-end gap-2 col-span-2">
+                <div className={classNames("text-[11px]", darkMode ? "text-gray-400" : "text-gray-600")}>
+                  {upcomingMatch.time || "--:--"}
+                </div>
+                <VideoIcon
+                  darkMode={darkMode}
+                  videoUrl={
+                    upcomingPlayedMatch?.videoUrl || upcomingMatch.videoUrl
+                  }
+                  played={!!upcomingPlayedMatch}
+                  galleryUrl={upcomingPlayedMatch?.galleryUrl || upcomingMatch.galleryUrl}
+                  hasGallery={!!(upcomingPlayedMatch?.hasGallery || upcomingMatch.hasGallery)}
+                  galleryCount={upcomingPlayedMatch?.galleryCount || upcomingMatch.galleryCount || 0}
+                  onOpenGallery={
+                    upcomingPlayedMatch?.hasGallery || upcomingMatch.hasGallery
+                      ? () => openGallery?.(upcomingPlayedMatch || upcomingMatch)
+                      : undefined
+                  }
+                  size={14}
+                />
+              </div>
+            </div>
+
             <div
               className={classNames(
-                "mt-2 text-xs text-center",
+                "mt-2 text-[11px] text-center",
                 darkMode ? "text-gray-400" : "text-gray-600"
               )}
             >
@@ -10259,6 +10331,57 @@ class HomePageErrorBoundary extends React.Component {
             <div className="text-xl font-extrabold">Strona główna chwilowo nie mogła się załadować</div>
             <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
               Odśwież widok albo wróć tutaj ponownie. Zabezpieczyłem ekran, żeby aplikacja nie przechodziła już w czarne tło.
+            </div>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className={classNames(
+                "mx-auto px-4 py-2 rounded-xl border font-bold e3d-btn",
+                darkMode
+                  ? "bg-white/5 border-white/10 hover:bg-white/10"
+                  : "bg-white border-gray-200 hover:bg-gray-50"
+              )}
+            >
+              Odśwież stronę
+            </button>
+          </div>
+        </Card>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+class PageRenderErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("Błąd renderowania widoku:", error, info);
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const { darkMode } = this.props;
+      return (
+        <Card darkMode={darkMode}>
+          <div className="space-y-3 text-center py-6">
+            <div className="text-xl font-extrabold">Ten widok chwilowo nie mógł się załadować</div>
+            <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+              Zabezpieczyłem stronę, żeby błąd nie kończył się już pustym czarnym ekranem.
             </div>
             <button
               type="button"
