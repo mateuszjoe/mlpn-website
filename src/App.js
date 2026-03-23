@@ -6074,10 +6074,10 @@ function LeagueHomePage({
         <>
           <Card
             darkMode={darkMode}
-            className="p-4"
+            className="p-3 sm:p-4"
           >
             <div className={classNames(
-              "font-black text-sm mb-2",
+              "font-black text-xs sm:text-sm mb-2",
               darkMode ? "text-blue-300" : "text-blue-700"
             )}>
               NAJBLIŻSZE SPOTKANIE
@@ -6146,65 +6146,68 @@ function LeagueHomePage({
               />
             </div>
 
-            <div className="sm:hidden grid grid-cols-[18px_minmax(0,1fr)_auto_18px] gap-2 items-center">
-              <TeamLogo
-                team={upcomingMatch.home}
-                darkMode={darkMode}
-                size={12}
-                onClick={() => openTeam(upcomingMatch.home)}
-              />
-              <button
-                onClick={() => openTeam(upcomingMatch.home)}
-                className="font-extrabold text-[11px] truncate text-left hover:underline"
-              >
-                {displayTeamName(upcomingMatch.home)}
-              </button>
-              <button
-                onClick={() => openMatch(upcomingMatch.id)}
-                className={classNames(
-                  "px-2.5 py-1.5 rounded-xl border font-black text-[11px] e3d-pill whitespace-nowrap",
-                  darkMode
-                    ? "bg-white/5 border-white/10 hover:bg-white/10"
-                    : "bg-black/5 border-black/10 hover:bg-black/10"
-                )}
-                title="Kliknij aby rozwinąć szczegóły"
-              >
-                {upcomingMatch.date || "Termin"}
-              </button>
-              <TeamLogo
-                team={upcomingMatch.away}
-                darkMode={darkMode}
-                size={12}
-                onClick={() => openTeam(upcomingMatch.away)}
-              />
-
-              <div></div>
-              <button
-                onClick={() => openTeam(upcomingMatch.away)}
-                className="font-extrabold text-[11px] truncate text-right hover:underline"
-              >
-                {displayTeamName(upcomingMatch.away)}
-              </button>
-              <div className="flex items-center justify-end gap-2 col-span-2">
-                <div className={classNames("text-[11px]", darkMode ? "text-gray-400" : "text-gray-600")}>
-                  {upcomingMatch.time || "--:--"}
-                </div>
-                <VideoIcon
+            <div className="sm:hidden space-y-2">
+              <div className="grid grid-cols-[24px_minmax(0,1fr)_auto] gap-x-2 items-center">
+                <TeamLogo
+                  team={upcomingMatch.home}
                   darkMode={darkMode}
-                  videoUrl={
-                    upcomingPlayedMatch?.videoUrl || upcomingMatch.videoUrl
-                  }
-                  played={!!upcomingPlayedMatch}
-                  galleryUrl={upcomingPlayedMatch?.galleryUrl || upcomingMatch.galleryUrl}
-                  hasGallery={!!(upcomingPlayedMatch?.hasGallery || upcomingMatch.hasGallery)}
-                  galleryCount={upcomingPlayedMatch?.galleryCount || upcomingMatch.galleryCount || 0}
-                  onOpenGallery={
-                    upcomingPlayedMatch?.hasGallery || upcomingMatch.hasGallery
-                      ? () => openGallery?.(upcomingPlayedMatch || upcomingMatch)
-                      : undefined
-                  }
-                  size={14}
+                  size={24}
+                  onClick={() => openTeam(upcomingMatch.home)}
                 />
+                <button
+                  onClick={() => openTeam(upcomingMatch.home)}
+                  className="font-extrabold text-[12px] truncate text-left hover:underline min-w-0"
+                >
+                  {displayTeamName(upcomingMatch.home)}
+                </button>
+                <button
+                  onClick={() => openMatch(upcomingMatch.id)}
+                  className={classNames(
+                    "min-w-[98px] px-2.5 py-2 rounded-xl border font-black text-[11px] text-center e3d-pill whitespace-nowrap",
+                    darkMode
+                      ? "bg-white/5 border-white/10 hover:bg-white/10"
+                      : "bg-black/5 border-black/10 hover:bg-black/10"
+                  )}
+                  title="Kliknij aby rozwinąć szczegóły"
+                >
+                  {upcomingMatch.date || "Termin"}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-[24px_minmax(0,1fr)_auto] gap-x-2 items-center">
+                <TeamLogo
+                  team={upcomingMatch.away}
+                  darkMode={darkMode}
+                  size={24}
+                  onClick={() => openTeam(upcomingMatch.away)}
+                />
+                <button
+                  onClick={() => openTeam(upcomingMatch.away)}
+                  className="font-extrabold text-[12px] truncate text-left hover:underline min-w-0"
+                >
+                  {displayTeamName(upcomingMatch.away)}
+                </button>
+                <div className="min-w-[98px] flex items-center justify-center gap-2">
+                  <div className={classNames("text-[11px] font-semibold", darkMode ? "text-gray-300" : "text-gray-700")}>
+                    {upcomingMatch.time || "--:--"}
+                  </div>
+                  <VideoIcon
+                    darkMode={darkMode}
+                    videoUrl={
+                      upcomingPlayedMatch?.videoUrl || upcomingMatch.videoUrl
+                    }
+                    played={!!upcomingPlayedMatch}
+                    galleryUrl={upcomingPlayedMatch?.galleryUrl || upcomingMatch.galleryUrl}
+                    hasGallery={!!(upcomingPlayedMatch?.hasGallery || upcomingMatch.hasGallery)}
+                    galleryCount={upcomingPlayedMatch?.galleryCount || upcomingMatch.galleryCount || 0}
+                    onOpenGallery={
+                      upcomingPlayedMatch?.hasGallery || upcomingMatch.hasGallery
+                        ? () => openGallery?.(upcomingPlayedMatch || upcomingMatch)
+                        : undefined
+                    }
+                    size={14}
+                  />
+                </div>
               </div>
             </div>
 
@@ -6214,7 +6217,7 @@ function LeagueHomePage({
                 darkMode ? "text-gray-400" : "text-gray-600"
               )}
             >
-              Kolejka {upcomingMatch.round} • {upcomingMatch.time}
+              Kolejka {upcomingMatch.round}
             </div>
           </Card>
 
