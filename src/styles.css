@@ -517,10 +517,10 @@ button.mlpn-home-panel:hover {
       inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
   }
 
-  button,
-  a {
-    min-height: 44px;
-    min-width: 44px;
+  .mlpn-shell .e3d-btn,
+  .mlpn-shell .e3d-tab {
+    min-height: 40px;
+    min-width: 40px;
   }
 }
 

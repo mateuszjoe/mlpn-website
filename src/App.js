@@ -1708,6 +1708,7 @@ function SeasonNavigation({
         onClick={() => canJumpFirst && onSeasonChange(availableSeasons[firstIndex])}
         disabled={!canJumpFirst}
         className={btnClass(canJumpFirst)}
+        style={{ minWidth: 28, minHeight: 28 }}
         title={canJumpFirst ? `Pierwszy sezon (${availableSeasons[firstIndex]})` : ""}
       >
         <ChevronsLeft size={14} strokeWidth={2.5} />
@@ -1716,6 +1717,7 @@ function SeasonNavigation({
         onClick={() => canGoPrev && onSeasonChange(availableSeasons[currentIndex - 1])}
         disabled={!canGoPrev}
         className={btnClass(canGoPrev)}
+        style={{ minWidth: 28, minHeight: 28 }}
         title={canGoPrev ? `Poprzedni sezon (${availableSeasons[currentIndex - 1]})` : "Brak starszych sezonów"}
       >
         <ChevronLeft size={14} strokeWidth={2.5} />
@@ -1736,6 +1738,7 @@ function SeasonNavigation({
         onClick={() => canGoNext && onSeasonChange(availableSeasons[currentIndex + 1])}
         disabled={!canGoNext}
         className={btnClass(canGoNext)}
+        style={{ minWidth: 28, minHeight: 28 }}
         title={canGoNext ? `Następny sezon (${availableSeasons[currentIndex + 1]})` : "To jest aktualny sezon"}
       >
         <ChevronRight size={14} strokeWidth={2.5} />
@@ -1744,6 +1747,7 @@ function SeasonNavigation({
         onClick={() => canJumpLast && onSeasonChange(availableSeasons[lastIndex])}
         disabled={!canJumpLast}
         className={btnClass(canJumpLast)}
+        style={{ minWidth: 28, minHeight: 28 }}
         title={canJumpLast ? `Najnowszy sezon (${availableSeasons[lastIndex]})` : ""}
       >
         <ChevronsRight size={14} strokeWidth={2.5} />
@@ -1789,7 +1793,16 @@ function TeamLogo({
           ? "rounded-2xl border overflow-hidden e3d-card bg-white border-gray-200"
           : "rounded-none border-0 bg-transparent overflow-visible shadow-none"
       )}
-      style={{ width: size, height: size }}
+      style={{
+        width: size,
+        height: size,
+        minWidth: size,
+        minHeight: size,
+        maxWidth: size,
+        maxHeight: size,
+        padding: 0,
+        flex: "0 0 auto",
+      }}
       title={team}
     >
       {resolvedSrc && !imgFailed ? (
@@ -1886,9 +1899,9 @@ function MobileLeagueScrollableTable({
   showForm = true,
   getRowBg,
 }) {
-  const leftColumnWidth = showForm ? 142 : 132;
-  const headerHeight = "h-9";
-  const rowHeight = "h-[52px]";
+  const leftColumnWidth = showForm ? 136 : 126;
+  const headerHeight = "h-8";
+  const rowHeight = "h-[46px]";
   const statColumns = [
     { key: "played", label: "M", width: "w-8" },
     { key: "win", label: "W", width: "w-8" },
@@ -1953,7 +1966,7 @@ function MobileLeagueScrollableTable({
           <div
             className={classNames(
               headerHeight,
-              "grid grid-cols-[14px_20px_minmax(0,1fr)] gap-1 items-center px-2 text-[9px] font-bold uppercase tracking-wide border-b",
+              "grid grid-cols-[12px_16px_minmax(0,1fr)] gap-1 items-center px-2 text-[8px] font-bold uppercase tracking-wide border-b",
               darkMode ? "text-gray-300 border-white/10" : "text-gray-600 border-gray-200"
             )}
           >
@@ -1970,21 +1983,21 @@ function MobileLeagueScrollableTable({
                 key={`mobile-fixed-${row.team}-${position}`}
                 className={classNames(
                   rowHeight,
-                  "grid grid-cols-[14px_20px_minmax(0,1fr)] gap-1 items-center px-2 border-b",
+                  "grid grid-cols-[12px_16px_minmax(0,1fr)] gap-1 items-center px-2 border-b overflow-hidden",
                   darkMode ? "border-white/10 text-gray-100" : "border-gray-100 text-gray-700",
                   rowBg
                 )}
               >
-                <div className="font-extrabold text-[11px] leading-none">{position}</div>
+                <div className="font-extrabold text-[10px] leading-none">{position}</div>
                 <TeamLogo
                   team={row.team}
                   darkMode={darkMode}
-                  size={15}
+                  size={8}
                   onClick={() => openTeam(row.team)}
                 />
                 <button
                   onClick={() => openTeam(row.team)}
-                  className="font-bold hover:underline truncate text-[10px] leading-tight text-left min-w-0 block w-full"
+                  className="font-bold hover:underline truncate text-[9px] leading-tight text-left min-w-0 block w-full"
                 >
                   {displayTeamName(row.team)}
                 </button>
@@ -1996,20 +2009,20 @@ function MobileLeagueScrollableTable({
         <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain touch-pan-x">
           <div className="min-w-max">
             <div
-              className={classNames(
-                headerHeight,
-                "flex items-center gap-0 px-1.5 text-[9px] font-bold uppercase tracking-wide border-b",
-                darkMode ? "text-gray-300 border-white/10 bg-black/20" : "text-gray-600 border-gray-200 bg-gray-50"
-              )}
-            >
+                className={classNames(
+                  headerHeight,
+                  "flex items-center gap-0 px-1 text-[8px] font-bold uppercase tracking-wide border-b",
+                  darkMode ? "text-gray-300 border-white/10 bg-black/20" : "text-gray-600 border-gray-200 bg-gray-50"
+                )}
+              >
               {statColumns.map((column) => (
                 <div
                   key={column.key}
-                  className={classNames(
-                    "shrink-0 text-center",
-                    column.width,
-                    column.key === "form" ? "text-left pl-1" : ""
-                  )}
+                    className={classNames(
+                      "shrink-0 text-center",
+                      column.width,
+                      column.key === "form" ? "text-left pl-1" : ""
+                    )}
                 >
                   {column.label}
                 </div>
@@ -2024,7 +2037,7 @@ function MobileLeagueScrollableTable({
                   key={`mobile-scroll-${row.team}-${position}`}
                   className={classNames(
                     rowHeight,
-                    "flex items-center gap-0 px-1.5 border-b",
+                    "flex items-center gap-0 px-1 border-b",
                     darkMode ? "border-white/10 text-gray-100" : "border-gray-100 text-gray-700",
                     rowBg
                   )}
@@ -2033,7 +2046,7 @@ function MobileLeagueScrollableTable({
                     <div
                       key={`${row.team}-${column.key}`}
                       className={classNames(
-                        "shrink-0 text-center font-semibold text-[10px]",
+                        "shrink-0 text-center font-semibold text-[9px]",
                         column.width,
                         column.key === "pts" ? "font-black" : "",
                         column.key === "form" ? "text-left font-normal pl-1" : ""
@@ -6125,23 +6138,23 @@ function LeagueHomePage({
               />
             </div>
 
-            <div className="sm:hidden grid grid-cols-[34px_minmax(0,1fr)_auto_34px] gap-2 items-center">
+            <div className="sm:hidden grid grid-cols-[18px_minmax(0,1fr)_auto_18px] gap-2 items-center">
               <TeamLogo
                 team={upcomingMatch.home}
                 darkMode={darkMode}
-                size={28}
+                size={12}
                 onClick={() => openTeam(upcomingMatch.home)}
               />
               <button
                 onClick={() => openTeam(upcomingMatch.home)}
-                className="font-extrabold text-sm truncate text-left hover:underline"
+                className="font-extrabold text-[11px] truncate text-left hover:underline"
               >
                 {displayTeamName(upcomingMatch.home)}
               </button>
               <button
                 onClick={() => openMatch(upcomingMatch.id)}
                 className={classNames(
-                  "px-3 py-2 rounded-xl border font-black text-sm e3d-pill whitespace-nowrap",
+                  "px-2.5 py-1.5 rounded-xl border font-black text-[11px] e3d-pill whitespace-nowrap",
                   darkMode
                     ? "bg-white/5 border-white/10 hover:bg-white/10"
                     : "bg-black/5 border-black/10 hover:bg-black/10"
@@ -6153,14 +6166,14 @@ function LeagueHomePage({
               <TeamLogo
                 team={upcomingMatch.away}
                 darkMode={darkMode}
-                size={28}
+                size={12}
                 onClick={() => openTeam(upcomingMatch.away)}
               />
 
               <div></div>
               <button
                 onClick={() => openTeam(upcomingMatch.away)}
-                className="font-extrabold text-sm truncate text-right hover:underline"
+                className="font-extrabold text-[11px] truncate text-right hover:underline"
               >
                 {displayTeamName(upcomingMatch.away)}
               </button>
