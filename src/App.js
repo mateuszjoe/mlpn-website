@@ -1846,6 +1846,7 @@ function TeamLogo({
 }
 
 function TeamLink({ team, onClick, className = "" }) {
+  const safeLabel = displayTeamName(team) || (typeof team === "string" ? team : "Drużyna");
   return (
     <button
       onClick={onClick}
@@ -1854,7 +1855,7 @@ function TeamLink({ team, onClick, className = "" }) {
         className
       )}
     >
-      {team}
+      {safeLabel}
     </button>
   );
 }
@@ -11731,7 +11732,7 @@ function HomeDashboard({
                           onOpenAway={() => openTeam(f.away)}
                           onOpenMatch={() => openMatch(f.id)}
                           leftPrimary={fixtureCenterTimeLabel(f)}
-                          leftSecondary={leagueName}
+                          leftSecondary={leagueLabel(f.league)}
                           rightPrimaryTop={null}
                           rightPrimaryBottom={null}
                           isScore={false}
@@ -12237,44 +12238,6 @@ function HomeDashboard({
         </div>
       </div>
 
-      <div className="hidden grid lg:grid-cols-3 gap-3">
-        {currentLeagues.map((lg) => (
-          <Card key={lg.id} darkMode={darkMode}>
-            <div className="font-extrabold mb-2">{lg.name} – TOP 3</div>
-            <div className="space-y-2">
-              {(tableByLeague[lg.id] || []).slice(0, 3).map((r) => (
-                <div
-                  key={r.team}
-                  className={classNames(
-                    "p-2 rounded-xl border flex items-center justify-between gap-3",
-                    darkMode
-                      ? "border-white/10 bg-black/10"
-                      : "border-gray-200 bg-gray-50"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 text-center font-extrabold">
-                      {r.pos}
-                    </div>
-                    <TeamLogo
-                      team={r.team}
-                      darkMode={darkMode}
-                      size={38}
-                      onClick={() => openTeam(r.team)}
-                    />
-                    <TeamLink
-                      team={r.team}
-                      onClick={() => openTeam(r.team)}
-                      className="font-bold e3d-link"
-                    />
-                  </div>
-                  <div className="font-extrabold">{r.pts} pkt</div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        ))}
-      </div>
     </div>
   );
 }
