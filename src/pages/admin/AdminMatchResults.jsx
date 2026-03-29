@@ -1045,6 +1045,7 @@ export default function AdminMatchResults({ darkMode }) {
       const resolvedStatus = scoreForm.status === "walkover"
         ? (scoreForm.walkover_winner === "away" ? "walkover_away" : "walkover_home")
         : scoreForm.status;
+      const normalizedVideoUrl = String(scoreForm.video_url || "").trim();
 
       const noScoreStatuses = new Set(["scheduled", "postponed", "cancelled", "unplayed"]);
       let homeGoals = parseScoreValue(scoreForm.home_goals);
@@ -1108,7 +1109,7 @@ export default function AdminMatchResults({ darkMode }) {
         home_goals: homeGoals,
         away_goals: awayGoals,
         status: resolvedStatus,
-        video_url: scoreForm.video_url || null,
+        video_url: normalizedVideoUrl || null,
         mvp_player_id: nextMvpPlayerId,
       };
 
@@ -1323,7 +1324,7 @@ export default function AdminMatchResults({ darkMode }) {
                     ) : (
                       <>
                         {isEditable ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-7 gap-3 items-end">
                             <AdminFormField
                               label={`Bramki ${match.home_team_abbr || match.home_team_name}`}
                               name="home_goals"
@@ -1405,6 +1406,18 @@ export default function AdminMatchResults({ darkMode }) {
                               darkMode={darkMode}
                               options={refereeOptions}
                             />
+                            <div className="sm:col-span-2 xl:col-span-2">
+                              <AdminFormField
+                                label="Link do nagrania"
+                                name="video_url"
+                                type="url"
+                                value={scoreForm.video_url || ""}
+                                onChange={(e) => setScoreForm((prev) => ({ ...prev, video_url: e.target.value }))}
+                                darkMode={darkMode}
+                                placeholder="https://..."
+                                helpText="Link otwierany po kliknieciu ikonki kamerki przy meczu."
+                              />
+                            </div>
                             <button
                               type="button"
                               onClick={() => saveMatch(match)}
