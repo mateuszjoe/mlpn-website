@@ -7,7 +7,6 @@ import {
   Users,
   BarChart3,
   FileText,
-  Target,
   Vote,
   UserPlus,
   ArrowLeft,
@@ -227,7 +226,6 @@ const LEAGUE_SLUG_TO_CONTEXT = Object.fromEntries(
 const HOME_SECTION_TO_SLUG = {
   home: "",
   news: "aktualnosci",
-  typer: "typer",
   polls: "ankiety",
   free: "wolni-zawodnicy",
   "teams-db": "baza-druzyn",
@@ -3991,11 +3989,6 @@ export default function App() {
       icon: <FileText size={18} className="e3d-ico" />,
     },
     {
-      id: "typer",
-      label: "Typer",
-      icon: <Target size={18} className="e3d-ico" />,
-    },
-    {
       id: "polls",
       label: "Ankiety",
       icon: <Vote size={18} className="e3d-ico" />,
@@ -4419,20 +4412,6 @@ export default function App() {
               news={news}
               openTeam={openTeam}
               openMatch={openMatchPage}
-            />
-          );
-        case "typer":
-          return (
-            <TyperPage
-              darkMode={darkMode}
-              typerMatches={typerMatches}
-              typerConfig={typerConfig}
-              teamStats={stats?.teamStats}
-              matches={matches}
-              openTeam={openTeam}
-              goToLeague={goToLeague}
-              currentLeagues={currentLeagues}
-              currentRound={currentRound}
             />
           );
         case "polls":
@@ -10749,23 +10728,6 @@ function HomeDashboard({
   const heroSlides = useMemo(() => {
     const slides = [];
 
-    slides.push({
-      kind: "typer",
-      key: "typer",
-      kicker: "Typer",
-      title: heroTyperMatches.length
-        ? `Typowanie kolejki ${currentRound || "?"}`
-        : "Typer MLPN",
-      body: heroTyperMatches.length
-        ? `${heroTyperMatches.length} meczów czeka na typy. Wejdź i obstaw najbliższe spotkania.`
-        : "Sprawdź typer i oddaj typy na najbliższe spotkania.",
-      meta: heroTyperMatches[0]
-        ? `${displayTeamName(heroTyperMatches[0].home)} vs ${displayTeamName(heroTyperMatches[0].away)}`
-        : "Panel typowania",
-      ctaLabel: "Otwórz typer",
-      onClick: () => openHomeTab("typer"),
-    });
-
     if (heroRecent) {
       slides.push({
         kind: "recent",
@@ -10833,7 +10795,6 @@ function HomeDashboard({
   const activeHeroKey = activeHeroSlide?.key || "";
   const heroSlideButtonDefs = [
     { kind: "news", label: "Aktualności" },
-    { kind: "typer", label: "Typer" },
     { kind: "poll", label: "Ankiety" },
     { kind: "recent", label: "Ostatni mecz" },
     { kind: "upcoming", label: "Najbliższy mecz" },
@@ -11390,7 +11351,7 @@ function HomeDashboard({
                       )}
                       {activeHeroKind !== "typer" && !(activeHeroKind === "poll" && latestPoll && latestPollOptions.length > 0) && (
                         <div className="h-full rounded-2xl border border-white/15 bg-black/15 p-4 flex items-center justify-center text-white/80 text-sm">
-                          Wybierz slajd „Typer” lub „Ankiety”, aby skorzystać z interaktywnej zawartości bezpośrednio w kaflu.
+                          Wybierz slajd „Ankiety”, aby skorzystać z interaktywnej zawartości bezpośrednio w kaflu.
                         </div>
                       )}
                       </div>
