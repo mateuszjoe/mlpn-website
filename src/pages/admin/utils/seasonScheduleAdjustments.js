@@ -247,6 +247,9 @@ function expandTemplateSlots(template, neededCount, fallbackPattern) {
 }
 
 function teamRoundValue(value, fallbackValue) {
+  if (value === null || value === undefined || value === "") {
+    return fallbackValue;
+  }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallbackValue;
 }

@@ -18,6 +18,7 @@ import {
   buildSafeRegenerationBatches,
   buildRegenerationPlan,
   formatLockedRounds,
+  isEditableScheduleStatus,
 } from "./utils/scheduleRegeneration";
 import {
   buildEffectiveDayRuleMap,
@@ -65,8 +66,9 @@ export default function AdminSchedule({ darkMode }) {
   const [addFromRound, setAddFromRound] = useState("");
   const [applyingTeamChange, setApplyingTeamChange] = useState(false);
   const [showRoundSwapModal, setShowRoundSwapModal] = useState(false);
-  const [swapRoundA, setSwapRoundA] = useState("");
-  const [swapRoundB, setSwapRoundB] = useState("");
+  const [roundSwapScope, setRoundSwapScope] = useState("league");
+  const [draggedRoundNumber, setDraggedRoundNumber] = useState(null);
+  const [dropTargetRoundNumber, setDropTargetRoundNumber] = useState(null);
   const [swappingRounds, setSwappingRounds] = useState(false);
 
   const card = darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-200";
@@ -117,6 +119,45 @@ export default function AdminSchedule({ darkMode }) {
     [matches]
   );
 
+  const roundSwapTiles = useMemo(() => {
+    const roundGroups = {};
+
+    for (const match of matches) {
+      if (!roundGroups[match.round]) {
+        roundGroups[match.round] = [];
+      }
+      roundGroups[match.round].push(match);
+    }
+
+    return Object.entries(roundGroups)
+      .map(([roundNumber, roundMatches]) => {
+        const scheduledMatches = [...(roundMatches || [])].sort((left, right) => {
+          const leftDate = String(left.match_date || "9999-12-31");
+          const rightDate = String(right.match_date || "9999-12-31");
+          if (leftDate !== rightDate) return leftDate.localeCompare(rightDate);
+
+          const leftTime = String(left.match_time || "99:99");
+          const rightTime = String(right.match_time || "99:99");
+          return leftTime.localeCompare(rightTime);
+        });
+
+        const firstMatch = scheduledMatches[0] || null;
+        const lastMatch = scheduledMatches[scheduledMatches.length - 1] || null;
+        const isLocked = scheduledMatches.some((match) => !isEditableScheduleStatus(match.status));
+
+        return {
+          round: Number(roundNumber),
+          matchCount: scheduledMatches.length,
+          firstDate: firstMatch?.match_date || "",
+          firstTime: firstMatch?.match_time || "",
+          lastDate: lastMatch?.match_date || "",
+          lastTime: lastMatch?.match_time || "",
+          isLocked,
+        };
+      })
+      .sort((left, right) => left.round - right.round);
+  }, [matches]);
+
   const suggestedStructureRound = useMemo(
     () => getSuggestedStructureRound(matches),
     [matches]
@@ -137,6 +178,35 @@ export default function AdminSchedule({ darkMode }) {
       (team) => !leagueSeasonTeams.some((seasonTeam) => seasonTeam.team_id === team.id)
     );
   }, [teamCatalog, leagueSeasonTeams]);
+
+  function formatRoundDateLabel(dateStr) {
+    if (!dateStr) return "Bez daty";
+
+    try {
+      return new Intl.DateTimeFormat("pl-PL", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).format(new Date(`${dateStr}T12:00:00`));
+    } catch {
+      return dateStr;
+    }
+  }
+
+  function formatRoundWindowLabel(tile) {
+    if (!tile?.firstDate) return "Brak przypisanych terminow";
+
+    const firstDateLabel = formatRoundDateLabel(tile.firstDate);
+    const lastDateLabel = formatRoundDateLabel(tile.lastDate || tile.firstDate);
+    const firstTime = tile.firstTime ? ` ${tile.firstTime}` : "";
+    const lastTime = tile.lastTime ? ` ${tile.lastTime}` : "";
+
+    if (tile.firstDate === tile.lastDate) {
+      return `${firstDateLabel}${firstTime}${tile.lastTime && tile.lastTime !== tile.firstTime ? ` - ${tile.lastTime}` : ""}`;
+    }
+
+    return `${firstDateLabel}${firstTime} -> ${lastDateLabel}${lastTime}`;
+  }
 
   const loadBase = useCallback(async () => {
     const [{ data: seasonsData }, { data: leaguesData }] = await Promise.all([
@@ -319,8 +389,9 @@ export default function AdminSchedule({ darkMode }) {
       return;
     }
 
-    setSwapRoundA("");
-    setSwapRoundB("");
+    setRoundSwapScope("league");
+    setDraggedRoundNumber(null);
+    setDropTargetRoundNumber(null);
     setShowRoundSwapModal(true);
   }
 
@@ -496,14 +567,14 @@ export default function AdminSchedule({ darkMode }) {
     }
   }
 
-  async function applyRoundSwap(scope) {
+  async function applyRoundSwap(scope, sourceRoundInput, targetRoundInput) {
     if (hasPendingEdits) {
       setAlert({ type: "error", message: "Najpierw zapisz reczne zmiany terminow meczow." });
       return;
     }
 
-    const sourceRound = Number(swapRoundA);
-    const targetRound = Number(swapRoundB);
+    const sourceRound = Number(sourceRoundInput);
+    const targetRound = Number(targetRoundInput);
 
     if (!sourceRound || !targetRound) {
       setAlert({ type: "error", message: "Podaj dwie kolejki do zamiany." });
@@ -516,9 +587,7 @@ export default function AdminSchedule({ darkMode }) {
       if (scope === "league") {
         const plan = buildRoundSwapUpdates(matches, sourceRound, targetRound);
         await persistMatchPayloadUpdates(plan.updates);
-        applyMatchUpdatesLocally(plan.updates);
-        clearEditedMatches([...new Set(plan.updates.map((update) => update.matchId))]);
-        setShowRoundSwapModal(false);
+        await loadMatches();
         setAlert({
           type: "success",
           message: `Zamieniono terminami kolejki ${sourceRound} i ${targetRound} w lidze ${selectedLeagueMeta?.name || ""}.`,
@@ -569,7 +638,6 @@ export default function AdminSchedule({ darkMode }) {
       }
 
       await loadMatches();
-      setShowRoundSwapModal(false);
 
       const skippedLabel = skippedLeagues.length
         ? ` Pominiete ligi: ${skippedLeagues.join(" | ")}`
@@ -583,7 +651,47 @@ export default function AdminSchedule({ darkMode }) {
       setAlert({ type: "error", message: `Nie udalo sie zamienic kolejek: ${error.message}` });
     } finally {
       setSwappingRounds(false);
+      setDraggedRoundNumber(null);
+      setDropTargetRoundNumber(null);
     }
+  }
+
+  function handleRoundDragStart(event, roundNumber) {
+    if (swappingRounds) return;
+
+    setDraggedRoundNumber(String(roundNumber));
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(roundNumber));
+  }
+
+  function handleRoundDragOver(event, roundNumber) {
+    if (swappingRounds || String(roundNumber) === String(draggedRoundNumber)) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+
+    if (String(roundNumber) !== String(dropTargetRoundNumber)) {
+      setDropTargetRoundNumber(String(roundNumber));
+    }
+  }
+
+  function handleRoundDrop(event, targetRoundNumber) {
+    event.preventDefault();
+
+    const sourceRoundNumber = draggedRoundNumber || event.dataTransfer.getData("text/plain");
+    if (!sourceRoundNumber || String(sourceRoundNumber) === String(targetRoundNumber)) {
+      setDropTargetRoundNumber(null);
+      return;
+    }
+
+    applyRoundSwap(roundSwapScope, sourceRoundNumber, targetRoundNumber);
+  }
+
+  function handleRoundDragEnd() {
+    if (swappingRounds) return;
+
+    setDraggedRoundNumber(null);
+    setDropTargetRoundNumber(null);
   }
 
   function buildGuidelineAwarePlan(leagueMatches, teamCount, guidelines) {
@@ -1328,11 +1436,11 @@ export default function AdminSchedule({ darkMode }) {
         onClose={() => !swappingRounds && setShowRoundSwapModal(false)}
         title="Zamien terminy kolejek"
         darkMode={darkMode}
-        wide
+        xwide
       >
         <div className="space-y-4">
           <div className={`rounded-xl border p-3 text-sm ${card}`}>
-            Ta operacja nie rusza par meczowych ani numerow kolejek. Zamienia tylko daty i godziny pomiedzy dwiema kolejkami.
+            Przeciagnij kafelek kolejki na inny kafelek, aby podmienic ich terminy. Numery kolejek i pary meczowe zostaja bez zmian.
           </div>
 
           {hasPendingEdits && (
@@ -1341,26 +1449,106 @@ export default function AdminSchedule({ darkMode }) {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <AdminFormField
-              label="Kolejka A"
-              name="swap_round_a"
-              type="number"
-              value={swapRoundA}
-              onChange={(event) => setSwapRoundA(event.target.value)}
-              darkMode={darkMode}
-              min={1}
-            />
-            <AdminFormField
-              label="Kolejka B"
-              name="swap_round_b"
-              type="number"
-              value={swapRoundB}
-              onChange={(event) => setSwapRoundB(event.target.value)}
-              darkMode={darkMode}
-              min={1}
-            />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setRoundSwapScope("league")}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                roundSwapScope === "league"
+                  ? "bg-cyan-500 text-white"
+                  : darkMode
+                    ? "bg-white/5 text-gray-200 hover:bg-white/10"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Tylko ta liga
+            </button>
+            <button
+              type="button"
+              onClick={() => setRoundSwapScope("global")}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                roundSwapScope === "global"
+                  ? "bg-cyan-500 text-white"
+                  : darkMode
+                    ? "bg-white/5 text-gray-200 hover:bg-white/10"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Globalnie w sezonie
+            </button>
           </div>
+
+          <div className={`rounded-xl border p-3 text-sm ${card}`}>
+            {roundSwapScope === "league"
+              ? `Zamiana dotyczy tylko ligi ${selectedLeagueMeta?.name || ""}.`
+              : "Zamiana dotyczy tych samych numerow kolejek we wszystkich ligach sezonu. Ligi z rozegranymi meczami w tych kolejkach zostana pominiete."}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {roundSwapTiles.map((tile) => {
+              const isDragged = String(draggedRoundNumber) === String(tile.round);
+              const isDropTarget = String(dropTargetRoundNumber) === String(tile.round);
+              const isDisabled = swappingRounds || (roundSwapScope === "league" && tile.isLocked);
+
+              return (
+                <div
+                  key={tile.round}
+                  draggable={!isDisabled}
+                  onDragStart={(event) => handleRoundDragStart(event, tile.round)}
+                  onDragOver={(event) => handleRoundDragOver(event, tile.round)}
+                  onDrop={(event) => handleRoundDrop(event, tile.round)}
+                  onDragEnd={handleRoundDragEnd}
+                  className={`rounded-2xl border p-4 transition-all ${
+                    darkMode ? "bg-white/[0.03] border-white/10" : "bg-white border-gray-200"
+                  } ${
+                    isDisabled ? "opacity-60 cursor-not-allowed" : "cursor-grab active:cursor-grabbing"
+                  } ${
+                    isDragged ? "scale-[0.99] opacity-60" : ""
+                  } ${
+                    isDropTarget
+                      ? darkMode
+                        ? "border-cyan-400 bg-cyan-500/10 shadow-[0_0_0_1px_rgba(34,211,238,0.45)]"
+                        : "border-cyan-500 bg-cyan-50 shadow-[0_0_0_1px_rgba(6,182,212,0.28)]"
+                      : ""
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-base font-bold">Kolejka {tile.round}</div>
+                      <div className={`text-xs mt-1 ${textMuted}`}>{formatRoundWindowLabel(tile)}</div>
+                    </div>
+                    <div
+                      className={`px-2 py-1 rounded-full text-[11px] font-semibold ${
+                        tile.isLocked
+                          ? darkMode
+                            ? "bg-amber-500/15 text-amber-300"
+                            : "bg-amber-100 text-amber-800"
+                          : darkMode
+                            ? "bg-cyan-500/10 text-cyan-300"
+                            : "bg-cyan-100 text-cyan-800"
+                      }`}
+                    >
+                      {tile.isLocked ? "Zablokowana" : "Edytowalna"}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <div className={`text-sm ${textMuted}`}>{tile.matchCount} mecz{tile.matchCount === 1 ? "" : tile.matchCount < 5 ? "e" : "ow"}</div>
+                    <div className={`flex items-center gap-2 text-xs font-medium ${darkMode ? "text-cyan-300" : "text-cyan-700"}`}>
+                      <GripVertical size={16} />
+                      Przeciagnij na inna kolejke
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {roundSwapTiles.length < 2 && (
+            <div className={`rounded-xl border p-3 text-sm ${card}`}>
+              Ta liga ma za malo kolejek do zamiany.
+            </div>
+          )}
 
           <div className="flex flex-wrap justify-end gap-3">
             <button
@@ -1371,24 +1559,11 @@ export default function AdminSchedule({ darkMode }) {
             >
               Anuluj
             </button>
-            <button
-              type="button"
-              onClick={() => applyRoundSwap("league")}
-              disabled={swappingRounds}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold ${
-                darkMode ? "bg-white/10 text-white hover:bg-white/15" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-              } disabled:opacity-50`}
-            >
-              {swappingRounds ? "Zmieniam..." : `Zamien w lidze ${selectedLeagueMeta?.name || ""}`}
-            </button>
-            <button
-              type="button"
-              onClick={() => applyRoundSwap("global")}
-              disabled={swappingRounds}
-              className="px-4 py-2 rounded-xl bg-cyan-500 text-white text-sm font-semibold hover:bg-cyan-400 disabled:opacity-50"
-            >
-              {swappingRounds ? "Zmieniam..." : "Zamien globalnie w sezonie"}
-            </button>
+            {swappingRounds && (
+              <div className={`px-4 py-2 rounded-xl text-sm font-semibold ${darkMode ? "bg-cyan-500/10 text-cyan-300" : "bg-cyan-50 text-cyan-800"}`}>
+                Zamieniam kolejki...
+              </div>
+            )}
           </div>
         </div>
       </AdminModal>
