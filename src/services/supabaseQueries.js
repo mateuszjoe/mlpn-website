@@ -3,6 +3,26 @@ import { publicSupabase } from '../lib/supabase';
 // Drużyny-atrapy (rezerwacje miejsc, pauzy) - filtrowane z wyników
 const PLACEHOLDER_TEAMS = ['przerwa', '-przerwa-', 'xxx', 'wolne miejsce', 'wolne miejsce ii'];
 const isPlaceholder = (name) => PLACEHOLDER_TEAMS.includes(name?.toLowerCase().trim());
+const PUBLIC_PAGE_SIZE = 1000;
+
+async function fetchAllPublicRows(queryFactory, pageSize = PUBLIC_PAGE_SIZE) {
+  const rows = [];
+  let from = 0;
+
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await queryFactory(from, to);
+    if (error) throw error;
+
+    const chunk = data || [];
+    rows.push(...chunk);
+
+    if (chunk.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return rows;
+}
 
 // ============================================================
 // SEZONY
@@ -914,21 +934,31 @@ export async function fetchTeamsDirectory() {
 }
 
 export async function fetchPlayersDirectory() {
-  const [{ data: players, error: playersErr }, { data: seasonStats }, { data: rosterRows }] = await Promise.all([
-    publicSupabase
-      .from('players')
-      .select('id, first_name, last_name, display_name, position, birth_year, city, is_active')
-      .order('last_name', { ascending: true })
-      .order('first_name', { ascending: true }),
-    publicSupabase
-      .from('player_season_stats')
-      .select('player_id, goals, assists, yellow_cards, red_cards, appearances'),
-    publicSupabase
-      .from('team_players')
-      .select('player_id, left_date, seasons(year), teams(name), leagues(code, name)'),
+  const [players, seasonStats, rosterRows] = await Promise.all([
+    fetchAllPublicRows((from, to) =>
+      publicSupabase
+        .from('players')
+        .select('id, first_name, last_name, display_name, position, birth_year, city, is_active')
+        .order('last_name', { ascending: true })
+        .order('first_name', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to)
+    ),
+    fetchAllPublicRows((from, to) =>
+      publicSupabase
+        .from('player_season_stats')
+        .select('id, player_id, goals, assists, yellow_cards, red_cards, appearances')
+        .order('id', { ascending: true })
+        .range(from, to)
+    ),
+    fetchAllPublicRows((from, to) =>
+      publicSupabase
+        .from('team_players')
+        .select('id, player_id, left_date, seasons(year), teams(name), leagues(code, name)')
+        .order('id', { ascending: true })
+        .range(from, to)
+    ),
   ]);
-
-  if (playersErr) throw playersErr;
 
   const totalsByPlayer = {};
   for (const row of seasonStats || []) {
