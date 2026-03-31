@@ -7572,7 +7572,7 @@ function HomePlayersDatabasePage({ darkMode, openPlayer }) {
       if (hideInactive && !row.isActive) return false;
       if (!q) return true;
       const hay = normalizeSearchKey(
-        `${row.name} ${row.firstName || ""} ${row.lastName || ""} ${row.position || ""} ${row.city || ""}`
+        `${row.name} ${row.firstName || ""} ${row.lastName || ""} ${row.currentTeam || ""} ${row.currentLeague || ""} ${row.position || ""} ${row.city || ""}`
       );
       return hay.includes(q);
     });
@@ -7609,7 +7609,7 @@ function HomePlayersDatabasePage({ darkMode, openPlayer }) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Szukaj zawodnika (imię, nazwisko, pozycja, miasto)"
+            placeholder="Szukaj zawodnika (imię, nazwisko, drużyna, pozycja, miasto)"
             className={classNames(
               "w-full md:flex-1 rounded-xl border px-3 py-2 outline-none",
               darkMode
@@ -7675,7 +7675,10 @@ function HomePlayersDatabasePage({ darkMode, openPlayer }) {
                 <div className="md:hidden space-y-1">
                   <div className="font-extrabold">{p.name}</div>
                   <div className={classNames("text-sm", darkMode ? "text-gray-300" : "text-gray-700")}>
-                    {p.position || "Brak pozycji"}{p.birthYear ? ` • ${p.birthYear}` : ""}
+                    {p.currentTeam || "Bez przypisanej drużyny"}{p.birthYear ? ` • ${p.birthYear}` : ""}
+                  </div>
+                  <div className={classNames("text-xs", darkMode ? "text-gray-400" : "text-gray-600")}>
+                    {p.position || "Brak pozycji"}{p.currentLeague ? ` • ${p.currentLeague}` : ""}
                   </div>
                   <div className={classNames("text-xs", darkMode ? "text-gray-400" : "text-gray-600")}>
                     M {p.totals.appearances} • G {p.totals.goals} • A {p.totals.assists} •
@@ -7688,7 +7691,10 @@ function HomePlayersDatabasePage({ darkMode, openPlayer }) {
                   <div className="min-w-0">
                     <div className="font-extrabold truncate">{p.name}</div>
                     <div className={classNames("text-xs truncate", darkMode ? "text-gray-400" : "text-gray-600")}>
-                      {p.city || "—"} {!p.isActive ? "• Nieaktywny" : ""}
+                      {p.currentTeam || "Bez przypisanej drużyny"}
+                      {p.currentLeague ? ` • ${p.currentLeague}` : ""}
+                      {p.city ? ` • ${p.city}` : ""}
+                      {!p.isActive ? " • Nieaktywny" : ""}
                     </div>
                   </div>
                   <div className="font-semibold truncate">{p.position || "—"}</div>

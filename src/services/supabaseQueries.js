@@ -914,7 +914,7 @@ export async function fetchTeamsDirectory() {
 }
 
 export async function fetchPlayersDirectory() {
-  const [{ data: players, error: playersErr }, { data: seasonStats }] = await Promise.all([
+  const [{ data: players, error: playersErr }, { data: seasonStats }, { data: rosterRows }] = await Promise.all([
     publicSupabase
       .from('players')
       .select('id, first_name, last_name, display_name, position, birth_year, city, is_active')
@@ -923,6 +923,9 @@ export async function fetchPlayersDirectory() {
     publicSupabase
       .from('player_season_stats')
       .select('player_id, goals, assists, yellow_cards, red_cards, appearances'),
+    publicSupabase
+      .from('team_players')
+      .select('player_id, left_date, seasons(year), teams(name), leagues(code, name)'),
   ]);
 
   if (playersErr) throw playersErr;
@@ -947,11 +950,41 @@ export async function fetchPlayersDirectory() {
     totalsByPlayer[pid].redCards += row.red_cards || 0;
   }
 
+  const latestTeamByPlayer = {};
+  for (const row of rosterRows || []) {
+    const playerId = row.player_id;
+    if (!playerId || !row.teams?.name) continue;
+
+    const candidate = {
+      team: row.teams.name || '',
+      league: row.leagues?.name || '',
+      leagueCode: row.leagues?.code || '',
+      season: row.seasons?.year || 0,
+      isCurrent: !row.left_date,
+    };
+
+    const current = latestTeamByPlayer[playerId];
+    if (!current) {
+      latestTeamByPlayer[playerId] = candidate;
+      continue;
+    }
+
+    if ((candidate.season || 0) > (current.season || 0)) {
+      latestTeamByPlayer[playerId] = candidate;
+      continue;
+    }
+
+    if ((candidate.season || 0) === (current.season || 0) && candidate.isCurrent && !current.isCurrent) {
+      latestTeamByPlayer[playerId] = candidate;
+    }
+  }
+
   return (players || []).map((p) => {
     const displayName =
       p.display_name?.trim() ||
       [p.first_name, p.last_name].filter(Boolean).join(' ').trim() ||
       'Bez nazwy';
+    const latestTeam = latestTeamByPlayer[p.id] || null;
     return {
       id: p.id,
       name: displayName,
@@ -961,6 +994,10 @@ export async function fetchPlayersDirectory() {
       birthYear: p.birth_year || null,
       city: p.city || '',
       isActive: p.is_active !== false,
+      currentTeam: latestTeam?.team || '',
+      currentLeague: latestTeam?.league || '',
+      currentLeagueCode: latestTeam?.leagueCode || '',
+      currentSeason: latestTeam?.season || null,
       totals: totalsByPlayer[p.id] || {
         appearances: 0,
         goals: 0,
