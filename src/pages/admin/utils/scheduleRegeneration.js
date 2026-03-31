@@ -1,4 +1,12 @@
-const EDITABLE_STATUSES = new Set(["scheduled", "postponed", "cancelled"]);
+export const EDITABLE_STATUSES = new Set(["scheduled", "postponed", "cancelled"]);
+
+export function isEditableScheduleStatus(status) {
+  return EDITABLE_STATUSES.has(String(status || "scheduled"));
+}
+
+export function isLockedScheduleStatus(status) {
+  return !isEditableScheduleStatus(status);
+}
 
 export function roundsPerRunda(teamCount) {
   if (teamCount < 2) return 0;
@@ -49,7 +57,7 @@ function shuffleArray(items, rng = Math.random) {
 }
 
 function isLockedStatus(status) {
-  return !EDITABLE_STATUSES.has(String(status || "scheduled"));
+  return isLockedScheduleStatus(status);
 }
 
 function buildRoundMap(matches) {
