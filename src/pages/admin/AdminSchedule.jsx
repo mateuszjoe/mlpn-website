@@ -354,18 +354,15 @@ export default function AdminSchedule({ darkMode }) {
   async function persistMatchPayloadUpdates(updates) {
     if (!updates?.length) return;
 
-    const results = await Promise.all(
-      updates.map((update) =>
-        supabase
-          .from("matches")
-          .update(update.payload)
-          .eq("id", update.matchId)
-      )
-    );
+    for (const update of updates) {
+      const { error } = await supabase
+        .from("matches")
+        .update(update.payload)
+        .eq("id", update.matchId);
 
-    const failedResult = results.find((result) => result.error);
-    if (failedResult?.error) {
-      throw failedResult.error;
+      if (error) {
+        throw error;
+      }
     }
   }
 
