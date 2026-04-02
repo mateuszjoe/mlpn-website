@@ -138,12 +138,17 @@ export default function AdminRosters({ darkMode }) {
     if (!selectedSeason || !selectedLeague) return;
 
     const currentSeason = seasons.find(s => s.id === selectedSeason);
+    const currentTeamIds = seasonTeams.map(st => st.team_id).filter(Boolean);
     if (!currentSeason) return;
 
     // Find previous season (one year back)
     const prevSeason = seasons.find(s => s.year === currentSeason.year - 1);
     if (!prevSeason) {
       setAlert({ type: "error", message: `Nie znaleziono poprzedniego sezonu (${currentSeason.year - 1}).` });
+      return;
+    }
+    if (currentTeamIds.length === 0) {
+      setAlert({ type: "error", message: "Brak druzyn przypisanych do tej ligi w biezacym sezonie." });
       return;
     }
 
@@ -155,12 +160,12 @@ export default function AdminRosters({ darkMode }) {
 
     setCopyingRosters(true);
     try {
-      // Get all active team_players from previous season in this league
+      // Copy previous-season rosters by team_id so promoted/relegated teams are included too.
       const { data: prevRosters, error: prevErr } = await supabase
         .from("team_players")
         .select("player_id, team_id, shirt_number, is_captain, players(is_active)")
         .eq("season_id", prevSeason.id)
-        .eq("league_id", selectedLeague)
+        .in("team_id", currentTeamIds)
         .is("left_date", null);
 
       if (prevErr) throw prevErr;
@@ -170,11 +175,10 @@ export default function AdminRosters({ darkMode }) {
         return;
       }
 
-      // Filter only active players and teams that exist in new season
-      const newSeasonTeamIds = new Set(seasonTeams.map(st => st.team_id));
+      // Filter only active players.
       const activePrev = prevRosters.filter(r => {
         const playerObj = Array.isArray(r.players) ? r.players[0] : r.players;
-        return playerObj?.is_active !== false && newSeasonTeamIds.has(r.team_id);
+        return playerObj?.is_active !== false;
       });
 
       if (activePrev.length === 0) {

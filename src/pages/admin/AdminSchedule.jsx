@@ -69,6 +69,7 @@ export default function AdminSchedule({ darkMode }) {
   const [roundSwapScope, setRoundSwapScope] = useState("league");
   const [draggedRoundNumber, setDraggedRoundNumber] = useState(null);
   const [dropTargetRoundNumber, setDropTargetRoundNumber] = useState(null);
+  const [selectedRoundNumber, setSelectedRoundNumber] = useState(null);
   const [swappingRounds, setSwappingRounds] = useState(false);
 
   const card = darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-200";
@@ -389,6 +390,7 @@ export default function AdminSchedule({ darkMode }) {
     setRoundSwapScope("league");
     setDraggedRoundNumber(null);
     setDropTargetRoundNumber(null);
+    setSelectedRoundNumber(null);
     setShowRoundSwapModal(true);
   }
 
@@ -650,6 +652,7 @@ export default function AdminSchedule({ darkMode }) {
       setSwappingRounds(false);
       setDraggedRoundNumber(null);
       setDropTargetRoundNumber(null);
+      setSelectedRoundNumber(null);
     }
   }
 
@@ -689,6 +692,24 @@ export default function AdminSchedule({ darkMode }) {
 
     setDraggedRoundNumber(null);
     setDropTargetRoundNumber(null);
+  }
+
+  function handleRoundTileClick(roundNumber, isDisabled) {
+    if (swappingRounds || isDisabled) return;
+
+    const normalizedRound = String(roundNumber);
+
+    if (!selectedRoundNumber) {
+      setSelectedRoundNumber(normalizedRound);
+      return;
+    }
+
+    if (normalizedRound === String(selectedRoundNumber)) {
+      setSelectedRoundNumber(null);
+      return;
+    }
+
+    applyRoundSwap(roundSwapScope, selectedRoundNumber, normalizedRound);
   }
 
   function buildGuidelineAwarePlan(leagueMatches, teamCount, guidelines) {
@@ -1430,14 +1451,18 @@ export default function AdminSchedule({ darkMode }) {
 
       <AdminModal
         isOpen={showRoundSwapModal}
-        onClose={() => !swappingRounds && setShowRoundSwapModal(false)}
+        onClose={() => {
+          if (swappingRounds) return;
+          setSelectedRoundNumber(null);
+          setShowRoundSwapModal(false);
+        }}
         title="Zamien terminy kolejek"
         darkMode={darkMode}
         xwide
       >
         <div className="space-y-4">
           <div className={`rounded-xl border p-3 text-sm ${card}`}>
-            Przeciagnij kafelek kolejki na inny kafelek, aby podmienic ich terminy. Numery kolejek i pary meczowe zostaja bez zmian.
+            Przeciagnij kafelek kolejki na inny kafelek albo kliknij dwie kolejki po kolei, aby podmienic ich terminy. Numery kolejek i pary meczowe zostaja bez zmian.
           </div>
 
           {hasPendingEdits && (
@@ -1449,7 +1474,10 @@ export default function AdminSchedule({ darkMode }) {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setRoundSwapScope("league")}
+              onClick={() => {
+                setSelectedRoundNumber(null);
+                setRoundSwapScope("league");
+              }}
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
                 roundSwapScope === "league"
                   ? "bg-cyan-500 text-white"
@@ -1462,7 +1490,10 @@ export default function AdminSchedule({ darkMode }) {
             </button>
             <button
               type="button"
-              onClick={() => setRoundSwapScope("global")}
+              onClick={() => {
+                setSelectedRoundNumber(null);
+                setRoundSwapScope("global");
+              }}
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
                 roundSwapScope === "global"
                   ? "bg-cyan-500 text-white"
@@ -1481,16 +1512,24 @@ export default function AdminSchedule({ darkMode }) {
               : "Zamiana dotyczy tych samych numerow kolejek we wszystkich ligach sezonu. Ligi z rozegranymi meczami w tych kolejkach zostana pominiete."}
           </div>
 
+          {selectedRoundNumber && (
+            <div className={`rounded-xl border p-3 text-sm ${darkMode ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-200" : "border-cyan-200 bg-cyan-50 text-cyan-900"}`}>
+              Wybrana kolejka startowa: <strong>{selectedRoundNumber}</strong>. Kliknij druga kolejke, aby wykonac zamiane.
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {roundSwapTiles.map((tile) => {
               const isDragged = String(draggedRoundNumber) === String(tile.round);
               const isDropTarget = String(dropTargetRoundNumber) === String(tile.round);
+              const isSelected = String(selectedRoundNumber) === String(tile.round);
               const isDisabled = swappingRounds || (roundSwapScope === "league" && tile.isLocked);
 
               return (
                 <div
                   key={tile.round}
                   draggable={!isDisabled}
+                  onClick={() => handleRoundTileClick(tile.round, isDisabled)}
                   onDragStart={(event) => handleRoundDragStart(event, tile.round)}
                   onDragOver={(event) => handleRoundDragOver(event, tile.round)}
                   onDrop={(event) => handleRoundDrop(event, tile.round)}
@@ -1501,6 +1540,12 @@ export default function AdminSchedule({ darkMode }) {
                     isDisabled ? "opacity-60 cursor-not-allowed" : "cursor-grab active:cursor-grabbing"
                   } ${
                     isDragged ? "scale-[0.99] opacity-60" : ""
+                  } ${
+                    isSelected
+                      ? darkMode
+                        ? "border-cyan-300 bg-cyan-500/10 shadow-[0_0_0_1px_rgba(34,211,238,0.35)]"
+                        : "border-cyan-500 bg-cyan-50 shadow-[0_0_0_1px_rgba(6,182,212,0.18)]"
+                      : ""
                   } ${
                     isDropTarget
                       ? darkMode
@@ -1550,7 +1595,10 @@ export default function AdminSchedule({ darkMode }) {
           <div className="flex flex-wrap justify-end gap-3">
             <button
               type="button"
-              onClick={() => setShowRoundSwapModal(false)}
+              onClick={() => {
+                setSelectedRoundNumber(null);
+                setShowRoundSwapModal(false);
+              }}
               className={`px-4 py-2 rounded-xl text-sm ${textMuted} ${darkMode ? "hover:bg-white/5" : "hover:bg-gray-100"}`}
               disabled={swappingRounds}
             >
