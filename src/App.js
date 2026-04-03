@@ -2512,7 +2512,7 @@ function AboutPage({ darkMode }) {
               darkMode ? "text-gray-300" : "text-gray-700"
             )}
           >
-            Miejska Liga Piłki Nożnej w Sulejówku (MLPN) została założona w 2018
+            Miejska Liga Piłki Nożnej w Sulejówku (MLPN) została założona w 2003
             roku z myślą o stworzeniu platformy dla lokalnych pasjonatów piłki
             nożnej. Od tamtej pory rozwinęliśmy się w największą amatorską ligę
             piłkarską w regionie, zrzeszając dziesiątki drużyn i setki
@@ -5413,7 +5413,7 @@ function Footer({ darkMode, setActiveContext, setActiveSection }) {
               )}
             >
               Miejska Liga Piłki Nożnej w Sulejówku - promujemy lokalny sport i
-              integrujemy społeczność od 2018 roku.
+              integrujemy społeczność od 2003 roku.
             </p>
           </div>
         </div>
