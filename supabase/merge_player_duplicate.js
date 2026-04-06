@@ -82,6 +82,47 @@ function throwIfError(result, label) {
   }
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetriableError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    message.includes("fetch failed") ||
+    message.includes("network") ||
+    message.includes("bad gateway") ||
+    message.includes("502") ||
+    message.includes("cloudflare") ||
+    message.includes("timeout") ||
+    message.includes("timed out") ||
+    message.includes("econnreset") ||
+    message.includes("socket") ||
+    message.includes("terminated") ||
+    message.endsWith(":")
+  );
+}
+
+async function runQuery(label, operation, maxAttempts = 4) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const result = await operation();
+      throwIfError(result, label);
+      return result;
+    } catch (error) {
+      lastError = error;
+      if (attempt >= maxAttempts || !isRetriableError(error)) {
+        throw error;
+      }
+      await delay(250 * attempt);
+    }
+  }
+
+  throw lastError;
+}
+
 function sanitizeUpsertRow(row) {
   const copy = { ...row };
   delete copy.id;
@@ -122,8 +163,9 @@ function mergePrivatePayload(targetPrivate, sourcePrivate) {
 }
 
 async function transferRowsWithUpsert(supabase, table, sourceId, targetId, onConflict) {
-  const selectRes = await supabase.from(table).select("*").eq("player_id", sourceId);
-  throwIfError(selectRes, `${table} select`);
+  const selectRes = await runQuery(`${table} select`, () =>
+    supabase.from(table).select("*").eq("player_id", sourceId)
+  );
   const rows = selectRes.data || [];
   if (!rows.length) return 0;
 
@@ -132,14 +174,16 @@ async function transferRowsWithUpsert(supabase, table, sourceId, targetId, onCon
     player_id: targetId,
   }));
 
-  const upsertRes = await supabase.from(table).upsert(payload, {
-    onConflict,
-    ignoreDuplicates: true,
-  });
-  throwIfError(upsertRes, `${table} upsert`);
+  await runQuery(`${table} upsert`, () =>
+    supabase.from(table).upsert(payload, {
+      onConflict,
+      ignoreDuplicates: true,
+    })
+  );
 
-  const cleanupRes = await supabase.from(table).delete().eq("player_id", sourceId);
-  throwIfError(cleanupRes, `${table} cleanup`);
+  await runQuery(`${table} cleanup`, () =>
+    supabase.from(table).delete().eq("player_id", sourceId)
+  );
 
   return rows.length;
 }
@@ -177,11 +221,12 @@ function buildSeasonStatsFloorMap(rows) {
 }
 
 async function applySeasonStatsFloor(supabase, targetId, floorMap) {
-  const currentRes = await supabase
-    .from("player_season_stats")
-    .select("id, season_id, league_id, team_id, appearances, goals, assists, yellow_cards, red_cards")
-    .eq("player_id", targetId);
-  throwIfError(currentRes, "player_season_stats target select");
+  const currentRes = await runQuery("player_season_stats target select", () =>
+    supabase
+      .from("player_season_stats")
+      .select("id, season_id, league_id, team_id, appearances, goals, assists, yellow_cards, red_cards")
+      .eq("player_id", targetId)
+  );
 
   const currentByKey = new Map(
     (currentRes.data || []).map((row) => [`${row.season_id || ""}|${row.league_id || ""}`, row])
@@ -211,25 +256,27 @@ async function applySeasonStatsFloor(supabase, targetId, floorMap) {
         patch.red_cards !== Number(current.red_cards || 0);
 
       if (changed) {
-        const updateRes = await supabase.from("player_season_stats").update(patch).eq("id", current.id);
-        throwIfError(updateRes, "player_season_stats floor update");
+        await runQuery("player_season_stats floor update", () =>
+          supabase.from("player_season_stats").update(patch).eq("id", current.id)
+        );
         touched += 1;
       }
       continue;
     }
 
-    const insertRes = await supabase.from("player_season_stats").insert({
-      player_id: targetId,
-      season_id: floor.season_id,
-      league_id: floor.league_id,
-      team_id: floor.team_id,
-      appearances: floor.appearances,
-      goals: floor.goals,
-      assists: floor.assists,
-      yellow_cards: floor.yellow_cards,
-      red_cards: floor.red_cards,
-    });
-    throwIfError(insertRes, "player_season_stats floor insert");
+    await runQuery("player_season_stats floor insert", () =>
+      supabase.from("player_season_stats").insert({
+        player_id: targetId,
+        season_id: floor.season_id,
+        league_id: floor.league_id,
+        team_id: floor.team_id,
+        appearances: floor.appearances,
+        goals: floor.goals,
+        assists: floor.assists,
+        yellow_cards: floor.yellow_cards,
+        red_cards: floor.red_cards,
+      })
+    );
     touched += 1;
   }
 
@@ -238,14 +285,16 @@ async function applySeasonStatsFloor(supabase, targetId, floorMap) {
 
 async function fetchPlayerBundle(supabase, playerId) {
   const [playerRes, privateRes, pssRes] = await Promise.all([
-    supabase.from("players").select("*").eq("id", playerId).single(),
-    supabase.from("players_private").select("*").eq("player_id", playerId).maybeSingle(),
-    supabase.from("player_season_stats").select("*").eq("player_id", playerId),
+    runQuery(`players ${playerId} select`, () =>
+      supabase.from("players").select("*").eq("id", playerId).single()
+    ),
+    runQuery(`players_private ${playerId} select`, () =>
+      supabase.from("players_private").select("*").eq("player_id", playerId).maybeSingle()
+    ),
+    runQuery(`player_season_stats ${playerId} select`, () =>
+      supabase.from("player_season_stats").select("*").eq("player_id", playerId)
+    ),
   ]);
-
-  throwIfError(playerRes, `players ${playerId} select`);
-  throwIfError(privateRes, `players_private ${playerId} select`);
-  throwIfError(pssRes, `player_season_stats ${playerId} select`);
 
   return {
     player: playerRes.data,
@@ -256,24 +305,25 @@ async function fetchPlayerBundle(supabase, playerId) {
 
 async function countReferences(supabase, playerId) {
   const [teamPlayersRes, lineupsRes, eventPlayerRes, eventAssistRes, suspensionsRes, mvpRes] = await Promise.all([
-    supabase.from("team_players").select("id", { count: "exact", head: true }).eq("player_id", playerId),
-    supabase.from("match_lineups").select("id", { count: "exact", head: true }).eq("player_id", playerId),
-    supabase.from("match_events").select("id", { count: "exact", head: true }).eq("player_id", playerId),
-    supabase.from("match_events").select("id", { count: "exact", head: true }).eq("assist_player_id", playerId),
-    supabase.from("suspensions").select("id", { count: "exact", head: true }).eq("player_id", playerId),
-    supabase.from("matches").select("id", { count: "exact", head: true }).eq("mvp_player_id", playerId),
+    runQuery("team_players count", () =>
+      supabase.from("team_players").select("id", { count: "exact", head: true }).eq("player_id", playerId)
+    ),
+    runQuery("match_lineups count", () =>
+      supabase.from("match_lineups").select("id", { count: "exact", head: true }).eq("player_id", playerId)
+    ),
+    runQuery("match_events player count", () =>
+      supabase.from("match_events").select("id", { count: "exact", head: true }).eq("player_id", playerId)
+    ),
+    runQuery("match_events assist count", () =>
+      supabase.from("match_events").select("id", { count: "exact", head: true }).eq("assist_player_id", playerId)
+    ),
+    runQuery("suspensions count", () =>
+      supabase.from("suspensions").select("id", { count: "exact", head: true }).eq("player_id", playerId)
+    ),
+    runQuery("matches mvp count", () =>
+      supabase.from("matches").select("id", { count: "exact", head: true }).eq("mvp_player_id", playerId)
+    ),
   ]);
-
-  for (const [result, label] of [
-    [teamPlayersRes, "team_players count"],
-    [lineupsRes, "match_lineups count"],
-    [eventPlayerRes, "match_events player count"],
-    [eventAssistRes, "match_events assist count"],
-    [suspensionsRes, "suspensions count"],
-    [mvpRes, "matches mvp count"],
-  ]) {
-    throwIfError(result, label);
-  }
 
   return {
     team_players: teamPlayersRes.count || 0,
@@ -283,6 +333,22 @@ async function countReferences(supabase, playerId) {
     suspensions: suspensionsRes.count || 0,
     mvps: mvpRes.count || 0,
   };
+}
+
+async function countReferencesSafe(supabase, playerId) {
+  try {
+    return await countReferences(supabase, playerId);
+  } catch (error) {
+    return {
+      team_players: null,
+      match_lineups: null,
+      match_events_player: null,
+      match_events_assist: null,
+      suspensions: null,
+      mvps: null,
+      warning: String(error?.message || error || "reference count unavailable"),
+    };
+  }
 }
 
 async function main() {
@@ -302,8 +368,8 @@ async function main() {
   const [sourceBundle, targetBundle, sourceRefs, targetRefs] = await Promise.all([
     fetchPlayerBundle(supabase, options.sourceId),
     fetchPlayerBundle(supabase, options.targetId),
-    countReferences(supabase, options.sourceId),
-    countReferences(supabase, options.targetId),
+    countReferencesSafe(supabase, options.sourceId),
+    countReferencesSafe(supabase, options.targetId),
   ]);
 
   const statsFloorMap = buildSeasonStatsFloorMap([
@@ -334,39 +400,38 @@ async function main() {
   const mergedPlayerPayload = mergePlayerPayload(targetBundle.player, sourceBundle.player);
   const mergedPrivatePayload = mergePrivatePayload(targetBundle.privateRow, sourceBundle.privateRow);
 
-  const updateTargetRes = await supabase.from("players").update(mergedPlayerPayload).eq("id", options.targetId);
-  throwIfError(updateTargetRes, "players target update");
+  await runQuery("players target update", () =>
+    supabase.from("players").update(mergedPlayerPayload).eq("id", options.targetId)
+  );
 
   if (Object.values(mergedPrivatePayload).some((value) => hasValue(value))) {
-    const upsertPrivateRes = await supabase.from("players_private").upsert(
-      { player_id: options.targetId, ...mergedPrivatePayload },
-      { onConflict: "player_id" }
+    await runQuery("players_private target upsert", () =>
+      supabase.from("players_private").upsert(
+        { player_id: options.targetId, ...mergedPrivatePayload },
+        { onConflict: "player_id" }
+      )
     );
-    throwIfError(upsertPrivateRes, "players_private target upsert");
   }
 
   await transferRowsWithUpsert(supabase, "team_players", options.sourceId, options.targetId, "player_id,season_id,league_id,team_id");
   await transferRowsWithUpsert(supabase, "match_lineups", options.sourceId, options.targetId, "match_id,player_id");
 
-  throwIfError(
-    await supabase.from("suspensions").update({ player_id: options.targetId }).eq("player_id", options.sourceId),
-    "suspensions update"
+  await runQuery("suspensions update", () =>
+    supabase.from("suspensions").update({ player_id: options.targetId }).eq("player_id", options.sourceId)
   );
-  throwIfError(
-    await supabase.from("match_events").update({ player_id: options.targetId }).eq("player_id", options.sourceId),
-    "match_events player update"
+  await runQuery("match_events player update", () =>
+    supabase.from("match_events").update({ player_id: options.targetId }).eq("player_id", options.sourceId)
   );
-  throwIfError(
-    await supabase.from("match_events").update({ assist_player_id: options.targetId }).eq("assist_player_id", options.sourceId),
-    "match_events assist update"
+  await runQuery("match_events assist update", () =>
+    supabase.from("match_events").update({ assist_player_id: options.targetId }).eq("assist_player_id", options.sourceId)
   );
-  throwIfError(
-    await supabase.from("matches").update({ mvp_player_id: options.targetId }).eq("mvp_player_id", options.sourceId),
-    "matches mvp update"
+  await runQuery("matches mvp update", () =>
+    supabase.from("matches").update({ mvp_player_id: options.targetId }).eq("mvp_player_id", options.sourceId)
   );
 
-  const deleteSourceStatsRes = await supabase.from("player_season_stats").delete().eq("player_id", options.sourceId);
-  throwIfError(deleteSourceStatsRes, "player_season_stats source cleanup");
+  await runQuery("player_season_stats source cleanup", () =>
+    supabase.from("player_season_stats").delete().eq("player_id", options.sourceId)
+  );
 
   await applySeasonStatsFloor(supabase, options.targetId, statsFloorMap);
 
@@ -375,23 +440,25 @@ async function main() {
     ? `${mergeMarker}\n${sourceBundle.privateRow.notes}`
     : mergeMarker;
 
-  const markSourcePrivateRes = await supabase.from("players_private").upsert(
-    { player_id: options.sourceId, notes: sourceNotes },
-    { onConflict: "player_id" }
+  await runQuery("players_private source mark", () =>
+    supabase.from("players_private").upsert(
+      { player_id: options.sourceId, notes: sourceNotes },
+      { onConflict: "player_id" }
+    )
   );
-  throwIfError(markSourcePrivateRes, "players_private source mark");
 
-  const deactivateSourceRes = await supabase
-    .from("players")
-    .update({ is_active: false })
-    .eq("id", options.sourceId);
-  throwIfError(deactivateSourceRes, "players source deactivate");
+  await runQuery("players source deactivate", () =>
+    supabase
+      .from("players")
+      .update({ is_active: false })
+      .eq("id", options.sourceId)
+  );
 
   const [finalSource, finalTarget, finalSourceRefs, finalTargetRefs] = await Promise.all([
     fetchPlayerBundle(supabase, options.sourceId),
     fetchPlayerBundle(supabase, options.targetId),
-    countReferences(supabase, options.sourceId),
-    countReferences(supabase, options.targetId),
+    countReferencesSafe(supabase, options.sourceId),
+    countReferencesSafe(supabase, options.targetId),
   ]);
 
   console.log("Merge complete.");
