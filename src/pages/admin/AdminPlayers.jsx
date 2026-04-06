@@ -7,6 +7,27 @@ import AdminAlert from "./components/AdminAlert";
 import AdminImageUpload from "./components/AdminImageUpload";
 import { Plus, Lock, AlertTriangle, GitMerge, UserMinus } from "lucide-react";
 
+const ADMIN_PAGE_SIZE = 1000;
+
+async function fetchAllAdminRows(queryFactory, pageSize = ADMIN_PAGE_SIZE) {
+  const rows = [];
+  let from = 0;
+
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await queryFactory(from, to);
+    if (error) throw error;
+
+    const chunk = data || [];
+    rows.push(...chunk);
+
+    if (chunk.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return rows;
+}
+
 function levenshtein(a, b) {
   const la = a.length, lb = b.length;
   if (!la) return lb;
@@ -163,41 +184,62 @@ export default function AdminPlayers({ darkMode }) {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [playersRes, teamsRes] = await Promise.all([
-      supabase
-        .from("players")
-        .select("*, players_private(*)")
-        .order("last_name"),
-      supabase
-        .from("team_players")
-        .select("player_id, team_id, season_id, joined_date, left_date, teams(name), seasons(year)")
-        .is("left_date", null)
-        .order("joined_date", { ascending: false }),
-    ]);
-    setPlayers(playersRes.data || []);
+    try {
+      const [playersRows, teamRows] = await Promise.all([
+        fetchAllAdminRows((from, to) =>
+          supabase
+            .from("players")
+            .select("*, players_private(*)")
+            .order("last_name")
+            .order("id")
+            .range(from, to)
+        ),
+        fetchAllAdminRows((from, to) =>
+          supabase
+            .from("team_players")
+            .select("id, player_id, team_id, season_id, joined_date, left_date, teams(name), seasons(year)")
+            .is("left_date", null)
+            .order("joined_date", { ascending: false })
+            .order("id", { ascending: false })
+            .range(from, to)
+        ),
+      ]);
 
-    // Build map: player_id -> { team_name, season_year, team_players_id }
-    const teamsMap = {};
-    for (const tp of teamsRes.data || []) {
-      if (teamsMap[tp.player_id]) continue; // keep first (most recent)
-      const teamObj = Array.isArray(tp.teams) ? tp.teams[0] : tp.teams;
-      const seasonObj = Array.isArray(tp.seasons) ? tp.seasons[0] : tp.seasons;
-      teamsMap[tp.player_id] = {
-        team_name: teamObj?.name || "?",
-        season_year: seasonObj?.year || null,
-        team_id: tp.team_id,
-      };
+      setPlayers(playersRows);
+
+      // Build map: player_id -> { team_name, season_year, team_players_id }
+      const teamsMap = {};
+      for (const tp of teamRows) {
+        if (teamsMap[tp.player_id]) continue; // keep first (most recent)
+        const teamObj = Array.isArray(tp.teams) ? tp.teams[0] : tp.teams;
+        const seasonObj = Array.isArray(tp.seasons) ? tp.seasons[0] : tp.seasons;
+        teamsMap[tp.player_id] = {
+          team_name: teamObj?.name || "?",
+          season_year: seasonObj?.year || null,
+          team_id: tp.team_id,
+        };
+      }
+      setPlayerTeams(teamsMap);
+    } catch (error) {
+      console.error("Nie udało się wczytać pełnej listy zawodników:", error);
+      setPlayers([]);
+      setPlayerTeams({});
+      setAlert({ type: "error", message: "Nie udało się wczytać pełnej listy zawodników." });
+    } finally {
+      setLoading(false);
     }
-    setPlayerTeams(teamsMap);
-    setLoading(false);
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const visiblePlayers = useMemo(
+    () => players.filter((player) => !isMergedPlayerRecord(player)),
+    [players]
+  );
+
   const duplicateGroups = useMemo(() => {
     const groups = new Map();
-    for (const p of players) {
-      if (isMergedPlayerRecord(p)) continue;
+    for (const p of visiblePlayers) {
       const key = normalizePlayerKey(p.first_name, p.last_name);
       if (!key) continue;
       if (!groups.has(key)) groups.set(key, []);
@@ -207,7 +249,7 @@ export default function AdminPlayers({ darkMode }) {
       .filter((g) => g.length > 1)
       .map((g) => [...g].sort((a, b) => Number(b.is_active) - Number(a.is_active) || String(a.created_at || "").localeCompare(String(b.created_at || ""))))
       .sort((a, b) => b.length - a.length);
-  }, [players]);
+  }, [visiblePlayers]);
 
   const filteredMergeDuplicateGroups = useMemo(() => {
     if (!mergeDupSearch.trim()) return duplicateGroups;
@@ -913,11 +955,11 @@ export default function AdminPlayers({ darkMode }) {
   ];
 
   const filtered = search
-    ? players.filter(p =>
+    ? visiblePlayers.filter(p =>
         `${p.first_name} ${p.last_name}`.toLowerCase().includes(search.toLowerCase()) ||
         p.city?.toLowerCase().includes(search.toLowerCase())
       )
-    : players;
+    : visiblePlayers;
 
   if (loading) {
     return (
@@ -932,7 +974,7 @@ export default function AdminPlayers({ darkMode }) {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold">Zawodnicy</h2>
-          <p className={`text-sm ${textMuted}`}>{players.filter((p) => p.is_active).length} aktywnych z {players.length}</p>
+          <p className={`text-sm ${textMuted}`}>{visiblePlayers.filter((p) => p.is_active).length} aktywnych z {visiblePlayers.length}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
