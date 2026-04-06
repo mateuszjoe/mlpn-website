@@ -5,6 +5,38 @@ import AdminModal from "./components/AdminModal";
 import AdminAlert from "./components/AdminAlert";
 import { Plus, UserMinus, Shield, Star, Copy, Loader2 } from "lucide-react";
 
+const ADMIN_PAGE_SIZE = 1000;
+const defaultJoinDate = () => new Date().toISOString().split("T")[0];
+const defaultAddForm = () => ({ player_id: "", shirt_number: "", is_captain: false, joined_date: defaultJoinDate() });
+const defaultNewPlayerForm = () => ({
+  first_name: "",
+  last_name: "",
+  position: "POM",
+  birth_year: "",
+  preferred_foot: "",
+  city: "",
+  is_active: true,
+});
+
+async function fetchAllAdminRows(queryFactory, pageSize = ADMIN_PAGE_SIZE) {
+  const rows = [];
+  let from = 0;
+
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await queryFactory(from, to);
+    if (error) throw error;
+
+    const chunk = data || [];
+    rows.push(...chunk);
+
+    if (chunk.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return rows;
+}
+
 export default function AdminRosters({ darkMode }) {
   const [seasons, setSeasons] = useState([]);
   const [leagues, setLeagues] = useState([]);
@@ -18,28 +50,46 @@ export default function AdminRosters({ darkMode }) {
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState({ type: null, message: null });
   const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [showCreatePlayer, setShowCreatePlayer] = useState(false);
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
-  const [addForm, setAddForm] = useState({ player_id: "", shirt_number: "", is_captain: false, joined_date: new Date().toISOString().split("T")[0] });
+  const [addForm, setAddForm] = useState(defaultAddForm);
+  const [newPlayerForm, setNewPlayerForm] = useState(defaultNewPlayerForm);
+  const [creatingPlayer, setCreatingPlayer] = useState(false);
   const [copyingRosters, setCopyingRosters] = useState(false);
 
   const card = darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-200";
   const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
 
   const loadBase = useCallback(async () => {
-    const [{ data: s }, { data: l }, { data: p }, { data: t }] = await Promise.all([
-      supabase.from("seasons").select("*").order("year", { ascending: false }),
-      supabase.from("leagues").select("*").order("display_order"),
-      supabase.from("players").select("id, first_name, last_name, display_name, position").eq("is_active", true).order("last_name"),
-      supabase.from("teams").select("id, name, abbreviation").eq("is_active", true).order("name"),
-    ]);
-    setSeasons(s || []);
-    setLeagues(l || []);
-    setAllPlayers(p || []);
-    setAllTeams(t || []);
-    if (s?.length) setSelectedSeason(s[0].id);
-    if (l?.length) setSelectedLeague(l[0].id);
-    setLoading(false);
+    try {
+      const [{ data: s }, { data: l }, playersRows, { data: t }] = await Promise.all([
+        supabase.from("seasons").select("*").order("year", { ascending: false }),
+        supabase.from("leagues").select("*").order("display_order"),
+        fetchAllAdminRows((from, to) =>
+          supabase
+            .from("players")
+            .select("id, first_name, last_name, display_name, position")
+            .eq("is_active", true)
+            .order("last_name")
+            .order("id")
+            .range(from, to)
+        ),
+        supabase.from("teams").select("id, name, abbreviation").eq("is_active", true).order("name"),
+      ]);
+
+      setSeasons(s || []);
+      setLeagues(l || []);
+      setAllPlayers(playersRows || []);
+      setAllTeams(t || []);
+      if (s?.length) setSelectedSeason(s[0].id);
+      if (l?.length) setSelectedLeague(l[0].id);
+    } catch (error) {
+      console.error("Nie udało się wczytać danych kadr:", error);
+      setAlert({ type: "error", message: "Nie udało się wczytać pełnej listy zawodników." });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadBase(); }, [loadBase]);
@@ -117,8 +167,62 @@ export default function AdminRosters({ darkMode }) {
     } else {
       setAlert({ type: "success", message: "Zawodnik dodany do kadry" });
       setShowAddPlayer(false);
-      setAddForm({ player_id: "", shirt_number: "", is_captain: false, joined_date: new Date().toISOString().split("T")[0] });
+      setAddForm(defaultAddForm());
+      setPlayerSearch("");
       loadRoster();
+    }
+  }
+
+  async function createPlayerFromRoster() {
+    const firstName = newPlayerForm.first_name.trim();
+    const lastName = newPlayerForm.last_name.trim();
+
+    if (!firstName || !lastName) {
+      setAlert({ type: "error", message: "Podaj imię i nazwisko nowego zawodnika." });
+      return;
+    }
+
+    setCreatingPlayer(true);
+    try {
+      const payload = {
+        first_name: firstName,
+        last_name: lastName,
+        position: newPlayerForm.position,
+        birth_year: newPlayerForm.birth_year ? parseInt(newPlayerForm.birth_year, 10) : null,
+        preferred_foot: newPlayerForm.preferred_foot || null,
+        city: newPlayerForm.city?.trim() || null,
+        is_active: newPlayerForm.is_active,
+      };
+
+      const { data, error } = await supabase
+        .from("players")
+        .insert(payload)
+        .select("id, first_name, last_name, display_name, position")
+        .single();
+
+      if (error) throw error;
+
+      const createdPlayer = {
+        ...data,
+        display_name: data.display_name || `${data.first_name || ""} ${data.last_name || ""}`.trim(),
+      };
+
+      setAllPlayers((prev) =>
+        [...prev, createdPlayer].sort((a, b) =>
+          String(a.last_name || "").localeCompare(String(b.last_name || ""), "pl") ||
+          String(a.first_name || "").localeCompare(String(b.first_name || ""), "pl") ||
+          String(a.id).localeCompare(String(b.id))
+        )
+      );
+      setAddForm((prev) => ({ ...prev, player_id: createdPlayer.id }));
+      setPlayerSearch(createdPlayer.display_name);
+      setShowCreatePlayer(false);
+      setNewPlayerForm(defaultNewPlayerForm());
+      setAlert({ type: "success", message: "Nowy zawodnik został dodany do bazy. Możesz go teraz dodać do kadry." });
+    } catch (error) {
+      setAlert({ type: "error", message: error.message || "Nie udało się dodać zawodnika do bazy." });
+    } finally {
+      setCreatingPlayer(false);
     }
   }
 
@@ -239,6 +343,8 @@ export default function AdminRosters({ darkMode }) {
   const availableTeams = allTeams.filter(t => !teamsInSeason.has(t.id));
 
   const posLabels = { BR: "BR", OBR: "OBR", POM: "POM", NAP: "NAP" };
+  const noAvailablePlayers = availablePlayers.length === 0;
+  const canCreatePlayerFromSearch = playerSearch.trim().length > 0 && noAvailablePlayers;
 
   if (loading) {
     return (
@@ -317,7 +423,7 @@ export default function AdminRosters({ darkMode }) {
         <div className={`rounded-2xl border p-4 ${card}`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">Kadra ({roster.length} zawodników)</h3>
-            <button onClick={() => { setPlayerSearch(""); setShowAddPlayer(true); }}
+            <button onClick={() => { setPlayerSearch(""); setAddForm(defaultAddForm()); setShowAddPlayer(true); }}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-yellow-500 text-black font-medium text-sm hover:bg-yellow-400">
               <Plus size={14} /> Dodaj zawodnika
             </button>
@@ -379,7 +485,37 @@ export default function AdminRosters({ darkMode }) {
                 {p.display_name} <span className={`text-xs ${textMuted}`}>({posLabels[p.position]})</span>
               </button>
             ))}
+            {noAvailablePlayers && (
+              <div className={`px-3 py-3 text-sm text-center rounded-xl ${darkMode ? "bg-white/5 text-gray-400" : "bg-gray-50 text-gray-500"}`}>
+                Brak zawodnika w wynikach wyszukiwania.
+              </div>
+            )}
           </div>
+          {canCreatePlayerFromSearch && <div className={`rounded-xl border p-3 ${darkMode ? "border-blue-500/20 bg-blue-500/5" : "border-blue-200 bg-blue-50"}`}>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <div className="text-sm font-medium">Nie ma go w bazie?</div>
+                <div className={`text-xs ${textMuted}`}>
+                  Dodaj nowego zawodnika bez wychodzenia z uzupełniania kadry.
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const [firstName = "", ...lastNameParts] = playerSearch.trim().split(/\s+/).filter(Boolean);
+                  setNewPlayerForm({
+                    ...defaultNewPlayerForm(),
+                    first_name: firstName || "",
+                    last_name: lastNameParts.join(" "),
+                  });
+                  setShowCreatePlayer(true);
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500 text-white font-medium text-sm hover:bg-blue-400"
+              >
+                <Plus size={14} /> Dodaj nowego zawodnika do bazy
+              </button>
+            </div>
+          </div>}
           <div className="grid grid-cols-2 gap-4">
             <AdminFormField label="Numer" name="shirt_number" type="number" value={addForm.shirt_number}
               onChange={e => setAddForm(f => ({ ...f, shirt_number: e.target.value }))} darkMode={darkMode} min={1} max={99} />
@@ -393,6 +529,96 @@ export default function AdminRosters({ darkMode }) {
             <button onClick={addPlayerToRoster} disabled={!addForm.player_id}
               className="px-4 py-2 rounded-xl bg-yellow-500 text-black font-medium text-sm hover:bg-yellow-400 disabled:opacity-50">
               Dodaj do kadry
+            </button>
+          </div>
+        </div>
+      </AdminModal>
+
+      <AdminModal isOpen={showCreatePlayer} onClose={() => setShowCreatePlayer(false)} title="Dodaj nowego zawodnika do bazy" darkMode={darkMode}>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AdminFormField
+              label="Imię"
+              name="first_name"
+              value={newPlayerForm.first_name}
+              onChange={e => setNewPlayerForm(f => ({ ...f, first_name: e.target.value }))}
+              required
+              darkMode={darkMode}
+            />
+            <AdminFormField
+              label="Nazwisko"
+              name="last_name"
+              value={newPlayerForm.last_name}
+              onChange={e => setNewPlayerForm(f => ({ ...f, last_name: e.target.value }))}
+              required
+              darkMode={darkMode}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <AdminFormField
+              label="Pozycja"
+              name="position"
+              type="select"
+              value={newPlayerForm.position}
+              onChange={e => setNewPlayerForm(f => ({ ...f, position: e.target.value }))}
+              darkMode={darkMode}
+              options={[
+                { value: "BR", label: "Bramkarz" },
+                { value: "OBR", label: "Obrońca" },
+                { value: "POM", label: "Pomocnik" },
+                { value: "NAP", label: "Napastnik" },
+              ]}
+            />
+            <AdminFormField
+              label="Rocznik"
+              name="birth_year"
+              type="number"
+              value={newPlayerForm.birth_year}
+              onChange={e => setNewPlayerForm(f => ({ ...f, birth_year: e.target.value }))}
+              darkMode={darkMode}
+              min={1960}
+              max={2015}
+            />
+            <AdminFormField
+              label="Noga"
+              name="preferred_foot"
+              type="select"
+              value={newPlayerForm.preferred_foot}
+              onChange={e => setNewPlayerForm(f => ({ ...f, preferred_foot: e.target.value }))}
+              darkMode={darkMode}
+              options={[
+                { value: "Prawa", label: "Prawa" },
+                { value: "Lewa", label: "Lewa" },
+                { value: "Obie", label: "Obie" },
+              ]}
+            />
+          </div>
+          <AdminFormField
+            label="Miasto"
+            name="city"
+            value={newPlayerForm.city}
+            onChange={e => setNewPlayerForm(f => ({ ...f, city: e.target.value }))}
+            darkMode={darkMode}
+          />
+          <AdminFormField
+            label="Aktywny"
+            name="is_active"
+            type="checkbox"
+            value={newPlayerForm.is_active}
+            onChange={e => setNewPlayerForm(f => ({ ...f, is_active: e.target.value }))}
+            darkMode={darkMode}
+          />
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={() => setShowCreatePlayer(false)} className={`px-4 py-2 rounded-xl text-sm ${textMuted}`}>
+              Anuluj
+            </button>
+            <button
+              type="button"
+              onClick={createPlayerFromRoster}
+              disabled={creatingPlayer || !newPlayerForm.first_name.trim() || !newPlayerForm.last_name.trim()}
+              className="px-4 py-2 rounded-xl bg-yellow-500 text-black font-medium text-sm hover:bg-yellow-400 disabled:opacity-50"
+            >
+              {creatingPlayer ? "Dodawanie..." : "Dodaj do bazy"}
             </button>
           </div>
         </div>
