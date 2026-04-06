@@ -105,7 +105,7 @@ function mergePlayerPayload(targetPlayer, sourcePlayer) {
     preferred_foot: hasValue(targetPlayer.preferred_foot) ? targetPlayer.preferred_foot : sourcePlayer.preferred_foot,
     photo_url: hasValue(targetPlayer.photo_url) ? targetPlayer.photo_url : sourcePlayer.photo_url,
     city: hasValue(targetPlayer.city) ? targetPlayer.city : sourcePlayer.city,
-    is_active: true,
+    is_active: Boolean(targetPlayer.is_active || sourcePlayer.is_active),
   };
 }
 
