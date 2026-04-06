@@ -354,7 +354,7 @@ export default function AdminPlayers({ darkMode }) {
             .from("player_season_stats")
             .update({
               team_id: t.team_id || row.team_id,
-              appearances: Number(t.appearances || 0) + Number(row.appearances || 0),
+              appearances: Math.max(Number(t.appearances || 0), Number(row.appearances || 0)),
               goals: Number(t.goals || 0) + Number(row.goals || 0),
               assists: Number(t.assists || 0) + Number(row.assists || 0),
               yellow_cards: Number(t.yellow_cards || 0) + Number(row.yellow_cards || 0),
@@ -407,7 +407,7 @@ export default function AdminPlayers({ darkMode }) {
       if ((isTargetRow && row.team_id) || (!acc.team_id && row.team_id)) {
         acc.team_id = row.team_id;
       }
-      acc.appearances += Number(row.appearances || 0);
+      acc.appearances = Math.max(acc.appearances, Number(row.appearances || 0));
       acc.goals += Number(row.goals || 0);
       acc.assists += Number(row.assists || 0);
       acc.yellow_cards += Number(row.yellow_cards || 0);
