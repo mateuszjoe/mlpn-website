@@ -153,19 +153,26 @@ export default function AdminRosters({ darkMode }) {
 
   async function addPlayerToRoster() {
     if (!addForm.player_id) return;
-    const { error } = await supabase.from("team_players").insert({
+
+    const rosterEntry = {
       team_id: selectedTeam,
       player_id: addForm.player_id,
       season_id: selectedSeason,
       league_id: selectedLeague,
       joined_date: addForm.joined_date,
+      left_date: null,
       shirt_number: addForm.shirt_number ? parseInt(addForm.shirt_number) : null,
       is_captain: addForm.is_captain,
-    });
+    };
+
+    const { error } = await supabase
+      .from("team_players")
+      .upsert(rosterEntry, { onConflict: "player_id,season_id,league_id,team_id" });
+
     if (error) {
       setAlert({ type: "error", message: error.message });
     } else {
-      setAlert({ type: "success", message: "Zawodnik dodany do kadry" });
+      setAlert({ type: "success", message: "Zawodnik dodany lub przywrócony do kadry" });
       setShowAddPlayer(false);
       setAddForm(defaultAddForm());
       setPlayerSearch("");
