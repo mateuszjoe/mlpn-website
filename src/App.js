@@ -594,6 +594,21 @@ function displayTeamName(team) {
   });
 }
 
+function getStandingsTeamLabel(team, withdrawn = false) {
+  const safeLabel =
+    displayTeamName(team) || (typeof team === "string" ? team : "Drużyna");
+  return withdrawn ? `${safeLabel} (wycofana)` : safeLabel;
+}
+
+function getStandingsWithdrawnRowClass(withdrawn, darkMode) {
+  if (!withdrawn) return "";
+  return "opacity-60";
+}
+
+function getStandingsWithdrawnLogoClass(withdrawn) {
+  return withdrawn ? "grayscale opacity-60" : "";
+}
+
 /* =========================================
    Forma drużyny z tooltipem: wynik + skrót rywala (ostatnie 5 rozegranych)
    ========================================= */
@@ -2006,7 +2021,7 @@ function MobileLeagueScrollableTable({
 
           {rows.map((row) => {
             const position = row.displayPos ?? row.pos;
-            const rowBg = getRowBg?.(position) || "";
+            const rowBg = row.withdrawn ? "" : getRowBg?.(position) || "";
             return (
               <div
                 key={`mobile-fixed-${row.team}-${position}`}
@@ -2014,21 +2029,24 @@ function MobileLeagueScrollableTable({
                   rowHeight,
                   "grid grid-cols-[12px_16px_minmax(0,1fr)] gap-1 items-center px-2 border-b overflow-hidden",
                   darkMode ? "border-white/10 text-gray-100" : "border-gray-100 text-gray-700",
-                  rowBg
+                  rowBg,
+                  getStandingsWithdrawnRowClass(row.withdrawn, darkMode)
                 )}
               >
                 <div className="font-extrabold text-[10px] leading-none">{position}</div>
-                <TeamLogo
-                  team={row.team}
-                  darkMode={darkMode}
-                  size={8}
-                  onClick={() => openTeam(row.team)}
-                />
+                <div className={getStandingsWithdrawnLogoClass(row.withdrawn)}>
+                  <TeamLogo
+                    team={row.team}
+                    darkMode={darkMode}
+                    size={8}
+                    onClick={() => openTeam(row.team)}
+                  />
+                </div>
                 <button
                   onClick={() => openTeam(row.team)}
                   className="font-bold hover:underline truncate text-[9px] leading-tight text-left min-w-0 block w-full"
                 >
-                  {displayTeamName(row.team)}
+                  {getStandingsTeamLabel(row.team, row.withdrawn)}
                 </button>
               </div>
             );
@@ -2060,7 +2078,7 @@ function MobileLeagueScrollableTable({
 
             {rows.map((row) => {
               const position = row.displayPos ?? row.pos;
-              const rowBg = getRowBg?.(position) || "";
+              const rowBg = row.withdrawn ? "" : getRowBg?.(position) || "";
               return (
                 <div
                   key={`mobile-scroll-${row.team}-${position}`}
@@ -2068,7 +2086,8 @@ function MobileLeagueScrollableTable({
                     rowHeight,
                     "flex items-center gap-0 px-1 border-b",
                     darkMode ? "border-white/10 text-gray-100" : "border-gray-100 text-gray-700",
-                    rowBg
+                    rowBg,
+                    getStandingsWithdrawnRowClass(row.withdrawn, darkMode)
                   )}
                 >
                   {statColumns.map((column) => (
@@ -5978,27 +5997,30 @@ function LeagueHomePage({
                   key={r.team}
                   className={classNames(
                     "hidden md:block p-1.5 rounded-lg border",
-                    getPositionBg(r.pos),
+                    !r.withdrawn && getPositionBg(r.pos),
                     darkMode
                       ? "border-white/10 bg-black/10 hover:bg-white/5"
-                      : "border-gray-200 bg-gray-50 hover:bg-white"
+                      : "border-gray-200 bg-gray-50 hover:bg-white",
+                    getStandingsWithdrawnRowClass(r.withdrawn, darkMode)
                   )}
                 >
                   <div className="grid grid-cols-[30px_30px_1fr_35px_35px_35px_35px_45px_45px_40px] gap-1 items-center text-xs">
                     <div className="text-center font-extrabold">
                       {r.pos}
                     </div>
-                    <TeamLogo
-                      team={r.team}
-                      darkMode={darkMode}
-                      size={24}
-                      onClick={() => openTeam(r.team)}
-                    />
+                    <div className={getStandingsWithdrawnLogoClass(r.withdrawn)}>
+                      <TeamLogo
+                        team={r.team}
+                        darkMode={darkMode}
+                        size={24}
+                        onClick={() => openTeam(r.team)}
+                      />
+                    </div>
                     <button
                       onClick={() => openTeam(r.team)}
                       className="font-bold hover:underline truncate text-left min-w-0 block w-full"
                     >
-                      {displayTeamName(r.team)}
+                      {getStandingsTeamLabel(r.team, r.withdrawn)}
                     </button>
                     <div className="text-center">{r.played}</div>
                     <div className="text-center">{r.win}</div>
@@ -6562,27 +6584,30 @@ function LeagueHomePage({
                 key={r.team}
                 className={classNames(
                   "hidden md:block p-2 rounded-xl border",
-                  getPositionBg(r.pos),
+                  !r.withdrawn && getPositionBg(r.pos),
                   darkMode
                     ? "border-white/10 bg-black/10 hover:bg-white/5"
-                    : "border-gray-200 bg-gray-50 hover:bg-white"
+                    : "border-gray-200 bg-gray-50 hover:bg-white",
+                  getStandingsWithdrawnRowClass(r.withdrawn, darkMode)
                 )}
               >
                 <div className="grid grid-cols-[40px_40px_1fr_60px_100px] gap-2 items-center">
                   <div className="text-center font-extrabold text-sm">
                     {r.pos}
                   </div>
-                  <TeamLogo
-                    team={r.team}
-                    darkMode={darkMode}
-                    size={36}
-                    onClick={() => openTeam(r.team)}
-                  />
+                  <div className={getStandingsWithdrawnLogoClass(r.withdrawn)}>
+                    <TeamLogo
+                      team={r.team}
+                      darkMode={darkMode}
+                      size={36}
+                      onClick={() => openTeam(r.team)}
+                    />
+                  </div>
                   <button
                     onClick={() => openTeam(r.team)}
                     className="font-bold hover:underline truncate text-sm text-left min-w-0 block w-full"
                   >
-                    {displayTeamName(r.team)}
+                    {getStandingsTeamLabel(r.team, r.withdrawn)}
                   </button>
                   <div className="font-black text-lg text-right">{r.pts}</div>
                   <div className="flex gap-1 justify-center">
@@ -6774,6 +6799,10 @@ function LeagueTablePage({
     copy.sort((a, b) => {
       let valA, valB;
 
+      if (a.withdrawn !== b.withdrawn) {
+        return a.withdrawn ? 1 : -1;
+      }
+
       if (sortBy === "team") {
         return sortOrder === "asc"
           ? a.team.localeCompare(b.team)
@@ -6889,25 +6918,28 @@ function LeagueTablePage({
             key={r.team}
             className={classNames(
               "hidden md:block px-4 py-3 border-t",
-              getPositionBg(r.displayPos),
+              !r.withdrawn && getPositionBg(r.displayPos),
               darkMode
                 ? "border-white/10 hover:bg-white/5"
-                : "border-gray-100 hover:bg-gray-50"
+                : "border-gray-100 hover:bg-gray-50",
+              getStandingsWithdrawnRowClass(r.withdrawn, darkMode)
             )}
           >
             <div className="grid grid-cols-[48px_1fr_60px_60px_60px_60px_70px_70px_50px_60px_190px] gap-2 items-center">
               <div className="font-extrabold">{r.displayPos}</div>
 
               <div className="flex items-center gap-3">
-                <TeamLogo
-                  team={r.team}
-                  darkMode={darkMode}
-                  size={42}
-                  onClick={() => openTeam(r.team)}
-                />
+                <div className={getStandingsWithdrawnLogoClass(r.withdrawn)}>
+                  <TeamLogo
+                    team={r.team}
+                    darkMode={darkMode}
+                    size={42}
+                    onClick={() => openTeam(r.team)}
+                  />
+                </div>
                 <div className="font-extrabold">
                   <TeamLink
-                    team={r.team}
+                    team={getStandingsTeamLabel(r.team, r.withdrawn)}
                     onClick={() => openTeam(r.team)}
                     className="e3d-link"
                   />

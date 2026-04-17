@@ -4,6 +4,7 @@ import { publicSupabase } from '../lib/supabase';
 const PLACEHOLDER_TEAMS = ['przerwa', '-przerwa-', 'xxx', 'wolne miejsce', 'wolne miejsce ii'];
 const isPlaceholder = (name) => PLACEHOLDER_TEAMS.includes(name?.toLowerCase().trim());
 const PUBLIC_PAGE_SIZE = 1000;
+const getSeasonTeamKey = (leagueId, teamId) => `${leagueId}:${teamId}`;
 
 async function fetchAllPublicRows(queryFactory, pageSize = PUBLIC_PAGE_SIZE) {
   const rows = [];
@@ -145,22 +146,38 @@ export async function fetchStandings(seasonYear) {
 
   if (error) throw error;
 
+  const standingsRows = (data || []).filter((row) => !isPlaceholder(row.team_name));
+  const seasonIds = [...new Set(standingsRows.map((row) => row.season_id).filter(Boolean))];
+  const withdrawnTeams = new Map();
+
+  if (seasonIds.length > 0) {
+    const seasonTeams = await fetchAllPublicRows((from, to) =>
+      publicSupabase
+        .from('season_teams')
+        .select('season_id, league_id, team_id, left_round')
+        .in('season_id', seasonIds)
+        .not('left_round', 'is', null)
+        .range(from, to)
+    );
+
+    for (const row of seasonTeams) {
+      withdrawnTeams.set(getSeasonTeamKey(row.league_id, row.team_id), row.left_round);
+    }
+  }
+
   const tableByLeague = {};
   const teamStats = {};
 
   // Mapowanie wyników formy: angielski (DB) → polski (frontend)
   const mapFormResult = (r) => r === 'D' ? 'R' : r === 'L' ? 'P' : r;
 
-  let pos = {};  // osobny licznik pozycji per liga (po odfiltrowaniu atrapy)
-
-  for (const row of (data || [])) {
+  for (const row of standingsRows) {
     // Filtruj drużyny-atrapy
     if (isPlaceholder(row.team_name)) continue;
 
     const code = row.league_code;
     if (!tableByLeague[code]) tableByLeague[code] = [];
-    if (!pos[code]) pos[code] = 0;
-    pos[code]++;
+    const withdrawnRound = withdrawnTeams.get(getSeasonTeamKey(row.league_id, row.team_id)) ?? null;
 
     // Forma: odwróć (najnowszy na prawo) + mapowanie D→R, L→P
     const rawForm = row.form_last5 || [];
@@ -179,17 +196,32 @@ export async function fetchStandings(seasonYear) {
       gf: row.goals_for || 0,
       ga: row.goals_against || 0,
       pts: row.points || 0,
-      pos: pos[code],
+      pos: row.position || 0,
+      originalPos: row.position || 0,
       form5,
       lastResults: form5,
       streakUnbeaten: row.streak_unbeaten || 0,
       streakWins: row.streak_wins || 0,
       streakWinless: row.streak_winless || 0,
       logoUrl: row.team_logo_url,
+      withdrawn: withdrawnRound !== null,
+      withdrawnRound,
     };
 
     tableByLeague[code].push(entry);
-    teamStats[row.team_name] = entry;
+  }
+
+  for (const rows of Object.values(tableByLeague)) {
+    rows.sort((a, b) => {
+      if (a.withdrawn !== b.withdrawn) return a.withdrawn ? 1 : -1;
+      if (a.originalPos !== b.originalPos) return a.originalPos - b.originalPos;
+      return b.pts - a.pts || a.team.localeCompare(b.team, 'pl');
+    });
+
+    rows.forEach((entry, index) => {
+      entry.pos = index + 1;
+      teamStats[entry.team] = entry;
+    });
   }
 
   return { tableByLeague, teamStats };
