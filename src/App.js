@@ -10852,6 +10852,9 @@ function HomeDashboardFeatureCard({
   featuredPositionOf,
   spotlightLeagues,
   leagueLabel,
+  topScorer,
+  topAssister,
+  bestFormTeam,
   goToLeague,
   openMatch,
   openTeam,
@@ -10859,28 +10862,9 @@ function HomeDashboardFeatureCard({
   openHomeTab,
 }) {
   const primaryLeagueId = featuredMatchData?.league || spotlightLeagues[0]?.id || null;
-  const contextLeague =
-    spotlightLeagues.find((league) => league.id === primaryLeagueId) ||
-    spotlightLeagues[0] ||
-    null;
-  const contextLeader = contextLeague?.leader || null;
-  const contextLeaderPoints = contextLeader?.pts ?? contextLeader?.points ?? null;
-  const contextPlayedMatches = contextLeague?.leagueMatches?.length || 0;
-  const contextNextMatch = contextLeague?.nextMatch || null;
-  const contextHeadline = contextLeader?.team
-    ? displayTeamName(contextLeader.team)
-    : contextLeague
-    ? leagueLabel(contextLeague.id)
-    : "Liga w grze";
-  const contextSummary = contextLeague
-    ? contextPlayedMatches > 0 && contextLeader
-      ? `${leagueLabel(contextLeague.id)}: lider ma ${contextLeaderPoints ?? 0} pkt po ${contextPlayedMatches} meczach.`
-      : contextNextMatch
-      ? `${leagueLabel(contextLeague.id)} startuje meczem ${displayTeamName(
-          contextNextMatch.home
-        )} vs ${displayTeamName(contextNextMatch.away)}.`
-      : `${leagueLabel(contextLeague.id)} czeka na pierwsze rozstrzygnięcia.`
-    : seasonPulseLabel;
+  const bestFormSummary = bestFormTeam?.form5?.length
+    ? bestFormTeam.form5.map((item) => item.result).join(" ")
+    : null;
 
   return (
     <Card darkMode={darkMode} className="mlpn-home-hero self-start p-0 overflow-hidden">
@@ -10905,19 +10889,11 @@ function HomeDashboardFeatureCard({
                   {seasonPulseLabel}
                 </div>
                 <div className="mt-2 text-3xl sm:text-4xl lg:text-[2.9rem] font-black leading-[0.92] text-white">
-                  {featuredMatchPlayed
-                    ? "Wynik dnia"
-                    : featuredMatchData
-                    ? "Mecz pod lupą"
-                    : "Puls sezonu"}
+                  {featuredMatchData ? "Mecz pod lupą" : "Puls sezonu"}
                 </div>
                 <div className="mt-3 max-w-3xl text-sm sm:text-base text-white/80 leading-relaxed">
                   {featuredMatchData
-                    ? featuredMatchPlayed
-                      ? `${displayTeamName(featuredMatchData.home)} i ${displayTeamName(
-                          featuredMatchData.away
-                        )} zamknęli spotkanie. Sprawdź wynik i pełne szczegóły meczu.`
-                      : "Najważniejszy mecz kolejki z godziną, tabelą i szybkim wejściem do szczegółów."
+                    ? "Wybrany mecz kolejki z godziną, tabelą i szybkim wejściem do szczegółów."
                     : "Najważniejsze informacje z ligi w jednym miejscu."}
                 </div>
               </div>
@@ -11117,10 +11093,10 @@ function HomeDashboardFeatureCard({
             </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-[22px] border border-white/10 bg-black/15 p-4">
               <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
-                Liga i kolejka
+                Info
               </div>
               <div className="mt-2 text-lg font-black text-white">
                 {featuredMatchData?.league ? leagueLabel(featuredMatchData.league) : "MLPN"}
@@ -11133,31 +11109,43 @@ function HomeDashboardFeatureCard({
 
             <div className="rounded-[22px] border border-white/10 bg-black/15 p-4">
               <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
-                Puls wydarzenia
+                Najlepszy strzelec
               </div>
               <div className="mt-2 text-lg font-black text-white">
-                {featuredMatchPlayed
-                  ? `${(featuredMatchData?.homeGoals || 0) + (featuredMatchData?.awayGoals || 0)} goli`
-                  : featuredMatchData?.time || "Wkrótce"}
+                {topScorer?.name || "Brak danych"}
               </div>
               <div className="mt-1 text-sm text-white/70">
-                {featuredMatchPlayed
-                  ? "Spotkanie zamknięte, wynik już zapisany."
-                  : featuredMatchData
-                  ? "Najbliższy termin w aktualnym centrum meczowym."
-                  : "Brak meczu w wyróżnieniu."}
+                {topScorer
+                  ? `${displayTeamName(topScorer.team)} • ${topScorer.goals || 0} goli`
+                  : "Ranking strzelców pojawi się po rozegraniu spotkań."}
               </div>
             </div>
 
             <div className="rounded-[22px] border border-white/10 bg-black/15 p-4">
               <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
-                Kontekst sezonu
+                Najlepsza forma
               </div>
               <div className="mt-2 text-lg font-black text-white">
-                {contextHeadline}
+                {bestFormTeam?.team ? displayTeamName(bestFormTeam.team) : "Brak danych"}
               </div>
               <div className="mt-1 text-sm text-white/70">
-                {contextSummary}
+                {bestFormTeam
+                  ? `${bestFormTeam.points} pkt w ostatnich ${bestFormTeam.games} meczach${bestFormSummary ? ` • ${bestFormSummary}` : ""}`
+                  : "Forma zespołów pojawi się po rozegraniu spotkań."}
+              </div>
+            </div>
+
+            <div className="rounded-[22px] border border-white/10 bg-black/15 p-4">
+              <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
+                Najlepszy asystent
+              </div>
+              <div className="mt-2 text-lg font-black text-white">
+                {topAssister?.name || "Brak danych"}
+              </div>
+              <div className="mt-1 text-sm text-white/70">
+                {topAssister
+                  ? `${displayTeamName(topAssister.team)} • ${topAssister.assists || 0} asyst`
+                  : "Ranking asyst pojawi się po rozegraniu spotkań."}
               </div>
             </div>
           </div>
@@ -12180,6 +12168,32 @@ function HomeDashboard({
     ? featuredFormOf(featuredMatchData.away)
     : [];
   const spotlightLeagues = leagueOverview.slice(0, 3);
+  const bestFormTeam = useMemo(() => {
+    return Object.values(teamStatsByTeam || {})
+      .map((team) => {
+        const form5 = Array.isArray(team?.form5) ? team.form5.slice(0, 5) : [];
+        if (!form5.length || !team?.team) return null;
+        const points = form5.reduce(
+          (sum, item) => sum + (item?.result === "W" ? 3 : item?.result === "R" ? 1 : 0),
+          0
+        );
+        const wins = form5.filter((item) => item?.result === "W").length;
+        return {
+          team: team.team,
+          league: team.league,
+          form5,
+          points,
+          wins,
+          games: form5.length,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        return a.team.localeCompare(b.team, "pl");
+      })[0] || null;
+  }, [teamStatsByTeam]);
   const featuredTone =
     featuredMatchData?.league === "1st"
       ? {
@@ -12203,7 +12217,7 @@ function HomeDashboard({
     : isActiveSeason
     ? `Gramy kolejkę ${currentRound}`
     : `Trwają przygotowania do sezonu ${currentSeason}`;
-  const featuredStatusLabel = featuredMatchPlayed ? "Po meczu" : "Najbliższy gwizdek";
+  const featuredStatusLabel = "Wybrany mecz";
   const featuredRoundLabel =
     featuredMatchData?.round != null ? `Kolejka ${featuredMatchData.round}` : "MLPN";
   const featuredMetaLine = featuredMatchData
@@ -12241,6 +12255,9 @@ function HomeDashboard({
             featuredPositionOf={featuredPositionOf}
             spotlightLeagues={spotlightLeagues}
             leagueLabel={leagueLabel}
+            topScorer={topScorers[0] || null}
+            topAssister={topAssists[0] || null}
+            bestFormTeam={bestFormTeam}
             goToLeague={goToLeague}
             openMatch={openMatch}
             openTeam={openTeam}
