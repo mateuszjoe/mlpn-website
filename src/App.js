@@ -10859,6 +10859,28 @@ function HomeDashboardFeatureCard({
   openHomeTab,
 }) {
   const primaryLeagueId = featuredMatchData?.league || spotlightLeagues[0]?.id || null;
+  const contextLeague =
+    spotlightLeagues.find((league) => league.id === primaryLeagueId) ||
+    spotlightLeagues[0] ||
+    null;
+  const contextLeader = contextLeague?.leader || null;
+  const contextLeaderPoints = contextLeader?.pts ?? contextLeader?.points ?? null;
+  const contextPlayedMatches = contextLeague?.leagueMatches?.length || 0;
+  const contextNextMatch = contextLeague?.nextMatch || null;
+  const contextHeadline = contextLeader?.team
+    ? displayTeamName(contextLeader.team)
+    : contextLeague
+    ? leagueLabel(contextLeague.id)
+    : "Liga w grze";
+  const contextSummary = contextLeague
+    ? contextPlayedMatches > 0 && contextLeader
+      ? `${leagueLabel(contextLeague.id)}: lider ma ${contextLeaderPoints ?? 0} pkt po ${contextPlayedMatches} meczach.`
+      : contextNextMatch
+      ? `${leagueLabel(contextLeague.id)} startuje meczem ${displayTeamName(
+          contextNextMatch.home
+        )} vs ${displayTeamName(contextNextMatch.away)}.`
+      : `${leagueLabel(contextLeague.id)} czeka na pierwsze rozstrzygnięcia.`
+    : seasonPulseLabel;
 
   return (
     <Card darkMode={darkMode} className="mlpn-home-hero self-start p-0 overflow-hidden">
@@ -11132,14 +11154,10 @@ function HomeDashboardFeatureCard({
                 Kontekst sezonu
               </div>
               <div className="mt-2 text-lg font-black text-white">
-                {spotlightLeagues[0]?.leader
-                  ? displayTeamName(spotlightLeagues[0].leader.team)
-                  : "Lider w grze"}
+                {contextHeadline}
               </div>
               <div className="mt-1 text-sm text-white/70">
-                {spotlightLeagues[0]?.leader
-                  ? `${leagueLabel(spotlightLeagues[0].id)} prowadzi z bilansem ${spotlightLeagues[0].leader.points || 0} pkt.`
-                  : seasonPulseLabel}
+                {contextSummary}
               </div>
             </div>
           </div>
