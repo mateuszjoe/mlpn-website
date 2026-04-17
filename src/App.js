@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   ChevronsLeft,
   ChevronsRight,
   Phone,
@@ -288,6 +289,27 @@ function normalizeSectionForContext(context, section) {
   if (LEAGUE_CONTEXT_TO_SLUG[context]) return "home";
   if (context === "admin") return section || "dashboard";
   return section || "home";
+}
+
+function defaultSectionForContext(context) {
+  if (context === "home" || context === "tournaments") return "home";
+  if (context === "info") return "about";
+  if (context === "admin") return "dashboard";
+  return "home";
+}
+
+function contextLabel(context) {
+  return (
+    {
+      home: "Strona główna",
+      tournaments: "Turnieje",
+      "1st": "I Liga",
+      "2nd": "II Liga",
+      "3rd": "III Liga",
+      info: "Informacje",
+      admin: "Panel admina",
+    }[context] || "MLPN"
+  );
 }
 
 function parseRoundParam(value) {
@@ -2210,68 +2232,96 @@ function MobileFlashscoreMatchRow({
   return (
     <div
       className={classNames(
-        "md:hidden rounded-xl border px-3 py-2.5",
-        darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-white"
+        "md:hidden rounded-[22px] border p-2.5",
+        darkMode ? "border-white/10 bg-black/15" : "border-gray-200 bg-white/95"
       )}
     >
-      <div className="grid grid-cols-[54px_minmax(0,1fr)_44px] gap-3 items-start">
+      <div className="grid grid-cols-[72px_minmax(0,1fr)_58px] gap-2.5 items-stretch">
         <button
           type="button"
           onClick={onOpenMatch}
-          className="min-h-[52px] text-left flex flex-col justify-center"
+          className={classNames(
+            "rounded-[18px] border px-2 py-2 text-center flex flex-col items-center justify-center",
+            darkMode
+              ? "border-white/10 bg-white/[0.04] text-white"
+              : "border-gray-200 bg-gray-50 text-gray-900"
+          )}
           title="Szczegóły meczu"
+          style={{ minWidth: 0 }}
         >
-          <div
-            className={classNames(
-              "font-black leading-none",
-              isScore ? "text-sm" : "text-[15px]",
-              darkMode ? "text-white" : "text-gray-900"
-            )}
-          >
-            {leftPrimary}
-          </div>
           {leftSecondary ? (
             <div
               className={classNames(
-                "mt-1 text-[10px] font-semibold leading-none",
+                "text-[10px] font-bold uppercase tracking-[0.12em] leading-tight",
                 darkMode ? "text-gray-400" : "text-gray-500"
               )}
             >
               {leftSecondary}
             </div>
           ) : null}
+          <div
+            className={classNames(
+              "font-black leading-none mt-1",
+              isScore ? "text-[15px]" : "text-[18px]",
+              darkMode ? "text-white" : "text-gray-900"
+            )}
+          >
+            {leftPrimary}
+          </div>
         </button>
 
-        <div className="min-w-0 space-y-2">
-          <div className="grid grid-cols-[24px_minmax(0,1fr)] gap-2 items-center min-w-0">
+        <div
+          className={classNames(
+            "min-w-0 rounded-[18px] border px-2 py-1.5",
+            darkMode
+              ? "border-white/10 bg-white/[0.035]"
+              : "border-gray-200 bg-gray-50/90"
+          )}
+        >
+          <div className="w-full grid grid-cols-[30px_minmax(0,1fr)] gap-3 items-center rounded-[16px] px-1.5 py-2 text-left">
             <TeamLogo
               team={homeTeam}
               src={homeLogoSrc}
               darkMode={darkMode}
-              size={22}
+              size={28}
               onClick={onOpenHome}
             />
             <button
               type="button"
               onClick={onOpenHome}
-              className="min-w-0 text-left text-sm font-extrabold leading-tight truncate hover:underline"
+              className={classNames(
+                "min-w-0 text-left text-[13.5px] font-black leading-[1.15] break-words",
+                darkMode ? "text-white" : "text-gray-900"
+              )}
+              style={{ minHeight: 0, minWidth: 0 }}
             >
               {displayTeamName(homeTeam)}
             </button>
           </div>
 
-          <div className="grid grid-cols-[24px_minmax(0,1fr)] gap-2 items-center min-w-0">
+          <div
+            className={classNames(
+              "mx-3 h-px",
+              darkMode ? "bg-white/10" : "bg-gray-200"
+            )}
+          />
+
+          <div className="w-full grid grid-cols-[30px_minmax(0,1fr)] gap-3 items-center rounded-[16px] px-1.5 py-2 text-left">
             <TeamLogo
               team={awayTeam}
               src={awayLogoSrc}
               darkMode={darkMode}
-              size={22}
+              size={28}
               onClick={onOpenAway}
             />
             <button
               type="button"
               onClick={onOpenAway}
-              className="min-w-0 text-left text-sm font-extrabold leading-tight truncate hover:underline"
+              className={classNames(
+                "min-w-0 text-left text-[13.5px] font-black leading-[1.15] break-words",
+                darkMode ? "text-white" : "text-gray-900"
+              )}
+              style={{ minHeight: 0, minWidth: 0 }}
             >
               {displayTeamName(awayTeam)}
             </button>
@@ -2282,35 +2332,74 @@ function MobileFlashscoreMatchRow({
           type="button"
           onClick={onOpenMatch}
           className={classNames(
-            "min-h-[52px] rounded-lg px-1 flex flex-col items-end justify-center",
+            "rounded-[18px] border px-1.5 py-2 flex flex-col items-center justify-center text-center",
             isScore
-              ? ""
+              ? darkMode
+                ? "border-white/10 bg-white/[0.06] text-white"
+                : "border-gray-200 bg-gray-50 text-gray-900"
               : darkMode
-              ? "border border-white/10 bg-white/5"
-              : "border border-gray-200 bg-gray-50"
+              ? "border-white/10 bg-white/[0.04] text-white"
+              : "border-gray-200 bg-gray-50 text-gray-900"
           )}
           title="Szczegóły meczu"
+          style={{ minWidth: 0 }}
         >
           {isScore ? (
             <>
-              <div className="text-lg font-black leading-none">{rightPrimaryTop}</div>
-              <div className="mt-2 text-lg font-black leading-none">{rightPrimaryBottom}</div>
+              <div
+                className={classNames(
+                  "text-[10px] font-bold uppercase tracking-[0.12em]",
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                )}
+              >
+                Wynik
+              </div>
+              <div className="mt-1 text-[22px] font-black leading-none">
+                {rightPrimaryTop}
+              </div>
+              <div
+                className={classNames(
+                  "my-1 h-px w-6",
+                  darkMode ? "bg-white/12" : "bg-gray-200"
+                )}
+              />
+              <div className="text-[22px] font-black leading-none">
+                {rightPrimaryBottom}
+              </div>
             </>
           ) : (
-            <div
-              className={classNames(
-                "text-xl font-black leading-none",
-                darkMode ? "text-gray-300" : "text-gray-700"
-              )}
-            >
-              ›
-            </div>
+            <>
+              <div
+                className={classNames(
+                  "text-[10px] font-bold uppercase tracking-[0.12em]",
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                )}
+              >
+                Mecz
+              </div>
+              <div
+                className={classNames(
+                  "mt-1 text-[28px] font-black leading-none",
+                  darkMode ? "text-gray-200" : "text-gray-700"
+                )}
+              >
+                ›
+              </div>
+              <div
+                className={classNames(
+                  "text-[10px] font-bold uppercase tracking-[0.12em]",
+                  darkMode ? "text-gray-500" : "text-gray-500"
+                )}
+              >
+                Detale
+              </div>
+            </>
           )}
         </button>
       </div>
 
       {hasMedia && (
-        <div className="mt-2 pl-[66px]">
+        <div className="mt-2 flex justify-end">
           <MediaIcons
             darkMode={darkMode}
             videoUrl={videoUrl}
@@ -3637,6 +3726,7 @@ export default function App() {
   const { user, hasAdminAccess, signOut } = useAuth();
   const isApplyingRouteRef = useRef(false);
   const routeReadyRef = useRef(false);
+  const historyIndexRef = useRef(0);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('mlpn-darkMode');
     return saved !== null ? saved === 'true' : false;
@@ -3730,6 +3820,7 @@ export default function App() {
 
   // Mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuExpandedContext, setMobileMenuExpandedContext] = useState("home");
   const [galleryOverlay, setGalleryOverlay] = useState({
     open: false,
     loading: false,
@@ -3769,6 +3860,7 @@ export default function App() {
             selectedTeam: null,
             selectedMatchId: null,
             selectedPlayerId: null,
+            matchViewMode: "inline",
             round: route.round || 1,
           },
         ]);
@@ -3786,15 +3878,47 @@ export default function App() {
     };
 
     applyRouteState(parseHashRoute(window.location.hash));
+
+    const initialState = window.history.state;
+    const initialIndex =
+      initialState?.__mlpn && Number.isFinite(initialState.idx)
+        ? initialState.idx
+        : 0;
+    historyIndexRef.current = initialIndex;
+    window.history.replaceState(
+      {
+        ...(initialState && typeof initialState === "object" ? initialState : {}),
+        __mlpn: true,
+        idx: initialIndex,
+      },
+      "",
+      `${window.location.pathname}${window.location.search}${window.location.hash}`
+    );
+
     routeReadyRef.current = true;
 
-    const handleHashChange = () => {
+    const handleRouteChange = () => {
+      const nextIndex =
+        window.history.state?.__mlpn && Number.isFinite(window.history.state.idx)
+          ? window.history.state.idx
+          : historyIndexRef.current;
+      historyIndexRef.current = nextIndex;
       applyRouteState(parseHashRoute(window.location.hash));
     };
 
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
+    window.addEventListener("hashchange", handleRouteChange);
+    window.addEventListener("popstate", handleRouteChange);
+    return () => {
+      window.removeEventListener("hashchange", handleRouteChange);
+      window.removeEventListener("popstate", handleRouteChange);
+    };
   }, []);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      setMobileMenuExpandedContext(activeContext);
+    }
+  }, [activeContext, mobileMenuOpen]);
 
   useEffect(() => {
     if (!galleryOverlay.open) return undefined;
@@ -4087,23 +4211,142 @@ export default function App() {
       ? []
       : leagueMenu;
 
+  const mobileContextMenus = {
+    home: [
+      {
+        id: "home",
+        label: "Główna",
+        icon: <Trophy size={18} className="e3d-ico" />,
+      },
+      ...homeMenu,
+    ],
+    tournaments: [
+      {
+        id: "home",
+        label: "Turnieje",
+        icon: <Trophy size={18} className="e3d-ico" />,
+      },
+    ],
+    "1st": leagueMenu,
+    "2nd": leagueMenu,
+    "3rd": leagueMenu,
+    info: infoMenu,
+  };
+
+  const topLevelNavItems = [
+    {
+      label: "Strona główna",
+      ctx: "home",
+      icon: <Trophy size={18} className="e3d-ico" />,
+    },
+    {
+      label: "Turnieje",
+      ctx: "tournaments",
+      icon: <Calendar size={18} className="e3d-ico" />,
+    },
+    {
+      label: "I Liga",
+      ctx: "1st",
+      icon: <Trophy size={18} className="e3d-ico" />,
+    },
+    {
+      label: "II Liga",
+      ctx: "2nd",
+      icon: <Trophy size={18} className="e3d-ico" />,
+    },
+    {
+      label: "III Liga",
+      ctx: "3rd",
+      icon: <Trophy size={18} className="e3d-ico" />,
+    },
+    {
+      label: "Info",
+      ctx: "info",
+      icon: <FileText size={18} className="e3d-ico" />,
+    },
+  ];
+
+  const has3rdLeague = currentLeagues.some((l) => l.id === "3rd");
+
+  const navigateToContext = (context, sectionOverride = null, closeMobileMenu = false) => {
+    const nextContext = normalizeContext(context);
+    const nextSection = normalizeSectionForContext(
+      nextContext,
+      sectionOverride || defaultSectionForContext(nextContext)
+    );
+
+    setSelectedTeam(null);
+    setSelectedMatchId(null);
+    setSelectedPlayerId(null);
+    setMatchViewMode("inline");
+    setActiveContext(nextContext);
+    setActiveSection(nextSection);
+
+    if (closeMobileMenu) {
+      setMobileMenuOpen(false);
+    }
+  };
+
+  const navigateToSection = (context, section, closeMobileMenu = false) => {
+    const nextContext = normalizeContext(context);
+    setSelectedTeam(null);
+    setSelectedMatchId(null);
+    setSelectedPlayerId(null);
+    setMatchViewMode("inline");
+    setActiveContext(nextContext);
+    setActiveSection(normalizeSectionForContext(nextContext, section));
+
+    if (closeMobileMenu) {
+      setMobileMenuOpen(false);
+    }
+  };
+
+  const toggleMobileMenuContext = (context) => {
+    setMobileMenuExpandedContext((prev) => (prev === context ? null : context));
+  };
+
   // Funkcja zapisująca aktualny stan do historii przed zmianą
   const saveToHistory = () => {
-    setNavigationHistory((prev) => [
-      ...prev,
-      {
-        activeContext,
-        activeSection,
-        selectedTeam,
-        selectedMatchId,
-        selectedPlayerId,
-        round,
-      },
-    ]);
+    const nextEntry = {
+      activeContext,
+      activeSection,
+      selectedTeam,
+      selectedMatchId,
+      selectedPlayerId,
+      matchViewMode,
+      round,
+    };
+
+    setNavigationHistory((prev) => {
+      const last = prev[prev.length - 1];
+      if (
+        last &&
+        last.activeContext === nextEntry.activeContext &&
+        last.activeSection === nextEntry.activeSection &&
+        last.selectedTeam === nextEntry.selectedTeam &&
+        last.selectedMatchId === nextEntry.selectedMatchId &&
+        last.selectedPlayerId === nextEntry.selectedPlayerId &&
+        last.matchViewMode === nextEntry.matchViewMode &&
+        last.round === nextEntry.round
+      ) {
+        return prev;
+      }
+      return [...prev, nextEntry];
+    });
   };
 
   // Funkcja cofania do poprzedniego widoku
   const goBack = () => {
+    const historyIndex =
+      window.history.state?.__mlpn && Number.isFinite(window.history.state.idx)
+        ? window.history.state.idx
+        : 0;
+
+    if (historyIndex > 0) {
+      window.history.back();
+      return;
+    }
+
     if (navigationHistory.length === 0) {
       // Jeśli brak historii, wróć do strony głównej
       goHome();
@@ -4118,6 +4361,7 @@ export default function App() {
     setSelectedTeam(previous.selectedTeam);
     setSelectedMatchId(previous.selectedMatchId);
     setSelectedPlayerId(previous.selectedPlayerId);
+    setMatchViewMode(previous.matchViewMode === "page" ? "page" : "inline");
     setRound(previous.round);
   };
 
@@ -4128,6 +4372,7 @@ export default function App() {
     setSelectedTeam(null);
     setSelectedMatchId(null);
     setSelectedPlayerId(null);
+    setMatchViewMode("inline");
     setNavigationHistory([]); // Czyść historię przy powrocie do domu
     // Przywróć bieżący sezon - strona główna zawsze pokazuje aktualne dane
     if (defaultSeason && currentSeason !== defaultSeason) {
@@ -4242,8 +4487,12 @@ export default function App() {
 
     if (window.location.hash === nextHash) return;
 
-    window.history.replaceState(
-      null,
+    historyIndexRef.current += 1;
+    window.history.pushState(
+      {
+        __mlpn: true,
+        idx: historyIndexRef.current,
+      },
       "",
       `${window.location.pathname}${window.location.search}${nextHash}`
     );
@@ -4721,33 +4970,15 @@ export default function App() {
         <div className="flex items-center gap-2">
           {/* Menu główne - tylko desktop */}
           <div className="hidden md:flex items-center gap-2">
-            {[
-              { label: "Strona główna", ctx: "home" },
-              { label: "Turnieje", ctx: "tournaments" },
-              { label: "I Liga", ctx: "1st" },
-              { label: "II Liga", ctx: "2nd" },
-              { label: "III Liga", ctx: "3rd" },
-              { label: "Info", ctx: "info" },
-            ].map((b) => {
-              const has3rd = currentLeagues.some(l => l.id === '3rd');
-              const isDisabled = b.ctx === '3rd' && !has3rd;
+            {topLevelNavItems.map((b) => {
+              const isDisabled = b.ctx === "3rd" && !has3rdLeague;
               return (
                 <button
                   key={b.ctx}
                   disabled={isDisabled}
                   onClick={() => {
                     if (isDisabled) return;
-                    setSelectedTeam(null);
-                    setSelectedMatchId(null);
-                    setActiveContext(b.ctx);
-                    if (b.ctx === "home" || b.ctx === "tournaments") {
-                      setActiveSection(b.ctx);
-                    } else if (b.ctx === "info") {
-                      setActiveSection("about");
-                    } else {
-                      setActiveSection("home");
-                    }
-                    setMobileMenuOpen(false);
+                    navigateToContext(b.ctx);
                   }}
                   className={classNames(
                     "px-3 py-2 text-sm rounded e3d-tab whitespace-nowrap",
@@ -4768,12 +4999,7 @@ export default function App() {
             {user && hasAdminAccess && (
               <button
                 onClick={() => {
-                  setSelectedTeam(null);
-                  setSelectedMatchId(null);
-                  setSelectedPlayerId(null);
-                  setActiveContext("admin");
-                  setActiveSection("dashboard");
-                  setMobileMenuOpen(false);
+                  navigateToContext("admin", "dashboard");
                 }}
                 className={classNames(
                   "p-2 rounded e3d-tab",
@@ -4804,12 +5030,7 @@ export default function App() {
             ) : (
               <button
                 onClick={() => {
-                  setSelectedTeam(null);
-                  setSelectedMatchId(null);
-                  setSelectedPlayerId(null);
-                  setActiveContext("admin");
-                  setActiveSection("dashboard");
-                  setMobileMenuOpen(false);
+                  navigateToContext("admin", "dashboard");
                 }}
                 className={classNames(
                   "p-2 rounded e3d-tab",
@@ -4871,6 +5092,7 @@ export default function App() {
           )}
           onClick={(e) => e.stopPropagation()}
         >
+          <div className="min-h-full flex flex-col">
             <div
               className="px-4 py-4 border-b flex items-center justify-between gap-3"
               style={{
@@ -4905,61 +5127,149 @@ export default function App() {
               }}
             >
               <div className={classNames("font-bold mb-3", darkMode ? "text-white" : "text-white")}>Menu Główne</div>
-              {[
-                { label: "Strona główna", ctx: "home" },
-                { label: "Turnieje", ctx: "tournaments" },
-                { label: "I Liga", ctx: "1st" },
-                { label: "II Liga", ctx: "2nd" },
-                { label: "III Liga", ctx: "3rd" },
-                { label: "Info", ctx: "info" },
-              ].map((b) => {
-                const has3rd = currentLeagues.some(l => l.id === '3rd');
-                const isDisabled = b.ctx === '3rd' && !has3rd;
-                return (
-                  <button
-                    key={b.ctx}
-                    disabled={isDisabled}
-                    onClick={() => {
-                      if (isDisabled) return;
-                      setSelectedTeam(null);
-                      setSelectedMatchId(null);
-                      setActiveContext(b.ctx);
-                      if (b.ctx === "home" || b.ctx === "tournaments") {
-                        setActiveSection(b.ctx);
-                      } else if (b.ctx === "info") {
-                        setActiveSection("about");
-                      } else {
-                        setActiveSection("home");
-                      }
-                      setMobileMenuOpen(false);
-                    }}
-                    className={classNames(
-                      "w-full text-left px-3 py-3 rounded-xl mb-1",
-                      isDisabled
-                        ? (darkMode ? "text-gray-600 opacity-40 cursor-not-allowed" : "text-white/40 opacity-70 cursor-not-allowed")
-                        : activeContext === b.ctx
-                        ? "bg-green-500/10 text-green-400 font-bold"
-                        : darkMode
-                        ? "text-gray-400 hover:bg-white/5"
-                        : "text-white/85 hover:bg-white/5"
-                    )}
-                  >
-                    {b.label}
-                  </button>
-                );
-              })}
+              <div className="space-y-2">
+                {topLevelNavItems.map((b) => {
+                  const isDisabled = b.ctx === "3rd" && !has3rdLeague;
+                  const submenu = mobileContextMenus[b.ctx] || [];
+                  const isExpanded = mobileMenuExpandedContext === b.ctx;
+                  const isActiveContext = activeContext === b.ctx;
+                  const activeSubsectionLabel =
+                    submenu.find((item) => item.id === activeSection)?.label ||
+                    (b.ctx === "info" ? "O nas" : "Główna");
+
+                  return (
+                    <div
+                      key={b.ctx}
+                      className={classNames(
+                        "rounded-[22px] border p-2 transition-colors",
+                        isDisabled
+                          ? "border-white/5 bg-black/10 opacity-60"
+                          : isActiveContext
+                          ? "border-white/20 bg-white/[0.08]"
+                          : "border-white/10 bg-black/10"
+                      )}
+                    >
+                      <button
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => {
+                          if (isDisabled) return;
+                          toggleMobileMenuContext(b.ctx);
+                        }}
+                        className={classNames(
+                          "w-full flex items-center gap-3 px-3 py-3 rounded-[18px] text-left transition-colors",
+                          isDisabled
+                            ? "cursor-not-allowed"
+                            : isExpanded
+                            ? "bg-white/[0.07]"
+                            : "hover:bg-white/[0.04]"
+                        )}
+                      >
+                        <span
+                          className={classNames(
+                            "w-10 h-10 shrink-0 rounded-2xl border flex items-center justify-center",
+                            isActiveContext
+                              ? "border-emerald-400/35 bg-emerald-500/12 text-emerald-300"
+                              : "border-white/10 bg-white/5 text-white"
+                          )}
+                        >
+                          {b.icon}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-black text-white leading-tight">
+                            {b.label}
+                          </span>
+                          <span className="block mt-1 text-[11px] leading-tight text-white/65">
+                            {isActiveContext
+                              ? `Aktywna sekcja: ${activeSubsectionLabel}`
+                              : submenu.length > 1
+                              ? `${submenu.length} podzakładek`
+                              : "Otwórz sekcję"}
+                          </span>
+                        </span>
+                        <span
+                          className={classNames(
+                            "shrink-0 rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em]",
+                            isActiveContext
+                              ? "bg-emerald-500/15 text-emerald-300"
+                              : "bg-white/5 text-white/55"
+                          )}
+                        >
+                          {isActiveContext ? "Aktywna" : "Menu"}
+                        </span>
+                        <ChevronDown
+                          size={18}
+                          className={classNames(
+                            "shrink-0 text-white/70 transition-transform duration-200",
+                            isExpanded ? "rotate-180" : ""
+                          )}
+                        />
+                      </button>
+
+                      {isExpanded && !isDisabled && (
+                        <div className="grid gap-2 px-3 pb-3 pt-2">
+                          {submenu.map((item) => (
+                            <button
+                              key={`${b.ctx}-${item.id}`}
+                              type="button"
+                              onClick={() => navigateToSection(b.ctx, item.id, true)}
+                              className={classNames(
+                                "w-full flex items-center gap-3 rounded-[18px] border px-3 py-3 text-left transition-colors",
+                                activeContext === b.ctx && activeSection === item.id
+                                  ? "border-emerald-400/35 bg-emerald-500/12 text-emerald-300"
+                                  : "border-white/10 bg-white/[0.03] text-white/88 hover:bg-white/[0.06]"
+                              )}
+                            >
+                              <span className="shrink-0">{item.icon}</span>
+                              <span className="min-w-0 flex-1 font-bold leading-tight">
+                                {item.label}
+                              </span>
+                              {activeContext === b.ctx && activeSection === item.id ? (
+                                <span className="text-[10px] font-black uppercase tracking-[0.12em] text-emerald-300">
+                                  Teraz
+                                </span>
+                              ) : (
+                                <ChevronRight size={16} className="shrink-0 opacity-60" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="px-4 pt-4">
+              <div className="mt-4 rounded-[24px] border border-white/10 bg-black/10 px-4 py-3">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-white/55 font-bold">
+                  Aktualnie
+                </div>
+                <div className="mt-2 text-base font-black text-white">
+                  {contextLabel(activeContext)}
+                </div>
+                <div className="mt-1 text-sm text-white/70">
+                  {activeContext === "admin"
+                    ? "Panel zarządzania"
+                    : mobileContextMenus[activeContext]?.find((item) => item.id === activeSection)?.label ||
+                      "Widok główny"}
+                </div>
+              </div>
+            </div>
+            <div
+              className="mt-auto px-4 pb-4 pt-4"
+              style={{
+                borderTop: "1px solid",
+                borderColor: darkMode
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(255,255,255,0.12)",
+              }}
+            >
               {user && hasAdminAccess && (
                 <button
-                  onClick={() => {
-                    setSelectedTeam(null);
-                    setSelectedMatchId(null);
-                    setSelectedPlayerId(null);
-                    setActiveContext("admin");
-                    setActiveSection("dashboard");
-                    setMobileMenuOpen(false);
-                  }}
+                  onClick={() => navigateToContext("admin", "dashboard", true)}
                   className={classNames(
-                    "w-full text-left px-3 py-3 rounded-xl mb-1 flex items-center gap-2",
+                    "w-full text-left px-3 py-3 rounded-xl flex items-center gap-2",
                     activeContext === "admin"
                       ? "bg-yellow-500/10 text-yellow-400 font-bold"
                       : "text-yellow-500/70 hover:bg-yellow-500/10"
@@ -4972,23 +5282,20 @@ export default function App() {
               {user ? (
                 <button
                   onClick={handleUserSignOut}
-                  className="w-full text-left px-3 py-3 rounded-xl mb-1 flex items-center gap-2 text-red-400/70 hover:bg-red-500/10"
+                  className={classNames(
+                    "w-full text-left px-3 py-3 rounded-xl flex items-center gap-2",
+                    user && hasAdminAccess ? "mt-2" : "",
+                    "text-red-400/70 hover:bg-red-500/10"
+                  )}
                 >
                   <LogOut size={14} />
                   Wyloguj się
                 </button>
               ) : (
                 <button
-                  onClick={() => {
-                    setSelectedTeam(null);
-                    setSelectedMatchId(null);
-                    setSelectedPlayerId(null);
-                    setActiveContext("admin");
-                    setActiveSection("dashboard");
-                    setMobileMenuOpen(false);
-                  }}
+                  onClick={() => navigateToContext("admin", "dashboard", true)}
                   className={classNames(
-                    "w-full text-left px-3 py-3 rounded-xl mb-1 flex items-center gap-2",
+                    "w-full text-left px-3 py-3 rounded-xl flex items-center gap-2",
                     activeContext === "admin"
                       ? "bg-yellow-500/10 text-yellow-400 font-bold"
                       : "text-yellow-500/70 hover:bg-yellow-500/10"
@@ -4999,45 +5306,7 @@ export default function App() {
                 </button>
               )}
             </div>
-
-            {/* Mobile sidebar menu (context-specific) */}
-            {menu.length > 0 && (
-              <div className="p-4">
-                <div className={classNames(
-                  "font-bold mb-3 text-sm",
-                  darkMode ? "text-gray-400" : "text-white/65"
-                )}>
-                  {activeContext === "home" && "Strona główna"}
-                  {activeContext === "1st" && "I Liga"}
-                  {activeContext === "2nd" && "II Liga"}
-                  {activeContext === "3rd" && "III Liga"}
-                  {activeContext === "info" && "Informacje"}
-                </div>
-                {menu.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setSelectedTeam(null);
-                      setSelectedMatchId(null);
-                      setSelectedPlayerId(null);
-                      setActiveSection(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={classNames(
-                      "w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1",
-                      activeSection === item.id
-                        ? "bg-green-500/10 text-green-400"
-                        : darkMode
-                        ? "text-gray-400 hover:bg-white/5"
-                        : "text-white/85 hover:bg-white/5"
-                    )}
-                  >
-                    <span className="shrink-0">{item.icon}</span>
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            )}
+          </div>
         </div>
       </div>
 
@@ -5057,12 +5326,7 @@ export default function App() {
             {menu.map((item) => (
               <button
                 key={item.id}
-                onClick={() => {
-                  setSelectedTeam(null);
-                  setSelectedMatchId(null);
-                  setSelectedPlayerId(null); // Reset również profilu zawodnika
-                  setActiveSection(item.id);
-                }}
+                onClick={() => navigateToSection(activeContext, item.id)}
                 className={classNames(
                   "w-full flex items-center gap-3 px-3 py-2 rounded mb-1 e3d-item",
                   activeSection === item.id
