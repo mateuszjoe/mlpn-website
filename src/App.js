@@ -508,6 +508,53 @@ function buildHashRoute({
   return `#${path}${queryString ? `?${queryString}` : ""}`;
 }
 
+const COMPLETED_FIXTURE_STATUSES = new Set([
+  "completed",
+  "walkover_home",
+  "walkover_away",
+]);
+
+function getCalendarCurrentRoundForLeague(
+  fixtures,
+  leagueId,
+  totalRoundsByLeague,
+  fallbackRound = 1
+) {
+  if (!LEAGUE_CONTEXT_TO_SLUG[leagueId]) return fallbackRound || 1;
+
+  const leagueFixtures = (fixtures || []).filter(
+    (fixture) =>
+      fixture?.league === leagueId &&
+      Number.isFinite(Number(fixture?.round)) &&
+      Number(fixture.round) > 0
+  );
+
+  if (!leagueFixtures.length) return fallbackRound || 1;
+
+  const fixturesByRound = new Map();
+
+  for (const fixture of leagueFixtures) {
+    const fixtureRound = Number(fixture.round);
+    if (!fixturesByRound.has(fixtureRound)) {
+      fixturesByRound.set(fixtureRound, []);
+    }
+    fixturesByRound.get(fixtureRound).push(fixture);
+  }
+
+  const sortedRounds = [...fixturesByRound.keys()].sort((a, b) => a - b);
+  const firstIncompleteRound = sortedRounds.find((fixtureRound) =>
+    fixturesByRound.get(fixtureRound).some((fixture) => {
+      const status = String(fixture?.status || "").toLowerCase();
+      return !COMPLETED_FIXTURE_STATUSES.has(status);
+    })
+  );
+
+  if (firstIncompleteRound) return firstIncompleteRound;
+
+  const leagueMaxRound = Number(totalRoundsByLeague?.[leagueId]) || 0;
+  return Math.max(sortedRounds[sortedRounds.length - 1] || 1, leagueMaxRound || 0);
+}
+
 /* =========================================
    SKRÓTY 3-literowe drużyn (konsekwentnie w całym serwisie)
    ========================================= */
@@ -3753,6 +3800,7 @@ export default function App() {
   const [activeContext, setActiveContext] = useState("home"); // home | 1st | 2nd | 3rd | tournaments | info | admin
   const [activeSection, setActiveSection] = useState("home"); // home/news/typer/polls/free | table/calendar/teams/players
   const prevContextRef = useRef(activeContext);
+  const calendarRoundAutoRef = useRef(false);
 
   // Zapisz motyw do localStorage
   useEffect(() => {
@@ -3816,7 +3864,15 @@ export default function App() {
   // Utrzymuj kolejkę w dozwolonym zakresie, ale nie nadpisuj ręcznego wyboru.
   React.useEffect(() => {
     if (!currentRound) return;
-    const fallbackRound = currentRound || 1;
+    const fallbackRound =
+      activeSection === "calendar" && LEAGUE_CONTEXT_TO_SLUG[activeContext]
+        ? getCalendarCurrentRoundForLeague(
+            rawFixtures,
+            activeContext,
+            totalRoundsByLeague,
+            currentRound || 1
+          )
+        : currentRound || 1;
     const leagueMax = totalRoundsByLeague[activeContext] || fallbackRound;
 
     setRound((prev) => {
@@ -3826,7 +3882,21 @@ export default function App() {
       }
       return prev;
     });
-  }, [activeContext, currentRound, totalRoundsByLeague]);
+  }, [activeContext, activeSection, currentRound, rawFixtures, totalRoundsByLeague]);
+
+  useEffect(() => {
+    if (!calendarRoundAutoRef.current) return;
+    if (activeSection !== "calendar" || !LEAGUE_CONTEXT_TO_SLUG[activeContext]) return;
+
+    const nextRound = getCalendarCurrentRoundForLeague(
+      rawFixtures,
+      activeContext,
+      totalRoundsByLeague,
+      currentRound || 1
+    );
+
+    setRound((prev) => (prev === nextRound ? prev : nextRound));
+  }, [activeContext, activeSection, currentRound, rawFixtures, totalRoundsByLeague]);
 
   // "routing" wewnętrzny
   const [selectedTeam, setSelectedTeam] = useState(null); // team name
@@ -3888,7 +3958,20 @@ export default function App() {
       }
 
       if (route.round) {
+        calendarRoundAutoRef.current = false;
         setRound(route.round);
+      } else if (nextSection === "calendar" && LEAGUE_CONTEXT_TO_SLUG[nextContext]) {
+        calendarRoundAutoRef.current = true;
+        setRound(
+          getCalendarCurrentRoundForLeague(
+            rawFixtures,
+            nextContext,
+            totalRoundsByLeague,
+            currentRound || 1
+          )
+        );
+      } else {
+        calendarRoundAutoRef.current = false;
       }
 
       requestAnimationFrame(() => {
@@ -4294,6 +4377,20 @@ export default function App() {
       sectionOverride || defaultSectionForContext(nextContext)
     );
 
+    if (nextSection === "calendar" && LEAGUE_CONTEXT_TO_SLUG[nextContext]) {
+      calendarRoundAutoRef.current = true;
+      setRound(
+        getCalendarCurrentRoundForLeague(
+          rawFixtures,
+          nextContext,
+          totalRoundsByLeague,
+          currentRound || 1
+        )
+      );
+    } else {
+      calendarRoundAutoRef.current = false;
+    }
+
     setSelectedTeam(null);
     setSelectedMatchId(null);
     setSelectedPlayerId(null);
@@ -4308,12 +4405,28 @@ export default function App() {
 
   const navigateToSection = (context, section, closeMobileMenu = false) => {
     const nextContext = normalizeContext(context);
+    const nextSection = normalizeSectionForContext(nextContext, section);
+
+    if (nextSection === "calendar" && LEAGUE_CONTEXT_TO_SLUG[nextContext]) {
+      calendarRoundAutoRef.current = true;
+      setRound(
+        getCalendarCurrentRoundForLeague(
+          rawFixtures,
+          nextContext,
+          totalRoundsByLeague,
+          currentRound || 1
+        )
+      );
+    } else {
+      calendarRoundAutoRef.current = false;
+    }
+
     setSelectedTeam(null);
     setSelectedMatchId(null);
     setSelectedPlayerId(null);
     setMatchViewMode("inline");
     setActiveContext(nextContext);
-    setActiveSection(normalizeSectionForContext(nextContext, section));
+    setActiveSection(nextSection);
 
     if (closeMobileMenu) {
       setMobileMenuOpen(false);
@@ -4381,11 +4494,13 @@ export default function App() {
     setSelectedMatchId(previous.selectedMatchId);
     setSelectedPlayerId(previous.selectedPlayerId);
     setMatchViewMode(previous.matchViewMode === "page" ? "page" : "inline");
+    calendarRoundAutoRef.current = false;
     setRound(previous.round);
   };
 
   // helpers navigation
   const goHome = () => {
+    calendarRoundAutoRef.current = false;
     setActiveContext("home");
     setActiveSection("home");
     setSelectedTeam(null);
@@ -4459,6 +4574,7 @@ export default function App() {
 
   const goToLeague = (leagueId) => {
     saveToHistory();
+    calendarRoundAutoRef.current = false;
     setActiveContext(leagueId);
     setActiveSection("home");
     setSelectedTeam(null);
@@ -5425,7 +5541,10 @@ export default function App() {
               return (
               <div className="flex items-center gap-4 mb-4">
                 <button
-                  onClick={() => setRound((r) => Math.max(1, r - 1))}
+                  onClick={() => {
+                    calendarRoundAutoRef.current = false;
+                    setRound((r) => Math.max(1, r - 1));
+                  }}
                   disabled={round <= 1}
                   className={classNames(
                     "px-3 py-2 rounded e3d-btn",
@@ -5439,7 +5558,10 @@ export default function App() {
                 </button>
                 <div className="font-semibold">Kolejka {round}</div>
                 <button
-                  onClick={() => setRound((r) => Math.min(maxRound, r + 1))}
+                  onClick={() => {
+                    calendarRoundAutoRef.current = false;
+                    setRound((r) => Math.min(maxRound, r + 1));
+                  }}
                   disabled={round >= maxRound}
                   className={classNames(
                     "px-3 py-2 rounded e3d-btn",
