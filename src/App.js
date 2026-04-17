@@ -10892,13 +10892,11 @@ function HomeDashboardFeatureCard({
                 <div className="mt-3 max-w-3xl text-sm sm:text-base text-white/80 leading-relaxed">
                   {featuredMatchData
                     ? featuredMatchPlayed
-                      ? `Najświeższy rezultat na górze pulpitu. ${displayTeamName(
-                          featuredMatchData.home
-                        )} i ${displayTeamName(
+                      ? `${displayTeamName(featuredMatchData.home)} i ${displayTeamName(
                           featuredMatchData.away
-                        )} nadają rytm bieżącej kolejce.`
-                      : `Najbliższe spotkanie ustawiamy w centrum uwagi, żeby kibic od razu widział termin, kontekst tabeli i drogę do szczegółów.`
-                    : `Sezon nie ma teraz wskazanego meczu na pierwszym planie, więc pokazujemy zbiorczy puls rozgrywek i najważniejsze skróty.`}
+                        )} zamknęli spotkanie. Sprawdź wynik i pełne szczegóły meczu.`
+                      : "Najważniejszy mecz kolejki z godziną, tabelą i szybkim wejściem do szczegółów."
+                    : "Najważniejsze informacje z ligi w jednym miejscu."}
                 </div>
               </div>
             </div>
