@@ -144,12 +144,12 @@ function buildPlayerStatsFromEvents(eventRows) {
   for (const event of eventRows || []) {
     const playerStats = ensurePlayer(event.player_id);
     if (playerStats) {
-      if (event.event_type === "GOAL") playerStats.goals += 1;
+      if (event.event_type === "GOAL" && !event.is_own_goal) playerStats.goals += 1;
       if (event.event_type === "YELLOW_CARD") playerStats.yellow += 1;
       if (event.event_type === "RED_CARD") playerStats.red += 1;
     }
 
-    if (event.event_type === "GOAL" && event.assist_player_id) {
+    if (event.event_type === "GOAL" && !event.is_own_goal && event.assist_player_id) {
       const assistStats = ensurePlayer(event.assist_player_id);
       if (assistStats) assistStats.assists += 1;
     }
@@ -179,6 +179,45 @@ function teamTotals(playerIds, playerStatsForm) {
     },
     { goals: 0, assists: 0, yellow: 0, red: 0 }
   );
+}
+
+function getAssistDistributionError(teamLabel, playerIds, playerStatsForm, rosterRows) {
+  const goalsByPlayer = new Map();
+  const namesByPlayer = new Map((rosterRows || []).map((player) => [player.id, player.name || "Zawodnik"]));
+  let totalGoals = 0;
+
+  for (const playerId of playerIds || []) {
+    const stats = playerStatsForm[playerId] || createEmptyPlayerStats();
+    const goalCount = parseCount(stats.goals);
+    goalsByPlayer.set(playerId, goalCount);
+    totalGoals += goalCount;
+  }
+
+  const directConflicts = [];
+
+  for (const playerId of playerIds || []) {
+    const stats = playerStatsForm[playerId] || createEmptyPlayerStats();
+    const assistCount = parseCount(stats.assists);
+    if (assistCount === 0) continue;
+
+    const goalsByOthers = totalGoals - (goalsByPlayer.get(playerId) || 0);
+    if (assistCount > goalsByOthers) {
+      directConflicts.push({
+        name: namesByPlayer.get(playerId) || "Zawodnik",
+        assists: assistCount,
+        goalsByOthers,
+      });
+    }
+  }
+
+  if (directConflicts.length === 0) return null;
+
+  if (directConflicts.length === 1) {
+    const conflict = directConflicts[0];
+    return `Nie da sie zapisac asyst w druzynie ${teamLabel}: ${conflict.name} ma wpisane ${conflict.assists} asyst, ale inni zawodnicy tej druzyny strzelili tylko ${conflict.goalsByOthers} goli. Asysty do wlasnej bramki nie zapiszesz.`;
+  }
+
+  return `Nie da sie zapisac wszystkich asyst w druzynie ${teamLabel}. Sprawdz, czy asysty nie sa wpisane zawodnikom, ktorzy strzelili wszystkie gole swojej druzyny.`;
 }
 
 function hasAnyPlayerStats(playerStatsForm) {
@@ -225,12 +264,46 @@ function buildGoalEvents(matchId, teamId, playerIds, playerStatsForm, teamLabel)
     throw new Error(`Za duzo asyst w druzynie ${teamLabel}. Asyst nie moze byc wiecej niz goli.`);
   }
 
-  for (const assistPlayerId of assists) {
-    const targetGoal = goals.find((goal) => !goal.assist_player_id && goal.player_id !== assistPlayerId);
-    if (!targetGoal) {
+  // Use bipartite matching so a valid global assignment is found whenever one exists.
+  const goalToAssistIndex = new Array(goals.length).fill(null);
+  const assistOptions = assists.map((assistPlayerId) =>
+    goals
+      .map((goal, index) => (goal.player_id !== assistPlayerId ? index : -1))
+      .filter((index) => index !== -1)
+  );
+
+  const assistOrder = assistOptions
+    .map((options, index) => ({ index, optionsCount: options.length }))
+    .sort((a, b) => a.optionsCount - b.optionsCount || a.index - b.index);
+
+  function assignAssist(assistIndex, visitedGoals) {
+    for (const goalIndex of assistOptions[assistIndex]) {
+      if (visitedGoals[goalIndex]) continue;
+      visitedGoals[goalIndex] = true;
+
+      const currentAssistIndex = goalToAssistIndex[goalIndex];
+      if (currentAssistIndex === null || assignAssist(currentAssistIndex, visitedGoals)) {
+        goalToAssistIndex[goalIndex] = assistIndex;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  for (const { index: assistIndex } of assistOrder) {
+    const visitedGoals = new Array(goals.length).fill(false);
+    const assigned = assignAssist(assistIndex, visitedGoals);
+    if (!assigned) {
       throw new Error(`Nie da sie przypisac wszystkich asyst w druzynie ${teamLabel} bez asysty do wlasnego gola.`);
     }
-    targetGoal.assist_player_id = assistPlayerId;
+  }
+
+  for (let goalIndex = 0; goalIndex < goalToAssistIndex.length; goalIndex += 1) {
+    const assistIndex = goalToAssistIndex[goalIndex];
+    if (assistIndex !== null) {
+      goals[goalIndex].assist_player_id = assists[assistIndex];
+    }
   }
 
   return goals;
@@ -276,7 +349,7 @@ function buildCardEvents(matchId, teamId, playerIds, playerStatsForm) {
   return events;
 }
 
-function buildMatchEventsPayload(match, participantSelection, playerStatsForm) {
+function buildMatchEventsPayload(match, participantSelection, playerStatsForm, existingEvents = []) {
   const homeGoals = buildGoalEvents(
     match.id,
     match.home_team_id,
@@ -293,8 +366,21 @@ function buildMatchEventsPayload(match, participantSelection, playerStatsForm) {
   );
   const homeCards = buildCardEvents(match.id, match.home_team_id, participantSelection.home, playerStatsForm);
   const awayCards = buildCardEvents(match.id, match.away_team_id, participantSelection.away, playerStatsForm);
+  const preservedOwnGoals = (existingEvents || [])
+    .filter((event) => event.event_type === "GOAL" && event.is_own_goal)
+    .map((event) => ({
+      match_id: match.id,
+      event_type: "GOAL",
+      team_id: event.team_id,
+      player_id: event.player_id,
+      assist_player_id: null,
+      minute: event.minute ?? null,
+      is_penalty: false,
+      is_own_goal: true,
+      notes: event.notes || null,
+    }));
 
-  const ordered = [...homeGoals, ...awayGoals, ...homeCards, ...awayCards];
+  const ordered = [...homeGoals, ...awayGoals, ...preservedOwnGoals, ...homeCards, ...awayCards];
   return ordered.map((event, index) => ({
     ...event,
     event_order: index + 1,
@@ -875,7 +961,7 @@ export default function AdminMatchResults({ darkMode }) {
         supabase
           .from("match_events")
           .select(
-            "id, event_type, team_id, player_id, assist_player_id, minute, event_order, player:players!match_events_player_id_fkey(id, display_name, position), assist:players!match_events_assist_player_id_fkey(id, display_name, position)"
+            "id, event_type, team_id, player_id, assist_player_id, minute, event_order, is_own_goal, is_penalty, notes, player:players!match_events_player_id_fkey(id, display_name, position), assist:players!match_events_assist_player_id_fkey(id, display_name, position)"
           )
           .eq("match_id", match.id)
           .order("event_order")
@@ -1081,13 +1167,19 @@ export default function AdminMatchResults({ darkMode }) {
 
         const homeTotals = teamTotals(participantSelection.home, playerStatsForm);
         const awayTotals = teamTotals(participantSelection.away, playerStatsForm);
+        const preservedHomeOwnGoals = (matchEvents || []).filter(
+          (event) => event.event_type === "GOAL" && event.is_own_goal && event.team_id === match.away_team_id
+        ).length;
+        const preservedAwayOwnGoals = (matchEvents || []).filter(
+          (event) => event.event_type === "GOAL" && event.is_own_goal && event.team_id === match.home_team_id
+        ).length;
 
         if (hasSelectedParticipants) {
-          if (homeTotals.goals !== homeGoals) {
-            throw new Error(`Liczba goli zawodnikow druzyny ${match.home_team_name} musi zgadzac sie z wynikiem meczu.`);
+          if (homeTotals.goals + preservedHomeOwnGoals > homeGoals) {
+            throw new Error(`Suma goli zawodnikow druzyny ${match.home_team_name} nie moze byc wieksza niz wynik meczu.`);
           }
-          if (awayTotals.goals !== awayGoals) {
-            throw new Error(`Liczba goli zawodnikow druzyny ${match.away_team_name} musi zgadzac sie z wynikiem meczu.`);
+          if (awayTotals.goals + preservedAwayOwnGoals > awayGoals) {
+            throw new Error(`Suma goli zawodnikow druzyny ${match.away_team_name} nie moze byc wieksza niz wynik meczu.`);
           }
           if (homeTotals.assists > homeTotals.goals) {
             throw new Error(`Za duzo asyst wpisano dla druzyny ${match.home_team_name}.`);
@@ -1095,12 +1187,26 @@ export default function AdminMatchResults({ darkMode }) {
           if (awayTotals.assists > awayTotals.goals) {
             throw new Error(`Za duzo asyst wpisano dla druzyny ${match.away_team_name}.`);
           }
+          const homeAssistError = getAssistDistributionError(
+            match.home_team_name,
+            participantSelection.home,
+            playerStatsForm,
+            homeSelectedRows
+          );
+          if (homeAssistError) throw new Error(homeAssistError);
+          const awayAssistError = getAssistDistributionError(
+            match.away_team_name,
+            participantSelection.away,
+            playerStatsForm,
+            awaySelectedRows
+          );
+          if (awayAssistError) throw new Error(awayAssistError);
           if (mvpPlayerId && !allSelectedPlayerIds.includes(mvpPlayerId)) {
             throw new Error("MVP musi byc wybrany sposrod zawodnikow uczestniczacych w meczu.");
           }
 
           lineupsPayload = buildLineupsPayload(match, participantSelection, homeRoster, awayRoster);
-          eventsPayload = buildMatchEventsPayload(match, participantSelection, playerStatsForm);
+          eventsPayload = buildMatchEventsPayload(match, participantSelection, playerStatsForm, matchEvents);
           nextMvpPlayerId = mvpPlayerId || null;
         }
       }
@@ -1240,6 +1346,14 @@ export default function AdminMatchResults({ darkMode }) {
           {matches.map((match) => {
             const homeTotals = teamTotals(participantSelection.home, playerStatsForm);
             const awayTotals = teamTotals(participantSelection.away, playerStatsForm);
+            const currentHomeScore =
+              expandedMatch === match.id ? parseScoreValue(scoreForm.home_goals) : parseScoreValue(match.home_goals);
+            const currentAwayScore =
+              expandedMatch === match.id ? parseScoreValue(scoreForm.away_goals) : parseScoreValue(match.away_goals);
+            const homeUnassignedGoals =
+              currentHomeScore === null ? 0 : Math.max(currentHomeScore - homeTotals.goals, 0);
+            const awayUnassignedGoals =
+              currentAwayScore === null ? 0 : Math.max(currentAwayScore - awayTotals.goals, 0);
 
             return (
               <div key={match.id} className={`rounded-2xl border overflow-hidden ${card}`}>
@@ -1445,7 +1559,7 @@ export default function AdminMatchResults({ darkMode }) {
                           <div className="font-semibold text-sm">Dobor zawodnikow i statystyki meczu</div>
                           <p className={`text-xs mt-1 ${textMuted}`}>
                             Wynik meczu mozesz zapisac bez skladu. Zawodnikow wybieraj tylko wtedy, gdy chcesz dopisac statystyki lub MVP.
-                            Puste pola i zera sa traktowane tak samo.
+                            Puste pola i zera sa traktowane tak samo. Nie musisz rozpisywac wszystkich goli na zawodnikow - jesli wpiszesz mniej strzelcow niz wynika z rezultatu, zapisze sie sam wynik meczu. Asysty zapisujemy tylko do goli wpisanych zawodnikom.
                           </p>
 
                           {scoreForm.status !== "completed" && (
@@ -1515,6 +1629,16 @@ export default function AdminMatchResults({ darkMode }) {
                             <span className={`px-2 py-1 rounded-full border ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-white"}`}>
                               {match.away_team_name}: gole {awayTotals.goals}, asysty {awayTotals.assists}, ZK {awayTotals.yellow}, CZK {awayTotals.red}
                             </span>
+                            {homeUnassignedGoals > 0 && (
+                              <span className={`px-2 py-1 rounded-full border ${darkMode ? "border-blue-400/20 bg-blue-500/10 text-blue-200" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
+                                {match.home_team_name}: nierozpisane gole {homeUnassignedGoals}
+                              </span>
+                            )}
+                            {awayUnassignedGoals > 0 && (
+                              <span className={`px-2 py-1 rounded-full border ${darkMode ? "border-blue-400/20 bg-blue-500/10 text-blue-200" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
+                                {match.away_team_name}: nierozpisane gole {awayUnassignedGoals}
+                              </span>
+                            )}
                             {mvpPlayerId && (
                               <span className={`px-2 py-1 rounded-full border ${darkMode ? "border-amber-400/20 bg-amber-500/10 text-amber-200" : "border-amber-300 bg-amber-50 text-amber-800"}`}>
                                 MVP wybrany
