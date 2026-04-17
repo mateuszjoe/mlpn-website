@@ -5209,29 +5209,47 @@ export default function App() {
                       {isExpanded && !isDisabled && (
                         <div className="grid gap-2 px-3 pb-3 pt-2">
                           {submenu.map((item) => (
+                            (() => {
+                              const isActiveSubsection =
+                                activeContext === b.ctx && activeSection === item.id;
+                              return (
                             <button
                               key={`${b.ctx}-${item.id}`}
                               type="button"
                               onClick={() => navigateToSection(b.ctx, item.id, true)}
                               className={classNames(
                                 "w-full flex items-center gap-3 rounded-[18px] border px-3 py-3 text-left transition-colors",
-                                activeContext === b.ctx && activeSection === item.id
-                                  ? "border-emerald-400/35 bg-emerald-500/12 text-emerald-300"
-                                  : "border-white/10 bg-white/[0.03] text-white/88 hover:bg-white/[0.06]"
+                                isActiveSubsection
+                                  ? "border-emerald-400/35 bg-emerald-500/12 text-emerald-200"
+                                  : "border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]"
                               )}
                             >
-                              <span className="shrink-0">{item.icon}</span>
-                              <span className="min-w-0 flex-1 font-bold leading-tight">
+                              <span
+                                className={classNames(
+                                  "shrink-0",
+                                  isActiveSubsection ? "text-emerald-200" : "text-white"
+                                )}
+                              >
+                                {item.icon}
+                              </span>
+                              <span
+                                className={classNames(
+                                  "min-w-0 flex-1 font-bold leading-tight",
+                                  isActiveSubsection ? "text-emerald-100" : "text-white"
+                                )}
+                              >
                                 {item.label}
                               </span>
-                              {activeContext === b.ctx && activeSection === item.id ? (
-                                <span className="text-[10px] font-black uppercase tracking-[0.12em] text-emerald-300">
+                              {isActiveSubsection ? (
+                                <span className="text-[10px] font-black uppercase tracking-[0.12em] text-emerald-100">
                                   Teraz
                                 </span>
                               ) : (
-                                <ChevronRight size={16} className="shrink-0 opacity-60" />
+                                <ChevronRight size={16} className="shrink-0 text-white/70" />
                               )}
                             </button>
+                              );
+                            })()
                           ))}
                         </div>
                       )}
