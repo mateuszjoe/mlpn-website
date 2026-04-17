@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/mlpn-website/static/css/main.d608e6f1.css",
-    "main.js": "/mlpn-website/static/js/main.23568eb2.js",
+    "main.css": "/mlpn-website/static/css/main.25e9d8d4.css",
+    "main.js": "/mlpn-website/static/js/main.e8fa07a2.js",
     "index.html": "/mlpn-website/index.html",
-    "main.d608e6f1.css.map": "/mlpn-website/static/css/main.d608e6f1.css.map",
-    "main.23568eb2.js.map": "/mlpn-website/static/js/main.23568eb2.js.map"
+    "main.25e9d8d4.css.map": "/mlpn-website/static/css/main.25e9d8d4.css.map",
+    "main.e8fa07a2.js.map": "/mlpn-website/static/js/main.e8fa07a2.js.map"
   },
   "entrypoints": [
-    "static/css/main.d608e6f1.css",
-    "static/js/main.23568eb2.js"
+    "static/css/main.25e9d8d4.css",
+    "static/js/main.e8fa07a2.js"
   ]
 }
