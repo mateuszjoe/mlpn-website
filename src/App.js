@@ -10837,6 +10837,935 @@ function PageRenderer({ renderPage }) {
   return renderPage();
 }
 
+function HomeDashboardFeatureCard({
+  darkMode,
+  featuredMatchData,
+  featuredMatchPlayed,
+  featuredTone,
+  seasonPulseLabel,
+  featuredStatusLabel,
+  featuredRoundLabel,
+  featuredMetaLine,
+  featuredActionLabel,
+  featuredHomeForm,
+  featuredAwayForm,
+  featuredPositionOf,
+  spotlightLeagues,
+  leagueLabel,
+  goToLeague,
+  openMatch,
+  openTeam,
+  openGallery,
+  openHomeTab,
+}) {
+  const primaryLeagueId = featuredMatchData?.league || spotlightLeagues[0]?.id || null;
+
+  return (
+    <Card darkMode={darkMode} className="mlpn-home-hero self-start p-0 overflow-hidden">
+      <div className="relative overflow-hidden p-4 sm:p-5 lg:p-6">
+        <div className="relative z-[1] space-y-4 lg:space-y-5">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <span className="mlpn-home-badge border-white/20 bg-white/10 text-white">
+                  MLPN Match Center
+                </span>
+                <span className={classNames("mlpn-home-badge", featuredTone.badge)}>
+                  {featuredStatusLabel}
+                </span>
+                <span className="mlpn-home-badge border-white/15 bg-black/20 text-white/75">
+                  {featuredRoundLabel}
+                </span>
+              </div>
+
+              <div>
+                <div className="text-[11px] font-black tracking-[0.2em] uppercase text-white/70">
+                  {seasonPulseLabel}
+                </div>
+                <div className="mt-2 text-3xl sm:text-4xl lg:text-[2.9rem] font-black leading-[0.92] text-white">
+                  {featuredMatchPlayed
+                    ? "Wynik dnia"
+                    : featuredMatchData
+                    ? "Mecz pod lupą"
+                    : "Puls sezonu"}
+                </div>
+                <div className="mt-3 max-w-3xl text-sm sm:text-base text-white/80 leading-relaxed">
+                  {featuredMatchData
+                    ? featuredMatchPlayed
+                      ? `Najświeższy rezultat na górze pulpitu. ${displayTeamName(
+                          featuredMatchData.home
+                        )} i ${displayTeamName(
+                          featuredMatchData.away
+                        )} nadają rytm bieżącej kolejce.`
+                      : `Najbliższe spotkanie ustawiamy w centrum uwagi, żeby kibic od razu widział termin, kontekst tabeli i drogę do szczegółów.`
+                    : `Sezon nie ma teraz wskazanego meczu na pierwszym planie, więc pokazujemy zbiorczy puls rozgrywek i najważniejsze skróty.`}
+                </div>
+              </div>
+            </div>
+
+            <div className="w-full xl:max-w-[330px]">
+              <div className="rounded-[24px] border border-white/12 bg-black/20 p-3 backdrop-blur-sm">
+                <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
+                  Na teraz
+                </div>
+                <div className="mt-1 text-sm font-bold text-white/90">
+                  {featuredMetaLine}
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                  {primaryLeagueId && (
+                    <button
+                      type="button"
+                      onClick={() => goToLeague?.(primaryLeagueId)}
+                      className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-sm font-black text-white transition-colors hover:bg-white/15"
+                    >
+                      {leagueLabel(primaryLeagueId)}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      featuredMatchData ? openMatch?.(featuredMatchData.id) : openHomeTab("news")
+                    }
+                    className="rounded-2xl border border-white/15 bg-white px-3 py-3 text-sm font-black text-slate-900 transition-colors hover:bg-slate-100"
+                  >
+                    {featuredMatchData ? featuredActionLabel : "Aktualności ligi"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[30px] border border-white/12 bg-black/20 p-3 sm:p-4 lg:p-5 backdrop-blur-sm">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px_minmax(0,1fr)] lg:items-center">
+              <button
+                type="button"
+                onClick={() => featuredMatchData?.home && openTeam?.(featuredMatchData.home)}
+                disabled={!featuredMatchData?.home}
+                className="mlpn-home-panel rounded-[24px] border p-4 text-left lg:text-right disabled:cursor-default"
+              >
+                <div className="flex items-center gap-3 lg:flex-row-reverse">
+                  <TeamLogo
+                    team={featuredMatchData?.home}
+                    darkMode={true}
+                    size={72}
+                    framed={false}
+                    imgScale={0.92}
+                    onClick={() => featuredMatchData?.home && openTeam?.(featuredMatchData.home)}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
+                      {featuredMatchData?.home
+                        ? featuredPositionOf(featuredMatchData.home)
+                          ? `#${featuredPositionOf(featuredMatchData.home)} w tabeli`
+                          : "Drużyna gospodarzy"
+                        : "Brak danych"}
+                    </div>
+                    <div className="mt-1 whitespace-normal text-xl sm:text-[1.55rem] font-black text-white leading-[1.05]">
+                      {featuredMatchData?.home
+                        ? displayTeamName(featuredMatchData.home)
+                        : "Czekamy na mecz"}
+                    </div>
+                    <div className="mt-3 flex items-center gap-1 lg:justify-end">
+                      {featuredHomeForm.length ? (
+                        featuredHomeForm.map((value, idx) => (
+                          <FormDot
+                            key={`featured-home-form-${featuredMatchData?.id || "none"}-${idx}`}
+                            v={value}
+                            title={`Forma: ${value}`}
+                            small
+                          />
+                        ))
+                      ) : (
+                        <span className="text-xs text-white/55">Forma pojawi się po rozegraniu spotkań.</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              <div className="rounded-[26px] border border-white/12 bg-white/[0.07] px-4 py-5 text-center shadow-[0_14px_30px_rgba(2,7,17,0.18)]">
+                <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/60">
+                  {featuredMatchData ? featuredMetaLine : "MLPN"}
+                </div>
+                {featuredMatchData ? (
+                  featuredMatchPlayed ? (
+                    <>
+                      <div className="mt-3 flex items-end justify-center gap-2 text-white">
+                        <span className="text-5xl sm:text-6xl font-black leading-none">
+                          {featuredMatchData.homeGoals}
+                        </span>
+                        <span className="pb-1 text-2xl font-black text-white/45">:</span>
+                        <span className="text-5xl sm:text-6xl font-black leading-none">
+                          {featuredMatchData.awayGoals}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-sm font-semibold text-white/72">
+                        Końcowy rezultat
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mt-3 text-4xl sm:text-5xl font-black leading-none text-white">
+                        {featuredMatchData.time || "--:--"}
+                      </div>
+                      <div className="mt-2 text-sm font-semibold text-white/72">
+                        Start spotkania
+                      </div>
+                    </>
+                  )
+                ) : (
+                  <>
+                    <div className="mt-3 text-4xl sm:text-5xl font-black leading-none text-white">
+                      MLPN
+                    </div>
+                    <div className="mt-2 text-sm font-semibold text-white/72">
+                      Czekamy na kolejne wydarzenie
+                    </div>
+                  </>
+                )}
+
+                {featuredMatchData && (
+                  <>
+                    <MediaIcons
+                      darkMode={true}
+                      videoUrl={featuredMatchData.videoUrl}
+                      galleryUrl={featuredMatchData.galleryUrl}
+                      onOpenGallery={
+                        featuredMatchData.hasGallery
+                          ? () => openGallery?.(featuredMatchData)
+                          : undefined
+                      }
+                      galleryCount={featuredMatchData.galleryCount || 0}
+                      className="mt-4 justify-center"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => openMatch?.(featuredMatchData.id)}
+                      className="mt-4 w-full rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-sm font-black text-white transition-colors hover:bg-white/15"
+                    >
+                      {featuredActionLabel}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => featuredMatchData?.away && openTeam?.(featuredMatchData.away)}
+                disabled={!featuredMatchData?.away}
+                className="mlpn-home-panel rounded-[24px] border p-4 text-left disabled:cursor-default"
+              >
+                <div className="flex items-center gap-3">
+                  <TeamLogo
+                    team={featuredMatchData?.away}
+                    darkMode={true}
+                    size={72}
+                    framed={false}
+                    imgScale={0.92}
+                    onClick={() => featuredMatchData?.away && openTeam?.(featuredMatchData.away)}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
+                      {featuredMatchData?.away
+                        ? featuredPositionOf(featuredMatchData.away)
+                          ? `#${featuredPositionOf(featuredMatchData.away)} w tabeli`
+                          : "Drużyna gości"
+                        : "Brak danych"}
+                    </div>
+                    <div className="mt-1 whitespace-normal text-xl sm:text-[1.55rem] font-black text-white leading-[1.05]">
+                      {featuredMatchData?.away
+                        ? displayTeamName(featuredMatchData.away)
+                        : "Czekamy na rywala"}
+                    </div>
+                    <div className="mt-3 flex items-center gap-1">
+                      {featuredAwayForm.length ? (
+                        featuredAwayForm.map((value, idx) => (
+                          <FormDot
+                            key={`featured-away-form-${featuredMatchData?.id || "none"}-${idx}`}
+                            v={value}
+                            title={`Forma: ${value}`}
+                            small
+                          />
+                        ))
+                      ) : (
+                        <span className="text-xs text-white/55">Forma pojawi się po rozegraniu spotkań.</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="rounded-[22px] border border-white/10 bg-black/15 p-4">
+              <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
+                Liga i kolejka
+              </div>
+              <div className="mt-2 text-lg font-black text-white">
+                {featuredMatchData?.league ? leagueLabel(featuredMatchData.league) : "MLPN"}
+              </div>
+              <div className="mt-1 text-sm text-white/70">
+                {featuredRoundLabel}
+                {featuredMatchData?.date ? ` • ${featuredMatchData.date}` : ""}
+              </div>
+            </div>
+
+            <div className="rounded-[22px] border border-white/10 bg-black/15 p-4">
+              <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
+                Puls wydarzenia
+              </div>
+              <div className="mt-2 text-lg font-black text-white">
+                {featuredMatchPlayed
+                  ? `${(featuredMatchData?.homeGoals || 0) + (featuredMatchData?.awayGoals || 0)} goli`
+                  : featuredMatchData?.time || "Wkrótce"}
+              </div>
+              <div className="mt-1 text-sm text-white/70">
+                {featuredMatchPlayed
+                  ? "Spotkanie zamknięte, wynik już zapisany."
+                  : featuredMatchData
+                  ? "Najbliższy termin w aktualnym centrum meczowym."
+                  : "Brak meczu w wyróżnieniu."}
+              </div>
+            </div>
+
+            <div className="rounded-[22px] border border-white/10 bg-black/15 p-4">
+              <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
+                Kontekst sezonu
+              </div>
+              <div className="mt-2 text-lg font-black text-white">
+                {spotlightLeagues[0]?.leader
+                  ? displayTeamName(spotlightLeagues[0].leader.team)
+                  : "Lider w grze"}
+              </div>
+              <div className="mt-1 text-sm text-white/70">
+                {spotlightLeagues[0]?.leader
+                  ? `${leagueLabel(spotlightLeagues[0].id)} prowadzi z bilansem ${spotlightLeagues[0].leader.points || 0} pkt.`
+                  : seasonPulseLabel}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function HomeDashboardSeasonPulseCard({
+  darkMode,
+  quickStats,
+  spotlightLeagues,
+  leagueLabel,
+  goToLeague,
+}) {
+  return (
+    <Card darkMode={darkMode} className="p-0 overflow-hidden">
+      <div
+        className={classNames(
+          "px-4 pt-4 pb-2 border-b",
+          darkMode ? "border-white/10" : "border-gray-200"
+        )}
+      >
+        <div className="text-lg font-extrabold">Puls sezonu</div>
+        <div
+          className={classNames(
+            "text-xs",
+            darkMode ? "text-gray-400" : "text-gray-600"
+          )}
+        >
+          Szybki obraz rozgrywek i lig pod lupą
+        </div>
+      </div>
+
+      <div className="p-3 space-y-3">
+        <div className="grid grid-cols-2 gap-2">
+          {quickStats.map((item) => (
+            <div
+              key={`pulse-${item.label}`}
+              className={classNames(
+                "rounded-2xl border p-3",
+                darkMode
+                  ? "bg-black/10 border-white/10"
+                  : "bg-gray-50 border-gray-200"
+              )}
+            >
+              <div
+                className={classNames(
+                  "text-[10px] uppercase tracking-[0.18em] font-black",
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                )}
+              >
+                {item.label}
+              </div>
+              <div className="mt-2 text-2xl font-black leading-none">
+                {item.value}
+              </div>
+              <div
+                className={classNames(
+                  "mt-1 text-xs",
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                )}
+              >
+                {item.sub}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-2">
+          {spotlightLeagues.map((lg) => (
+            <button
+              key={`spotlight-${lg.id}`}
+              type="button"
+              onClick={() => goToLeague?.(lg.id)}
+              className={classNames(
+                "w-full rounded-2xl border p-3 text-left transition-colors",
+                darkMode
+                  ? "bg-black/10 border-white/10 hover:bg-white/5"
+                  : "bg-white border-gray-200 hover:bg-gray-50"
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div
+                    className={classNames(
+                      "text-[10px] uppercase tracking-[0.18em] font-black",
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    )}
+                  >
+                    {leagueLabel(lg.id)}
+                  </div>
+                  <div className="mt-1 text-sm font-black truncate">
+                    {lg.leader ? displayTeamName(lg.leader.team) : "Czekamy na lidera"}
+                  </div>
+                  <div
+                    className={classNames(
+                      "mt-1 text-xs",
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    )}
+                  >
+                    {lg.nextMatch
+                      ? `Następny mecz: ${displayTeamName(lg.nextMatch.home)} vs ${displayTeamName(
+                          lg.nextMatch.away
+                        )}`
+                      : "Brak kolejnego meczu w terminarzu"}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="text-lg font-black leading-none">
+                    {lg.playedPct}%
+                  </div>
+                  <div
+                    className={classNames(
+                      "text-[10px] uppercase tracking-[0.15em]",
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    )}
+                  >
+                    postępu
+                  </div>
+                </div>
+              </div>
+              <div
+                className={classNames(
+                  "mt-3 h-2 overflow-hidden rounded-full",
+                  darkMode ? "bg-white/8" : "bg-gray-200"
+                )}
+              >
+                <div
+                  className={classNames(
+                    "h-full rounded-full",
+                    lg.id === "1st"
+                      ? "bg-rose-400"
+                      : lg.id === "2nd"
+                      ? "bg-sky-400"
+                      : "bg-emerald-400"
+                  )}
+                  style={{ width: `${Math.max(8, lg.playedPct || 0)}%` }}
+                />
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function HomeDashboardStoryPulseCard({
+  darkMode,
+  featuredStoryButtons,
+  focusHeroSlide,
+  isHeroKindActive,
+  activeHeroSlide,
+  activeHeroKind,
+  latestPoll,
+  latestPollOptions,
+  heroPollCounts,
+  heroPollTotalVotes,
+  heroPollVoteIdx,
+  heroPollShowResults,
+  heroPollIsArchived,
+  voteInHeroPoll,
+  heroSlides,
+  heroSlideIndex,
+  setHeroSlideIndex,
+  prevHeroSlide,
+  nextHeroSlide,
+}) {
+  return (
+    <Card darkMode={darkMode} className="p-0 overflow-hidden">
+      <div
+        className={classNames(
+          "px-4 pt-4 pb-2 border-b",
+          darkMode ? "border-white/10" : "border-gray-200"
+        )}
+      >
+        <div className="text-lg font-extrabold">Puls tygodnia</div>
+        <div
+          className={classNames(
+            "text-xs",
+            darkMode ? "text-gray-400" : "text-gray-600"
+          )}
+        >
+          Aktualności, ankiety i szybkie wejście w najważniejszy temat
+        </div>
+      </div>
+
+      <div className="p-3 space-y-3">
+        <div className="flex flex-wrap gap-2">
+          {featuredStoryButtons.map((b) => (
+            <button
+              key={`featured-story-${b.kind}`}
+              type="button"
+              onClick={() => focusHeroSlide(b.kind)}
+              className={classNames(
+                "rounded-xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition-colors",
+                isHeroKindActive(b.kind)
+                  ? darkMode
+                    ? "bg-white text-slate-900 border-white"
+                    : "bg-slate-900 text-white border-slate-900"
+                  : darkMode
+                  ? "bg-white/5 text-white border-white/10 hover:bg-white/10"
+                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+              )}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+
+        {activeHeroSlide ? (
+          <div
+            className={classNames(
+              "rounded-[22px] border p-4",
+              darkMode
+                ? "bg-black/10 border-white/10"
+                : "bg-white border-gray-200"
+            )}
+          >
+            <div
+              className={classNames(
+                "text-[10px] uppercase tracking-[0.18em] font-black",
+                darkMode ? "text-sky-200" : "text-sky-700"
+              )}
+            >
+              {activeHeroSlide.kicker}
+            </div>
+            <div className="mt-2 text-xl font-black leading-tight">
+              {activeHeroSlide.title}
+            </div>
+
+            {activeHeroKind !== "poll" && (
+              <div
+                className={classNames(
+                  "mt-2 text-sm leading-relaxed",
+                  darkMode ? "text-gray-300" : "text-gray-700"
+                )}
+              >
+                {activeHeroSlide.body}
+              </div>
+            )}
+
+            {activeHeroSlide.meta && (
+              <div
+                className={classNames(
+                  "mt-2 text-xs",
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                )}
+              >
+                {activeHeroSlide.meta}
+              </div>
+            )}
+
+            {activeHeroKind === "poll" && latestPoll && latestPollOptions.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {latestPollOptions.slice(0, 4).map((opt, idx) => {
+                  const count = heroPollCounts[idx] || 0;
+                  const pct = heroPollTotalVotes
+                    ? Math.round((count / heroPollTotalVotes) * 100)
+                    : 0;
+                  const chosen = heroPollVoteIdx === idx;
+                  return (
+                    <button
+                      key={`featured-poll-${idx}`}
+                      type="button"
+                      onClick={() => voteInHeroPoll(idx)}
+                      disabled={heroPollIsArchived}
+                      className={classNames(
+                        "relative w-full overflow-hidden rounded-2xl border px-3 py-3 text-left transition-colors",
+                        chosen
+                          ? "border-emerald-300/60 bg-emerald-400/15"
+                          : darkMode
+                          ? "border-white/10 bg-white/5 hover:bg-white/10"
+                          : "border-gray-200 bg-gray-50 hover:bg-gray-100",
+                        heroPollIsArchived && "cursor-not-allowed"
+                      )}
+                    >
+                      {heroPollShowResults && (
+                        <div
+                          className={classNames(
+                            "absolute inset-y-0 left-0",
+                            darkMode ? "bg-white/10" : "bg-sky-100"
+                          )}
+                          style={{ width: `${pct}%` }}
+                        />
+                      )}
+                      <div className="relative flex items-center justify-between gap-3">
+                        <span className="text-sm font-semibold">{opt}</span>
+                        {heroPollShowResults && (
+                          <span className="text-xs font-black">{pct}%</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeHeroSlide.onClick && activeHeroKind !== "poll" && (
+              <button
+                type="button"
+                onClick={activeHeroSlide.onClick}
+                className={classNames(
+                  "mt-4 w-full rounded-2xl border px-4 py-3 text-sm font-black transition-colors",
+                  darkMode
+                    ? "border-white/15 bg-white/5 text-white hover:bg-white/10"
+                    : "border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100"
+                )}
+              >
+                {activeHeroSlide.ctaLabel || "Otwórz"}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div
+            className={classNames(
+              "rounded-[22px] border p-4 text-sm",
+              darkMode
+                ? "bg-black/10 border-white/10 text-gray-400"
+                : "bg-white border-gray-200 text-gray-600"
+            )}
+          >
+            Brak aktywnego tematu tygodnia.
+          </div>
+        )}
+
+        {heroSlides.length > 1 && (
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={prevHeroSlide}
+              className={classNames(
+                "inline-flex h-10 w-10 items-center justify-center rounded-full border font-black transition-colors",
+                darkMode
+                  ? "border-white/10 bg-white/5 hover:bg-white/10"
+                  : "border-gray-200 bg-white hover:bg-gray-50"
+              )}
+              title="Poprzedni slajd"
+            >
+              ‹
+            </button>
+            <div className="flex items-center justify-center gap-2">
+              {heroSlides.map((slide, idx) => (
+                <button
+                  key={`featured-slide-dot-${slide.key}`}
+                  type="button"
+                  onClick={() => setHeroSlideIndex(idx)}
+                  className={classNames(
+                    "h-2 rounded-full transition-all",
+                    idx === heroSlideIndex
+                      ? "w-8 bg-sky-400"
+                      : darkMode
+                      ? "w-2 bg-white/30 hover:bg-white/45"
+                      : "w-2 bg-gray-300 hover:bg-gray-400"
+                  )}
+                  title={slide.kicker}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={nextHeroSlide}
+              className={classNames(
+                "inline-flex h-10 w-10 items-center justify-center rounded-full border font-black transition-colors",
+                darkMode
+                  ? "border-white/10 bg-white/5 hover:bg-white/10"
+                  : "border-gray-200 bg-white hover:bg-gray-50"
+              )}
+              title="Następny slajd"
+            >
+              ›
+            </button>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function HomeDashboardTyperLeadersCard({
+  darkMode,
+  heroTyperMatches,
+  heroTyperAnsweredCount,
+  heroTyperProgressPct,
+  heroTyperCurrentMatch,
+  heroTyperPicks,
+  selectHeroTyperPickInstant,
+  openTeam,
+  heroTyperAllPicked,
+  setHeroTyperSubmitted,
+  heroTyperSubmitted,
+  globalLeaders,
+  openPlayer,
+  leagueLabel,
+}) {
+  return (
+    <Card darkMode={darkMode} className="p-0 overflow-hidden">
+      <div
+        className={classNames(
+          "px-4 pt-4 pb-2 border-b",
+          darkMode ? "border-white/10" : "border-gray-200"
+        )}
+      >
+        <div className="text-lg font-extrabold">Typowanie i liderzy</div>
+        <div
+          className={classNames(
+            "text-xs",
+            darkMode ? "text-gray-400" : "text-gray-600"
+          )}
+        >
+          Kompaktowy kupon tygodnia i najgorętsze nazwiska sezonu
+        </div>
+      </div>
+
+      <div className="p-3 space-y-3">
+        <div
+          className={classNames(
+            "rounded-[22px] border p-4",
+            darkMode
+              ? "bg-black/10 border-white/10"
+              : "bg-white border-gray-200"
+          )}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div
+                className={classNames(
+                  "text-[10px] uppercase tracking-[0.18em] font-black",
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                )}
+              >
+                Typowanie tygodnia
+              </div>
+              <div className="mt-1 text-base font-black">
+                {heroTyperMatches.length
+                  ? `${heroTyperAnsweredCount}/${heroTyperMatches.length} typów`
+                  : "Brak meczów do typowania"}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-black leading-none">
+                {heroTyperProgressPct}%
+              </div>
+              <div
+                className={classNames(
+                  "text-[10px] uppercase tracking-[0.15em]",
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                )}
+              >
+                komplet
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={classNames(
+              "mt-3 h-2 overflow-hidden rounded-full",
+              darkMode ? "bg-white/8" : "bg-gray-200"
+            )}
+          >
+            <div
+              className="h-full rounded-full bg-emerald-400"
+              style={{ width: `${Math.max(heroTyperMatches.length ? 8 : 0, heroTyperProgressPct)}%` }}
+            />
+          </div>
+
+          {heroTyperCurrentMatch ? (
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => openTeam?.(heroTyperCurrentMatch.home)}
+                  className="min-w-0 text-left text-sm font-black hover:underline"
+                >
+                  {displayTeamName(heroTyperCurrentMatch.home)}
+                </button>
+                <span
+                  className={classNames(
+                    "text-[10px] uppercase tracking-[0.15em]",
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  )}
+                >
+                  vs
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openTeam?.(heroTyperCurrentMatch.away)}
+                  className="min-w-0 text-right text-sm font-black hover:underline"
+                >
+                  {displayTeamName(heroTyperCurrentMatch.away)}
+                </button>
+              </div>
+
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {["1", "X", "2"].map((pick) => (
+                  <button
+                    key={`featured-typer-${heroTyperCurrentMatch.id}-${pick}`}
+                    type="button"
+                    onClick={() => selectHeroTyperPickInstant(heroTyperCurrentMatch.id, pick)}
+                    className={classNames(
+                      "rounded-xl border py-2.5 text-sm font-black transition-colors",
+                      heroTyperPicks[heroTyperCurrentMatch.id] === pick
+                        ? "bg-emerald-400 text-black border-emerald-300"
+                        : darkMode
+                        ? "bg-white/5 text-white border-white/10 hover:bg-white/10"
+                        : "bg-gray-50 text-gray-800 border-gray-200 hover:bg-gray-100"
+                    )}
+                  >
+                    {pick}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div
+              className={classNames(
+                "mt-4 rounded-2xl border p-3 text-sm",
+                darkMode
+                  ? "bg-white/5 border-white/10 text-gray-400"
+                  : "bg-gray-50 border-gray-200 text-gray-600"
+              )}
+            >
+              {heroTyperMatches.length
+                ? "Komplet typów zaznaczony. Możesz jeszcze wrócić i zmienić wybory."
+                : "Typowanie pojawi się, gdy liga doda mecze do kuponu."}
+            </div>
+          )}
+
+          <button
+            type="button"
+            disabled={!heroTyperAllPicked}
+            onClick={() => setHeroTyperSubmitted(true)}
+            className={classNames(
+              "mt-4 w-full rounded-2xl border px-4 py-3 text-sm font-black transition-colors",
+              heroTyperAllPicked
+                ? "bg-emerald-400 text-black border-emerald-300 hover:brightness-110"
+                : darkMode
+                ? "bg-white/5 text-white/50 border-white/10 cursor-not-allowed"
+                : "bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed"
+            )}
+          >
+            {heroTyperSubmitted ? "Typy zapisane lokalnie" : "Zapisz typy tygodnia"}
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          {globalLeaders.length === 0 ? (
+            <div
+              className={classNames(
+                "rounded-[22px] border p-4 text-sm",
+                darkMode
+                  ? "bg-black/10 border-white/10 text-gray-400"
+                  : "bg-white border-gray-200 text-gray-600"
+              )}
+            >
+              Brak danych liderów.
+            </div>
+          ) : (
+            globalLeaders.map((leader) => (
+              <div
+                key={`featured-leader-${leader.key}`}
+                className={classNames(
+                  "rounded-2xl border p-3",
+                  darkMode
+                    ? "bg-black/10 border-white/10"
+                    : "bg-white border-gray-200"
+                )}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div
+                      className={classNames(
+                        "text-[10px] uppercase tracking-[0.18em] font-black",
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      )}
+                    >
+                      {leader.title}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        leader.row?.playerId && openPlayer?.(leader.row.playerId)
+                      }
+                      className="mt-1 block max-w-full truncate text-left text-sm font-black hover:underline"
+                    >
+                      {leader.row?.name || "-"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => leader.row?.team && openTeam?.(leader.row.team)}
+                      className={classNames(
+                        "mt-1 block max-w-full truncate text-left text-xs hover:underline",
+                        darkMode ? "text-gray-300" : "text-gray-700"
+                      )}
+                    >
+                      {leader.row?.team ? displayTeamName(leader.row.team) : "-"}
+                      {leader.row?.league ? ` • ${leagueLabel(leader.row.league)}` : ""}
+                    </button>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="text-3xl font-black leading-none">
+                      {leader.value}
+                    </div>
+                    <div
+                      className={classNames(
+                        "text-[10px] uppercase tracking-[0.15em]",
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      )}
+                    >
+                      {leader.suffix}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function HomeDashboard({
   darkMode,
   fixtures = [],
@@ -10882,6 +11811,7 @@ function HomeDashboard({
     ? typerMatches.filter((item) => item && typeof item === "object")
     : [];
   const tableByLeague = safeStats.tableByLeague || {};
+  const teamStatsByTeam = safeStats.teamStats || {};
   const topScorers = Array.isArray(safeStats.topScorers) ? safeStats.topScorers : [];
   const topAssists = Array.isArray(safeStats.topAssists) ? safeStats.topAssists : [];
   const topYellow = Array.isArray(safeStats.topYellow) ? safeStats.topYellow : [];
@@ -11138,6 +12068,9 @@ function HomeDashboard({
   const heroTyperProgressStep = heroTyperAllPicked
     ? heroTyperMatches.length
     : Math.min(heroTyperAnsweredCount + 1, heroTyperMatches.length || 1);
+  const heroTyperProgressPct = heroTyperMatches.length
+    ? Math.round((heroTyperAnsweredCount / heroTyperMatches.length) * 100)
+    : 0;
   const [showHeroFloatingNav, setShowHeroFloatingNav] = useState(false);
   const [heroTyperAnimatingPick, setHeroTyperAnimatingPick] = useState(null);
   const [heroTyperCardPhase, setHeroTyperCardPhase] = useState("idle");
@@ -11209,6 +12142,66 @@ function HomeDashboard({
     };
   }, [heroSlides.length]);
 
+  const featuredMatchData = useMemo(
+    () => heroUpcoming || heroRecent || upcoming[0] || lastMatches[0] || null,
+    [heroUpcoming, heroRecent, upcoming, lastMatches]
+  );
+  const featuredMatchPlayed =
+    featuredMatchData?.homeGoals != null && featuredMatchData?.awayGoals != null;
+  const featuredLeagueTable = featuredMatchData?.league
+    ? tableByLeague[featuredMatchData.league] || []
+    : [];
+  const featuredPositionOf = (team) =>
+    featuredLeagueTable.find((row) => row.team === team)?.pos || null;
+  const featuredFormOf = (team) =>
+    Array.isArray(teamStatsByTeam?.[team]?.form5)
+      ? teamStatsByTeam[team].form5.slice(0, 5)
+      : [];
+  const featuredHomeForm = featuredMatchData?.home
+    ? featuredFormOf(featuredMatchData.home)
+    : [];
+  const featuredAwayForm = featuredMatchData?.away
+    ? featuredFormOf(featuredMatchData.away)
+    : [];
+  const spotlightLeagues = leagueOverview.slice(0, 3);
+  const featuredTone =
+    featuredMatchData?.league === "1st"
+      ? {
+          badge: "border-rose-300/35 bg-rose-400/12 text-rose-100",
+          pill: "text-rose-100 bg-rose-400/14 border-rose-300/30",
+          line: "bg-rose-300/80",
+        }
+      : featuredMatchData?.league === "2nd"
+      ? {
+          badge: "border-sky-300/35 bg-sky-400/12 text-sky-100",
+          pill: "text-sky-100 bg-sky-400/14 border-sky-300/30",
+          line: "bg-sky-300/80",
+        }
+      : {
+          badge: "border-emerald-300/35 bg-emerald-400/12 text-emerald-100",
+          pill: "text-emerald-100 bg-emerald-400/14 border-emerald-300/30",
+          line: "bg-emerald-300/80",
+        };
+  const seasonPulseLabel = isCompleted
+    ? `Sezon ${currentSeason} został zamknięty`
+    : isActiveSeason
+    ? `Gramy kolejkę ${currentRound}`
+    : `Trwają przygotowania do sezonu ${currentSeason}`;
+  const featuredStatusLabel = featuredMatchPlayed ? "Po meczu" : "Najbliższy gwizdek";
+  const featuredRoundLabel =
+    featuredMatchData?.round != null ? `Kolejka ${featuredMatchData.round}` : "MLPN";
+  const featuredMetaLine = featuredMatchData
+    ? featuredMatchPlayed
+      ? `${featuredMatchData.date || "--"} • ${featuredRoundLabel} • ${leagueLabel(
+          featuredMatchData.league
+        )}`
+      : `${featuredMatchData.date || "--"} • ${featuredMatchData.time || "--:--"} • ${featuredRoundLabel}`
+    : seasonPulseLabel;
+  const featuredActionLabel = featuredMatchPlayed
+    ? "Pełen raport meczu"
+    : "Szczegóły spotkania";
+  const featuredStoryButtons = heroSlideButtonDefs.filter((b) => hasHeroSlideKind(b.kind));
+
   return (
     <div className="space-y-4">
       <HomeSectionErrorBoundary
@@ -11216,6 +12209,78 @@ function HomeDashboard({
         resetKey={`hero:${currentSeason}:${currentRound}:${matches.length}:${fixtures.length}:${latestNews.length}:${latestPoll?.id || "no-poll"}:${heroTyperMatches.length}`}
         sectionTitle="Pulpit główny"
       >
+        <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1.45fr)_400px]">
+          <HomeDashboardFeatureCard
+            darkMode={darkMode}
+            featuredMatchData={featuredMatchData}
+            featuredMatchPlayed={featuredMatchPlayed}
+            featuredTone={featuredTone}
+            seasonPulseLabel={seasonPulseLabel}
+            featuredStatusLabel={featuredStatusLabel}
+            featuredRoundLabel={featuredRoundLabel}
+            featuredMetaLine={featuredMetaLine}
+            featuredActionLabel={featuredActionLabel}
+            featuredHomeForm={featuredHomeForm}
+            featuredAwayForm={featuredAwayForm}
+            featuredPositionOf={featuredPositionOf}
+            spotlightLeagues={spotlightLeagues}
+            leagueLabel={leagueLabel}
+            goToLeague={goToLeague}
+            openMatch={openMatch}
+            openTeam={openTeam}
+            openGallery={openGallery}
+            openHomeTab={openHomeTab}
+          />
+
+          <div className="grid gap-3">
+            <HomeDashboardSeasonPulseCard
+              darkMode={darkMode}
+              quickStats={quickStats}
+              spotlightLeagues={spotlightLeagues}
+              leagueLabel={leagueLabel}
+              goToLeague={goToLeague}
+            />
+            <HomeDashboardStoryPulseCard
+              darkMode={darkMode}
+              featuredStoryButtons={featuredStoryButtons}
+              focusHeroSlide={focusHeroSlide}
+              isHeroKindActive={isHeroKindActive}
+              activeHeroSlide={activeHeroSlide}
+              activeHeroKind={activeHeroKind}
+              latestPoll={latestPoll}
+              latestPollOptions={latestPollOptions}
+              heroPollCounts={heroPollCounts}
+              heroPollTotalVotes={heroPollTotalVotes}
+              heroPollVoteIdx={heroPollVoteIdx}
+              heroPollShowResults={heroPollShowResults}
+              heroPollIsArchived={heroPollIsArchived}
+              voteInHeroPoll={voteInHeroPoll}
+              heroSlides={heroSlides}
+              heroSlideIndex={heroSlideIndex}
+              setHeroSlideIndex={setHeroSlideIndex}
+              prevHeroSlide={prevHeroSlide}
+              nextHeroSlide={nextHeroSlide}
+            />
+            <HomeDashboardTyperLeadersCard
+              darkMode={darkMode}
+              heroTyperMatches={heroTyperMatches}
+              heroTyperAnsweredCount={heroTyperAnsweredCount}
+              heroTyperProgressPct={heroTyperProgressPct}
+              heroTyperCurrentMatch={heroTyperCurrentMatch}
+              heroTyperPicks={heroTyperPicks}
+              selectHeroTyperPickInstant={selectHeroTyperPickInstant}
+              openTeam={openTeam}
+              heroTyperAllPicked={heroTyperAllPicked}
+              setHeroTyperSubmitted={setHeroTyperSubmitted}
+              heroTyperSubmitted={heroTyperSubmitted}
+              globalLeaders={globalLeaders}
+              openPlayer={openPlayer}
+              leagueLabel={leagueLabel}
+            />
+          </div>
+        </div>
+
+        <div className="hidden">
       <div className="grid xl:grid-cols-[1.35fr_0.95fr] gap-3">
         <Card darkMode={darkMode} className="mlpn-home-hero p-0 overflow-hidden">
           <div ref={heroCardRef} className="relative p-4 lg:p-6 min-h-[340px] h-auto lg:min-h-[540px] lg:h-[600px]">
@@ -11857,6 +12922,7 @@ function HomeDashboard({
           </Card>
         </div>
       </div>
+        </div>
       </HomeSectionErrorBoundary>
 
       <div className="hidden">
