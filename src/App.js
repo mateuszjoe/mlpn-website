@@ -641,6 +641,47 @@ function displayTeamName(team) {
   });
 }
 
+const TABULAR_NUMBER_STYLE = { fontVariantNumeric: "tabular-nums" };
+
+function getCompactPlayerName(name) {
+  const safeName =
+    typeof name === "string" && name.trim()
+      ? name.trim().replace(/\s+/g, " ")
+      : "Zawodnik";
+  const parts = safeName.split(" ").filter(Boolean);
+  if (parts.length < 2) return safeName;
+
+  const firstName = parts[0];
+  const lastName = parts[parts.length - 1];
+  const initial = Array.from(firstName)[0] || firstName.charAt(0);
+  return `${initial.toUpperCase()}. ${lastName}`;
+}
+
+function ResponsivePlayerName({ name, className = "" }) {
+  const fullName =
+    typeof name === "string" && name.trim()
+      ? name.trim().replace(/\s+/g, " ")
+      : "Zawodnik";
+  const compactName = getCompactPlayerName(fullName);
+  const shouldSwapByBreakpoint = compactName !== fullName;
+
+  return (
+    <span
+      className={classNames("block min-w-0", className)}
+      title={shouldSwapByBreakpoint ? fullName : undefined}
+    >
+      {shouldSwapByBreakpoint ? (
+        <>
+          <span className="block truncate sm:hidden">{compactName}</span>
+          <span className="hidden truncate sm:block">{fullName}</span>
+        </>
+      ) : (
+        <span className="block truncate">{fullName}</span>
+      )}
+    </span>
+  );
+}
+
 function getStandingsTeamLabel(team, withdrawn = false) {
   const safeLabel =
     displayTeamName(team) || (typeof team === "string" ? team : "Drużyna");
@@ -6948,7 +6989,7 @@ function LeagueTablePage({
       setSortOrder(sortOrder === "desc" ? "asc" : "desc");
     } else {
       setSortBy(column);
-      setSortOrder("desc");
+      setSortOrder(column === "team" ? "asc" : "desc");
     }
   };
 
@@ -8084,7 +8125,7 @@ function HomePlayersDatabasePage({ darkMode, openPlayer }) {
           <div className="space-y-2">
             <div
               className={classNames(
-                "hidden md:grid grid-cols-[1.2fr_120px_90px_90px_90px_90px_90px] gap-2 px-2 py-2 text-xs font-bold tracking-wide",
+                "hidden md:grid grid-cols-[minmax(0,1.25fr)_110px_78px_68px_68px_68px_84px] gap-3 px-3 py-2 text-xs font-bold tracking-wide",
                 darkMode ? "text-gray-300" : "text-gray-600"
               )}
             >
@@ -8108,37 +8149,122 @@ function HomePlayersDatabasePage({ darkMode, openPlayer }) {
                     : "border-gray-200 hover:bg-gray-50"
                 )}
               >
-                <div className="md:hidden space-y-1">
-                  <div className="font-extrabold">{p.name}</div>
-                  <div className={classNames("text-sm", darkMode ? "text-gray-300" : "text-gray-700")}>
-                    {p.currentTeam || "Bez przypisanej drużyny"}{p.birthYear ? ` • ${p.birthYear}` : ""}
+                <div className="md:hidden space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-extrabold text-[17px] leading-tight">
+                        <ResponsivePlayerName name={p.name} />
+                      </div>
+                      <div
+                        className={classNames(
+                          "mt-1 text-sm",
+                          darkMode ? "text-gray-300" : "text-gray-700"
+                        )}
+                      >
+                        {displayTeamName(p.currentTeam) || "Bez przypisanej drużyny"}
+                        {p.birthYear ? ` • ${p.birthYear}` : ""}
+                      </div>
+                      <div
+                        className={classNames(
+                          "text-xs",
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        )}
+                      >
+                        {p.position || "Brak pozycji"}
+                        {p.currentLeague ? ` • ${p.currentLeague}` : ""}
+                      </div>
+                    </div>
+                    {!p.isActive ? (
+                      <div className="shrink-0 rounded-full border border-rose-400/30 bg-rose-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-rose-400">
+                        Nieaktywny
+                      </div>
+                    ) : null}
                   </div>
-                  <div className={classNames("text-xs", darkMode ? "text-gray-400" : "text-gray-600")}>
-                    {p.position || "Brak pozycji"}{p.currentLeague ? ` • ${p.currentLeague}` : ""}
-                  </div>
-                  <div className={classNames("text-xs", darkMode ? "text-gray-400" : "text-gray-600")}>
-                    M {p.totals.appearances} • G {p.totals.goals} • A {p.totals.assists} •
-                    Z {p.totals.yellowCards} / C {p.totals.redCards}
-                    {!p.isActive ? " • Nieaktywny" : ""}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: "Mecze", value: p.totals.appearances },
+                      { label: "Gole", value: p.totals.goals },
+                      { label: "Asysty", value: p.totals.assists },
+                      {
+                        label: "Kartki",
+                        value: `${p.totals.yellowCards}/${p.totals.redCards}`,
+                      },
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        className={classNames(
+                          "rounded-2xl border px-3 py-2.5",
+                          darkMode
+                            ? "border-white/10 bg-white/5"
+                            : "border-gray-200 bg-gray-50"
+                        )}
+                      >
+                        <div
+                          className={classNames(
+                            "text-[10px] font-bold uppercase tracking-[0.16em]",
+                            darkMode ? "text-gray-400" : "text-gray-500"
+                          )}
+                        >
+                          {item.label}
+                        </div>
+                        <div
+                          className="mt-1 text-lg font-black"
+                          style={TABULAR_NUMBER_STYLE}
+                        >
+                          {item.value}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="hidden md:grid grid-cols-[1.2fr_120px_90px_90px_90px_90px_90px] gap-2 items-center">
+                <div className="hidden md:grid grid-cols-[minmax(0,1.25fr)_110px_78px_68px_68px_68px_84px] gap-3 items-center">
                   <div className="min-w-0">
-                    <div className="font-extrabold truncate">{p.name}</div>
-                    <div className={classNames("text-xs truncate", darkMode ? "text-gray-400" : "text-gray-600")}>
-                      {p.currentTeam || "Bez przypisanej drużyny"}
+                    <div className="font-extrabold text-[15px] leading-tight">
+                      <ResponsivePlayerName name={p.name} />
+                    </div>
+                    <div
+                      className={classNames(
+                        "text-xs truncate",
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      )}
+                    >
+                      {displayTeamName(p.currentTeam) || "Bez przypisanej drużyny"}
                       {p.currentLeague ? ` • ${p.currentLeague}` : ""}
                       {p.city ? ` • ${p.city}` : ""}
                       {!p.isActive ? " • Nieaktywny" : ""}
                     </div>
                   </div>
                   <div className="font-semibold truncate">{p.position || "—"}</div>
-                  <div className="text-right font-semibold">{p.birthYear || "—"}</div>
-                  <div className="text-right font-extrabold">{p.totals.appearances}</div>
-                  <div className="text-right font-extrabold">{p.totals.goals}</div>
-                  <div className="text-right font-extrabold">{p.totals.assists}</div>
-                  <div className="text-right font-semibold">
+                  <div
+                    className="text-right font-semibold"
+                    style={TABULAR_NUMBER_STYLE}
+                  >
+                    {p.birthYear || "—"}
+                  </div>
+                  <div
+                    className="text-right font-extrabold"
+                    style={TABULAR_NUMBER_STYLE}
+                  >
+                    {p.totals.appearances}
+                  </div>
+                  <div
+                    className="text-right font-extrabold"
+                    style={TABULAR_NUMBER_STYLE}
+                  >
+                    {p.totals.goals}
+                  </div>
+                  <div
+                    className="text-right font-extrabold"
+                    style={TABULAR_NUMBER_STYLE}
+                  >
+                    {p.totals.assists}
+                  </div>
+                  <div
+                    className="text-right font-semibold"
+                    style={TABULAR_NUMBER_STYLE}
+                  >
                     {p.totals.yellowCards}/{p.totals.redCards}
                   </div>
                 </div>
@@ -8265,7 +8391,7 @@ function TeamStatsTable({ darkMode, teamRows, openTeam }) {
       <button
         onClick={() => handleSort(column)}
         className={classNames(
-          "hover:underline flex items-center gap-1",
+          "w-full min-w-0 hover:underline flex items-center gap-1",
           align,
           justifyClass
         )}
@@ -8278,68 +8404,245 @@ function TeamStatsTable({ darkMode, teamRows, openTeam }) {
     );
   };
 
+  const mobileSortOptions = [
+    { column: "pts", label: "Pkt" },
+    { column: "played", label: "M" },
+    { column: "gf", label: "BZ" },
+    { column: "ga", label: "BS" },
+    { column: "streakUnbeaten", label: "Bez por." },
+    { column: "streakWins", label: "Seria W" },
+    { column: "streakWinless", label: "Bez wygr." },
+    { column: "team", label: "A-Z" },
+  ];
+
   return (
     <>
-      <div
-        className={classNames(
-          "px-2 py-2 text-xs font-bold tracking-wide",
-          darkMode ? "text-gray-300" : "text-gray-600"
-        )}
-      >
-        <div className="grid grid-cols-[1fr_90px_90px_90px_90px_120px_120px_120px] gap-2">
-          <SortButton column="team" label="Drużyna" />
-          <SortButton column="gf" label="BZ" align="text-right" />
-          <SortButton column="ga" label="BS" align="text-right" />
-          <SortButton
-            column="streakUnbeaten"
-            label="Bez por."
-            align="text-right"
-          />
-          <SortButton column="streakWins" label="Seria W" align="text-right" />
-          <SortButton
-            column="streakWinless"
-            label="Bez wygr."
-            align="text-right"
-          />
-          <SortButton column="pts" label="Pkt" align="text-right" />
-          <SortButton column="played" label="M" align="text-right" />
-        </div>
+      <div className="mb-4 flex flex-wrap gap-2 md:hidden">
+        {mobileSortOptions.map((option) => (
+          <button
+            key={option.column}
+            onClick={() => handleSort(option.column)}
+            className={classNames(
+              "rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em]",
+              sortBy === option.column
+                ? darkMode
+                  ? "border-cyan-300/40 bg-cyan-400/15 text-cyan-100"
+                  : "border-sky-300 bg-sky-50 text-sky-700"
+                : darkMode
+                ? "border-white/10 bg-white/5 text-gray-200"
+                : "border-gray-200 bg-gray-50 text-gray-700"
+            )}
+          >
+            {option.label}
+            {sortBy === option.column ? ` ${sortOrder === "desc" ? "↓" : "↑"}` : ""}
+          </button>
+        ))}
       </div>
 
-      {sortedRows.map((t) => (
-        <div
-          key={t.team}
-          className={classNames(
-            "px-2 py-3 border-t",
-            darkMode ? "border-white/10" : "border-gray-100"
-          )}
-        >
-          <div className="grid grid-cols-[1fr_90px_90px_90px_90px_120px_120px_120px] gap-2 items-center">
-            <div className="flex items-center gap-3">
-              <TeamLogo
-                team={t.team}
-                darkMode={darkMode}
-                size={40}
-                onClick={() => openTeam(t.team)}
-              />
-              <div className="font-extrabold">
-                <TeamLink
+      <div className="space-y-3 md:hidden">
+        {sortedRows.map((t) => {
+          const metricCards = [
+            { label: "BZ", value: t.gf },
+            { label: "BS", value: t.ga },
+            { label: "Bez por.", value: t.streakUnbeaten },
+            { label: "Seria W", value: t.streakWins },
+            { label: "Bez wygr.", value: t.streakWinless },
+            { label: "Pkt", value: t.pts, emphasize: true },
+            { label: "Mecze", value: t.played },
+          ];
+
+          return (
+            <div
+              key={t.team}
+              className={classNames(
+                "rounded-[24px] border p-3",
+                darkMode
+                  ? "border-white/10 bg-white/5"
+                  : "border-gray-200 bg-gray-50"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <TeamLogo
                   team={t.team}
+                  darkMode={darkMode}
+                  size={42}
                   onClick={() => openTeam(t.team)}
-                  className="e3d-link"
                 />
+                <div className="min-w-0 flex-1">
+                  <TeamLink
+                    team={t.team}
+                    onClick={() => openTeam(t.team)}
+                    className="e3d-link block w-full font-extrabold text-[15px] leading-tight"
+                  />
+                  <div
+                    className={classNames(
+                      "mt-1 text-xs",
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    )}
+                    style={TABULAR_NUMBER_STYLE}
+                  >
+                    M {t.played} • Pkt {t.pts}
+                  </div>
+                </div>
+                <div
+                  className={classNames(
+                    "rounded-2xl border px-3 py-2 text-right",
+                    darkMode
+                      ? "border-cyan-300/20 bg-cyan-400/10"
+                      : "border-sky-200 bg-sky-50"
+                  )}
+                >
+                  <div
+                    className={classNames(
+                      "text-[10px] font-bold uppercase tracking-[0.16em]",
+                      darkMode ? "text-cyan-100/80" : "text-sky-700/70"
+                    )}
+                  >
+                    Pkt
+                  </div>
+                  <div
+                    className="text-xl font-black"
+                    style={TABULAR_NUMBER_STYLE}
+                  >
+                    {t.pts}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {metricCards.map((metric) => (
+                  <div
+                    key={metric.label}
+                    className={classNames(
+                      "rounded-2xl border px-3 py-2.5",
+                      metric.emphasize
+                        ? darkMode
+                          ? "border-cyan-300/20 bg-cyan-400/10"
+                          : "border-sky-200 bg-sky-50"
+                        : darkMode
+                        ? "border-white/10 bg-black/10"
+                        : "border-gray-200 bg-white"
+                    )}
+                  >
+                    <div
+                      className={classNames(
+                        "text-[10px] font-bold uppercase tracking-[0.16em]",
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      )}
+                    >
+                      {metric.label}
+                    </div>
+                    <div
+                      className="mt-1 text-lg font-black"
+                      style={TABULAR_NUMBER_STYLE}
+                    >
+                      {metric.value}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="text-right font-extrabold">{t.gf}</div>
-            <div className="text-right font-extrabold">{t.ga}</div>
-            <div className="text-right font-extrabold">{t.streakUnbeaten}</div>
-            <div className="text-right font-extrabold">{t.streakWins}</div>
-            <div className="text-right font-extrabold">{t.streakWinless}</div>
-            <div className="text-right font-extrabold">{t.pts}</div>
-            <div className="text-right font-bold">{t.played}</div>
+          );
+        })}
+      </div>
+
+      <div className="hidden md:block">
+        <div
+          className={classNames(
+            "px-3 py-2 text-xs font-bold tracking-wide",
+            darkMode ? "text-gray-300" : "text-gray-600"
+          )}
+        >
+          <div className="grid grid-cols-[minmax(0,1.35fr)_72px_72px_92px_92px_96px_72px_56px] gap-3">
+            <SortButton column="team" label="Drużyna" />
+            <SortButton column="gf" label="BZ" align="text-right" />
+            <SortButton column="ga" label="BS" align="text-right" />
+            <SortButton
+              column="streakUnbeaten"
+              label="Bez por."
+              align="text-right"
+            />
+            <SortButton column="streakWins" label="Seria W" align="text-right" />
+            <SortButton
+              column="streakWinless"
+              label="Bez wygr."
+              align="text-right"
+            />
+            <SortButton column="pts" label="Pkt" align="text-right" />
+            <SortButton column="played" label="M" align="text-right" />
           </div>
         </div>
-      ))}
+
+        {sortedRows.map((t) => (
+          <div
+            key={t.team}
+            className={classNames(
+              "px-3 py-3 border-t",
+              darkMode ? "border-white/10" : "border-gray-100"
+            )}
+          >
+            <div className="grid grid-cols-[minmax(0,1.35fr)_72px_72px_92px_92px_96px_72px_56px] gap-3 items-center">
+              <div className="flex items-center gap-3 min-w-0">
+                <TeamLogo
+                  team={t.team}
+                  darkMode={darkMode}
+                  size={38}
+                  onClick={() => openTeam(t.team)}
+                />
+                <div className="min-w-0 font-extrabold">
+                  <TeamLink
+                    team={t.team}
+                    onClick={() => openTeam(t.team)}
+                    className="e3d-link block w-full"
+                  />
+                </div>
+              </div>
+              <div
+                className="text-right font-extrabold"
+                style={TABULAR_NUMBER_STYLE}
+              >
+                {t.gf}
+              </div>
+              <div
+                className="text-right font-extrabold"
+                style={TABULAR_NUMBER_STYLE}
+              >
+                {t.ga}
+              </div>
+              <div
+                className="text-right font-extrabold"
+                style={TABULAR_NUMBER_STYLE}
+              >
+                {t.streakUnbeaten}
+              </div>
+              <div
+                className="text-right font-extrabold"
+                style={TABULAR_NUMBER_STYLE}
+              >
+                {t.streakWins}
+              </div>
+              <div
+                className="text-right font-extrabold"
+                style={TABULAR_NUMBER_STYLE}
+              >
+                {t.streakWinless}
+              </div>
+              <div
+                className="text-right font-extrabold"
+                style={TABULAR_NUMBER_STYLE}
+              >
+                {t.pts}
+              </div>
+              <div
+                className="text-right font-bold"
+                style={TABULAR_NUMBER_STYLE}
+              >
+                {t.played}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </>
   );
 }
@@ -8367,6 +8670,30 @@ function StatsPage({
   const red = rowsForLeague(stats.topRed);
 
   const teamRows = stats.tableByLeague[leagueId] || [];
+  const playerRows =
+    tab === "scorers"
+      ? scorers
+      : tab === "assists"
+      ? assists
+      : tab === "yellow"
+      ? yellow
+      : red;
+  const valueLabel =
+    tab === "scorers"
+      ? "Gole"
+      : tab === "assists"
+      ? "Asysty"
+      : tab === "yellow"
+      ? "Żółte"
+      : "Czerwone";
+  const getPlayerStatValue = (playerRow) =>
+    tab === "scorers"
+      ? playerRow.goals
+      : tab === "assists"
+      ? playerRow.assists
+      : tab === "yellow"
+      ? playerRow.yellow
+      : playerRow.red;
 
   return (
     <div className="space-y-4">
@@ -8422,7 +8749,7 @@ function StatsPage({
       </div>
 
       {tab !== "teams" ? (
-        (tab === "scorers" ? scorers : tab === "assists" ? assists : tab === "yellow" ? yellow : red).length === 0 ? (
+        playerRows.length === 0 ? (
           <Card darkMode={darkMode}>
             <div className={classNames("text-center py-8", darkMode ? "text-gray-400" : "text-gray-500")}>
               Brak statystyk zawodników dla tego sezonu
@@ -8430,79 +8757,178 @@ function StatsPage({
           </Card>
         ) :
         <Card darkMode={darkMode}>
-          <div
-            className={classNames(
-              "px-2 py-2 text-xs font-bold tracking-wide",
-              darkMode ? "text-gray-300" : "text-gray-600"
-            )}
-          >
-            <div className="grid grid-cols-[60px_1fr_1fr_90px] gap-2">
-              <div>#</div>
-              <div>Zawodnik</div>
-              <div>Drużyna</div>
-              <div className="text-right">
-                {tab === "scorers"
-                  ? "Gole"
-                  : tab === "assists"
-                  ? "Asysty"
-                  : tab === "yellow"
-                  ? "Żółte"
-                  : "Czerwone"}
-              </div>
-            </div>
-          </div>
-
-          {(tab === "scorers"
-            ? scorers
-            : tab === "assists"
-            ? assists
-            : tab === "yellow"
-            ? yellow
-            : red
-          ).map((p, idx) => (
-            <div
-              key={p.playerId}
-              className={classNames(
-                "px-2 py-3 border-t",
-                darkMode ? "border-white/10" : "border-gray-100"
-              )}
-            >
-              <div className="grid grid-cols-[60px_1fr_1fr_90px] gap-2 items-center">
-                <div className="font-extrabold">{idx + 1}</div>
-                <button
-                  onClick={() => openPlayer?.(p.playerId)}
-                  className="font-bold hover:underline text-left"
-                  title="Profil zawodnika"
+          <div className="space-y-3 md:hidden">
+            {playerRows.map((p, idx) => {
+              const statValue = getPlayerStatValue(p) ?? 0;
+              return (
+                <div
+                  key={p.playerId}
+                  className={classNames(
+                    "rounded-[24px] border p-3",
+                    darkMode
+                      ? "border-white/10 bg-white/5"
+                      : "border-gray-200 bg-gray-50"
+                  )}
                 >
-                  {p.name}
-                </button>
-                <div className="flex items-center gap-3">
-                  <TeamLogo
-                    team={p.team}
-                    darkMode={darkMode}
-                    size={40}
-                    onClick={() => openTeam(p.team)}
-                  />
-                  <div className="font-extrabold">
-                    <TeamLink
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                      <div
+                        className={classNames(
+                          "grid h-10 w-10 shrink-0 place-items-center rounded-2xl border text-base font-black",
+                          darkMode
+                            ? "border-white/10 bg-black/20 text-white"
+                            : "border-gray-200 bg-white text-gray-900"
+                        )}
+                        style={TABULAR_NUMBER_STYLE}
+                      >
+                        {idx + 1}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <button
+                          onClick={() => openPlayer?.(p.playerId)}
+                          className="block w-full min-w-0 text-left font-extrabold text-[17px] leading-tight hover:underline"
+                          title="Profil zawodnika"
+                        >
+                          <ResponsivePlayerName name={p.name} />
+                        </button>
+                        <div
+                          className={classNames(
+                            "mt-1 text-[10px] font-bold uppercase tracking-[0.18em]",
+                            darkMode ? "text-gray-400" : "text-gray-500"
+                          )}
+                        >
+                          {valueLabel}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className={classNames(
+                        "rounded-2xl border px-3 py-2 text-right",
+                        darkMode
+                          ? "border-cyan-300/20 bg-cyan-400/10"
+                          : "border-sky-200 bg-sky-50"
+                      )}
+                    >
+                      <div
+                        className={classNames(
+                          "text-[10px] font-bold uppercase tracking-[0.16em]",
+                          darkMode ? "text-cyan-100/80" : "text-sky-700/70"
+                        )}
+                      >
+                        {valueLabel}
+                      </div>
+                      <div
+                        className="mt-1 text-2xl font-black"
+                        style={TABULAR_NUMBER_STYLE}
+                      >
+                        {statValue}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={classNames(
+                      "mt-3 flex items-center gap-3 rounded-2xl border px-3 py-2.5",
+                      darkMode
+                        ? "border-white/10 bg-black/10"
+                        : "border-gray-200 bg-white"
+                    )}
+                  >
+                    <TeamLogo
                       team={p.team}
+                      darkMode={darkMode}
+                      size={36}
                       onClick={() => openTeam(p.team)}
-                      className="e3d-link"
                     />
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className={classNames(
+                          "text-[10px] font-bold uppercase tracking-[0.16em]",
+                          darkMode ? "text-gray-400" : "text-gray-500"
+                        )}
+                      >
+                        Drużyna
+                      </div>
+                      <div className="mt-1 min-w-0 font-extrabold">
+                        <TeamLink
+                          team={p.team}
+                          onClick={() => openTeam(p.team)}
+                          className="e3d-link block w-full"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="text-right font-extrabold">
-                  {tab === "scorers"
-                    ? p.goals
-                    : tab === "assists"
-                    ? p.assists
-                    : tab === "yellow"
-                    ? p.yellow
-                    : p.red}
-                </div>
+              );
+            })}
+          </div>
+
+          <div className="hidden md:block">
+            <div
+              className={classNames(
+                "px-3 py-2 text-xs font-bold tracking-wide",
+                darkMode ? "text-gray-300" : "text-gray-600"
+              )}
+            >
+              <div className="grid grid-cols-[64px_minmax(0,1.2fr)_minmax(0,1fr)_76px] gap-4">
+                <div>#</div>
+                <div>Zawodnik</div>
+                <div>Drużyna</div>
+                <div className="text-right">{valueLabel}</div>
               </div>
             </div>
-          ))}
+
+            {playerRows.map((p, idx) => (
+              <div
+                key={p.playerId}
+                className={classNames(
+                  "px-3 py-3 border-t",
+                  darkMode ? "border-white/10" : "border-gray-100"
+                )}
+              >
+                <div className="grid grid-cols-[64px_minmax(0,1.2fr)_minmax(0,1fr)_76px] gap-4 items-center">
+                  <div
+                    className="font-extrabold"
+                    style={TABULAR_NUMBER_STYLE}
+                  >
+                    {idx + 1}
+                  </div>
+                  <button
+                    onClick={() => openPlayer?.(p.playerId)}
+                    className="min-w-0 text-left font-bold hover:underline"
+                    title="Profil zawodnika"
+                  >
+                    <ResponsivePlayerName
+                      name={p.name}
+                      className="font-extrabold"
+                    />
+                  </button>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <TeamLogo
+                      team={p.team}
+                      darkMode={darkMode}
+                      size={38}
+                      onClick={() => openTeam(p.team)}
+                    />
+                    <div className="min-w-0 font-extrabold">
+                      <TeamLink
+                        team={p.team}
+                        onClick={() => openTeam(p.team)}
+                        className="e3d-link block w-full"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className="text-right font-extrabold"
+                    style={TABULAR_NUMBER_STYLE}
+                  >
+                    {getPlayerStatValue(p) ?? 0}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </Card>
       ) : (
         <Card darkMode={darkMode}>
