@@ -15,6 +15,8 @@ import {
   ArrowLeftRight,
   Eye,
   EyeOff,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   buildSafeRegenerationBatches,
@@ -91,6 +93,7 @@ export default function AdminSchedule({ darkMode }) {
   const [dropTargetRoundNumber, setDropTargetRoundNumber] = useState(null);
   const [selectedRoundNumber, setSelectedRoundNumber] = useState(null);
   const [swappingRounds, setSwappingRounds] = useState(false);
+  const [collapsedRounds, setCollapsedRounds] = useState({});
 
   const card = darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-200";
   const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
@@ -271,6 +274,7 @@ export default function AdminSchedule({ darkMode }) {
 
     setMatches(data || []);
     setEditedMatches({});
+    setCollapsedRounds({});
   }
 
   async function loadLeagueTeams() {
@@ -730,6 +734,13 @@ export default function AdminSchedule({ darkMode }) {
     }
 
     applyRoundSwap(roundSwapScope, selectedRoundNumber, normalizedRound);
+  }
+
+  function toggleRoundCollapsed(roundNumber) {
+    setCollapsedRounds((prev) => ({
+      ...prev,
+      [roundNumber]: !prev[roundNumber],
+    }));
   }
 
   function buildGuidelineAwarePlan(leagueMatches, teamCount, guidelines) {
@@ -1238,19 +1249,43 @@ export default function AdminSchedule({ darkMode }) {
             .sort(([a], [b]) => Number(a) - Number(b))
             .map(([roundNum, roundMatches]) => {
               const roundScheduleHidden = roundMatches.some((match) => hasScheduleHiddenMarker(match.notes));
+              const roundCollapsed = !!collapsedRounds[roundNum];
 
               return (
               <div key={roundNum} className={`rounded-2xl border overflow-hidden ${card}`}>
                 <div className={`px-4 py-2 text-sm ${darkMode ? "bg-white/5" : "bg-gray-50"}`}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <div className="font-semibold">Kolejka {roundNum}</div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="font-semibold">Kolejka {roundNum}</div>
+                        <span className={`text-xs ${textMuted}`}>
+                          {roundMatches.length} {roundMatches.length === 1 ? "mecz" : "meczów"}
+                        </span>
+                      </div>
                       {roundScheduleHidden && (
                         <div className={`mt-0.5 text-xs ${textMuted}`}>
                           Publicznie widoczne są tylko pary meczowe.
                         </div>
                       )}
                     </div>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleRoundCollapsed(roundNum)}
+                      className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+                        roundCollapsed
+                          ? darkMode
+                            ? "border-yellow-300/30 bg-yellow-400/10 text-yellow-200 hover:bg-yellow-400/15"
+                            : "border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                          : darkMode
+                          ? "border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"
+                          : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                      }`}
+                      title={roundCollapsed ? "Rozwiń mecze tej kolejki" : "Zwiń mecze tej kolejki"}
+                    >
+                      {roundCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                      {roundCollapsed ? "Rozwiń" : "Zwiń"}
+                    </button>
                     <button
                       type="button"
                       onClick={() => toggleRoundScheduleVisibility(roundNum, !roundScheduleHidden)}
@@ -1268,9 +1303,10 @@ export default function AdminSchedule({ darkMode }) {
                       {roundScheduleHidden ? <Eye size={14} /> : <EyeOff size={14} />}
                       {roundScheduleHidden ? "Odkryj kolejkę" : "Ukryj kolejkę"}
                     </button>
+                    </div>
                   </div>
                 </div>
-                <div className="divide-y" style={{ borderColor: darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                {!roundCollapsed && <div className="divide-y" style={{ borderColor: darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                   {roundMatches.map((match) => {
                     const edits = editedMatches[match.id] || {};
                     const hasEdits = Object.keys(edits).length > 0;
@@ -1357,7 +1393,7 @@ export default function AdminSchedule({ darkMode }) {
                       </div>
                     );
                   })}
-                </div>
+                </div>}
               </div>
               );
             })}
