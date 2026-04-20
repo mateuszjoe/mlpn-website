@@ -14,6 +14,7 @@ import AdminSeasonWizard from "./AdminSeasonWizard";
 import AdminControlCenter from "./AdminControlCenter";
 import AdminUsers from "./AdminUsers";
 import AdminReferees from "./AdminReferees";
+import AdminSponsors from "./AdminSponsors";
 import {
   LayoutDashboard,
   Calendar,
@@ -31,6 +32,7 @@ import {
   SlidersHorizontal,
   Scale,
   Newspaper,
+  Handshake,
 } from "lucide-react";
 
 const ADMIN_MENU_ITEMS = [
@@ -43,6 +45,7 @@ const ADMIN_MENU_ITEMS = [
   { id: "schedule", label: "Terminarz", icon: <ListChecks size={18} /> },
   { id: "results", label: "Wyniki", icon: <Trophy size={18} /> },
   { id: "news", label: "Aktualności", icon: <Newspaper size={18} /> },
+  { id: "sponsors", label: "Sponsorzy", icon: <Handshake size={18} /> },
   { id: "referees", label: "Sedziowie", icon: <Scale size={18} /> },
   { id: "control-center", label: "Ustawienia", icon: <SlidersHorizontal size={18} /> },
   { id: "users", label: "Konta", icon: <UserPlus size={18} /> },
@@ -135,6 +138,8 @@ export default function AdminPanel({ darkMode, goHome }) {
         return <AdminMatchResults darkMode={darkMode} />;
       case "news":
         return <AdminNews darkMode={darkMode} />;
+      case "sponsors":
+        return <AdminSponsors darkMode={darkMode} />;
       case "referees":
         return <AdminReferees darkMode={darkMode} />;
       case "control-center":

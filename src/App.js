@@ -184,6 +184,134 @@ const logoByTeam = {
 
 let activeTeamLogoRegistry = { ...logoByTeam };
 
+const SPONSOR_CATEGORY_META = {
+  sponsor_tytularny: {
+    label: "Sponsor tytularny",
+    shortLabel: "Tytularny",
+    accent: "from-amber-300 to-yellow-500",
+  },
+  sponsor_techniczny: {
+    label: "Sponsor techniczny",
+    shortLabel: "Techniczny",
+    accent: "from-sky-300 to-cyan-500",
+  },
+  sponsor: {
+    label: "Sponsor",
+    shortLabel: "Sponsor",
+    accent: "from-emerald-300 to-green-500",
+  },
+};
+
+const FALLBACK_PUBLIC_SPONSORS = [
+  {
+    id: "isola",
+    name: "Isola Ristorante",
+    logoUrl: `${PU}/isola.png`,
+    websiteUrl: "https://www.facebook.com/isolaristorante",
+    description:
+      "Sponsor tytularny MLPN Sulejówek. Lokalny partner, który wspiera rozwój ligi i sportowej społeczności.",
+    shortDescription: "Sponsor tytularny MLPN Sulejówek.",
+    category: "sponsor_tytularny",
+    displayOrder: 0,
+    isActive: true,
+    profileSlug: "isola-ristorante",
+    ctaLabel: "Odwiedź profil",
+  },
+  {
+    id: "jadlostacja",
+    name: "Jadłostacja Sulejówek",
+    logoUrl: `${PU}/jadlostacja.png`,
+    websiteUrl:
+      "https://www.facebook.com/p/Jadłostacja-Sulejówek-100039844490108/?locale=pl_PL",
+    description: "Restauracja serwująca domowe obiady i smaczne dania na dowóz.",
+    shortDescription: "Domowe obiady i lokalne wsparcie rozgrywek.",
+    category: "sponsor",
+    displayOrder: 10,
+    isActive: true,
+    profileSlug: "jadlostacja-sulejowek",
+    ctaLabel: "Odwiedź stronę",
+  },
+  {
+    id: "oslonydookien",
+    name: "Osłony do Okien",
+    logoUrl: `${PU}/oslonydookien.png`,
+    websiteUrl: "https://oslonydookien.pl",
+    description: "Kompleksowe rozwiązania w zakresie osłon okiennych.",
+    shortDescription: "Rolety, żaluzje, markizy i moskitiery.",
+    category: "sponsor",
+    displayOrder: 20,
+    isActive: true,
+    profileSlug: "oslony-do-okien",
+    ctaLabel: "Odwiedź stronę",
+  },
+  {
+    id: "paelfasady",
+    name: "Pa-El Fasady",
+    logoUrl: `${PU}/paelfasady.png`,
+    websiteUrl: "https://www.facebook.com/profile.php?id=100063629406941",
+    description: "Profesjonalne usługi elewacyjne i tynkarskie.",
+    shortDescription: "Elewacje i prace fasadowe.",
+    category: "sponsor",
+    displayOrder: 30,
+    isActive: true,
+    profileSlug: "pa-el-fasady",
+    ctaLabel: "Odwiedź profil",
+  },
+];
+
+function normalizePublicSponsor(sponsor = {}) {
+  const category = sponsor.category || "sponsor";
+  return {
+    ...sponsor,
+    id: sponsor.id || sponsor.profileSlug || sponsor.profile_slug || sponsor.name,
+    logoUrl: sponsor.logoUrl || sponsor.logo_url || "",
+    websiteUrl: sponsor.websiteUrl || sponsor.website_url || "",
+    shortDescription: sponsor.shortDescription || sponsor.short_description || "",
+    description: sponsor.description || "",
+    category,
+    profileSlug: sponsor.profileSlug || sponsor.profile_slug || "",
+    facebookUrl: sponsor.facebookUrl || sponsor.facebook_url || "",
+    instagramUrl: sponsor.instagramUrl || sponsor.instagram_url || "",
+    contactEmail: sponsor.contactEmail || sponsor.contact_email || "",
+    phone: sponsor.phone || "",
+    ctaLabel: sponsor.ctaLabel || sponsor.cta_label || "Odwiedź stronę",
+    isActive: sponsor.isActive ?? sponsor.is_active ?? true,
+    displayOrder: Number(sponsor.displayOrder ?? sponsor.display_order ?? 0),
+  };
+}
+
+function getRenderableSponsors(sponsors = []) {
+  const normalized = (Array.isArray(sponsors) ? sponsors : [])
+    .map(normalizePublicSponsor)
+    .filter((sponsor) => sponsor.name && sponsor.isActive !== false)
+    .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name, "pl"));
+
+  if (!normalized.length) return FALLBACK_PUBLIC_SPONSORS;
+
+  const hasTitleSponsor = normalized.some((sponsor) => sponsor.category === "sponsor_tytularny");
+  const hasIsola = normalized.some((sponsor) => sponsor.name?.toLowerCase().includes("isola"));
+  if (!hasTitleSponsor && !hasIsola) {
+    return [FALLBACK_PUBLIC_SPONSORS[0], ...normalized];
+  }
+
+  return normalized;
+}
+
+function sponsorRouteId(sponsor) {
+  return sponsor?.profileSlug || sponsor?.id || "";
+}
+
+function sponsorMatchesRoute(sponsor, routeId) {
+  const decoded = String(routeId || "");
+  return [sponsor?.id, sponsor?.profileSlug]
+    .filter(Boolean)
+    .some((value) => String(value) === decoded);
+}
+
+function sponsorCategoryLabel(category) {
+  return SPONSOR_CATEGORY_META[category]?.label || SPONSOR_CATEGORY_META.sponsor.label;
+}
+
 function createTeamLogoRegistry({ standings, fixtures, matches }) {
   const map = { ...logoByTeam };
 
@@ -346,6 +474,7 @@ function parseHashRoute(hash) {
       selectedTeam: segments[1],
       selectedMatchId: null,
       selectedPlayerId: null,
+      selectedSponsorId: null,
       matchViewMode: "inline",
       round,
       season,
@@ -360,6 +489,7 @@ function parseHashRoute(hash) {
       selectedTeam: null,
       selectedMatchId: null,
       selectedPlayerId: segments[1],
+      selectedSponsorId: null,
       matchViewMode: "inline",
       round,
       season,
@@ -374,7 +504,23 @@ function parseHashRoute(hash) {
       selectedTeam: null,
       selectedMatchId: segments[1],
       selectedPlayerId: null,
+      selectedSponsorId: null,
       matchViewMode: "page",
+      round,
+      season,
+    };
+  }
+
+  if (segments[0] === "sponsor" && segments[1]) {
+    const context = normalizeContext(rawContext || "info");
+    return {
+      activeContext: context,
+      activeSection: normalizeSectionForContext(context, rawSection || "sponsors"),
+      selectedTeam: null,
+      selectedMatchId: null,
+      selectedPlayerId: null,
+      selectedSponsorId: segments[1],
+      matchViewMode: "inline",
       round,
       season,
     };
@@ -387,6 +533,7 @@ function parseHashRoute(hash) {
       selectedTeam: null,
       selectedMatchId: null,
       selectedPlayerId: null,
+      selectedSponsorId: null,
       matchViewMode: "inline",
       round: null,
       season,
@@ -401,6 +548,7 @@ function parseHashRoute(hash) {
       selectedTeam: null,
       selectedMatchId: null,
       selectedPlayerId: null,
+      selectedSponsorId: null,
       matchViewMode: "inline",
       round: null,
       season,
@@ -414,6 +562,7 @@ function parseHashRoute(hash) {
       selectedTeam: null,
       selectedMatchId: null,
       selectedPlayerId: null,
+      selectedSponsorId: null,
       matchViewMode: "inline",
       round: null,
       season,
@@ -429,6 +578,7 @@ function parseHashRoute(hash) {
       selectedTeam: null,
       selectedMatchId: inlineMatchId,
       selectedPlayerId: null,
+      selectedSponsorId: null,
       matchViewMode: "inline",
       round,
       season,
@@ -442,6 +592,7 @@ function parseHashRoute(hash) {
     selectedTeam: null,
     selectedMatchId: inlineMatchId,
     selectedPlayerId: null,
+    selectedSponsorId: null,
     matchViewMode: "inline",
     round: null,
     season,
@@ -454,6 +605,7 @@ function buildHashRoute({
   selectedTeam,
   selectedMatchId,
   selectedPlayerId,
+  selectedSponsorId,
   matchViewMode,
   round,
   currentSeason,
@@ -477,7 +629,9 @@ function buildHashRoute({
 
   let path = "";
 
-  if (selectedPlayerId) {
+  if (selectedSponsorId) {
+    path = `/sponsor/${encodeURIComponent(selectedSponsorId)}`;
+  } else if (selectedPlayerId) {
     path = `/zawodnik/${encodeURIComponent(selectedPlayerId)}`;
   } else if (selectedTeam) {
     path = `/druzyna/${encodeURIComponent(selectedTeam)}`;
@@ -2741,13 +2895,15 @@ function VideoIcon({
 /* =========================================
    INFO PAGE - Informacje o lidze
    ========================================= */
-function InfoPage({ darkMode, activeTab = "about", setActiveTab }) {
+function InfoPage({ darkMode, activeTab = "about", setActiveTab, sponsors = [], openSponsor }) {
   return (
     <Card darkMode={darkMode} className="p-0">
       <div className="mx-auto w-full max-w-5xl px-5 py-6 md:px-8 md:py-8">
         {activeTab === "about" && <AboutPage darkMode={darkMode} />}
         {activeTab === "regulations" && <RegulationsPage darkMode={darkMode} />}
-        {activeTab === "sponsors" && <SponsorsPage darkMode={darkMode} />}
+        {activeTab === "sponsors" && (
+          <SponsorsPage darkMode={darkMode} sponsors={sponsors} openSponsor={openSponsor} />
+        )}
         {activeTab === "rodo" && <RodoPage darkMode={darkMode} />}
         {activeTab === "privacy" && <PrivacyPage darkMode={darkMode} />}
         {activeTab === "contact" && <ContactPage darkMode={darkMode} />}
@@ -3082,146 +3238,284 @@ function RegulationsPage({ darkMode }) {
 }
 
 /* Sponsors Page */
-function SponsorsPage({ darkMode }) {
-  const sponsors = [
+function SponsorsPage({ darkMode, sponsors = [], openSponsor }) {
+  const visibleSponsors = getRenderableSponsors(sponsors);
+  const titleSponsor = visibleSponsors.find((sponsor) => sponsor.category === "sponsor_tytularny");
+  const grouped = [
     {
-      name: "Jadłostacja Sulejówek",
-      logo: "/jadlostacja.png",
-      desc: "Restauracja serwująca domowe obiady i smaczne dania na dowóz. Wspiera nas od początku istnienia ligi!",
-      website:
-        "https://www.facebook.com/p/Jadłostacja-Sulejówek-100039844490108/?locale=pl_PL",
+      key: "sponsor_tytularny",
+      title: "Sponsor tytularny",
+      items: visibleSponsors.filter((sponsor) => sponsor.category === "sponsor_tytularny"),
     },
     {
-      name: "Osłony do Okien",
-      logo: "/oslonydookien.png",
-      desc: "Kompleksowe rozwiązania w zakresie osłon okiennych - żaluzje, rolety, markizy i moskitiery.",
-      website: "https://oslonydookien.pl",
+      key: "sponsor_techniczny",
+      title: "Sponsor techniczny",
+      items: visibleSponsors.filter((sponsor) => sponsor.category === "sponsor_techniczny"),
     },
     {
-      name: "Pa-El Fasady",
-      logo: "/paelfasady.png",
-      desc: "Profesjonalne usługi elewacyjne i tynkarskie. Tworzymy piękne i trwałe fasady budynków.",
-      website: "https://www.facebook.com/profile.php?id=100063629406941",
+      key: "sponsor",
+      title: "Sponsorzy",
+      items: visibleSponsors.filter((sponsor) => !["sponsor_tytularny", "sponsor_techniczny"].includes(sponsor.category)),
     },
-    {
-      name: "RoboExpert",
-      logo: "/roboexpert.png",
-      desc: "Eksperci w dziedzinie robotyki, automatyki przemysłowej i innowacyjnych rozwiązań technologicznych.",
-      website: "https://www.roboexpert.pl",
-    },
-    {
-      name: "SzwagierKop",
-      logo: "/szwagierkop.png",
-      desc: "Profesjonalne usługi koparko-ładowarką. Prace ziemne, wyburzenia i transport.",
-      website: "https://szwagierkop.pl",
-    },
-    {
-      name: "Nasze Stroje",
-      logo: "/naszestroje.png",
-      desc: "Producent sportowej odzieży i strojów drużynowych. Twoje drużyny - nasze stroje!",
-      website: "https://naszestroje.pl",
-    },
-  ];
+  ].filter((group) => group.items.length > 0);
+
+  const open = (sponsor) => {
+    if (sponsorRouteId(sponsor)) {
+      openSponsor?.(sponsor);
+    } else if (sponsor.websiteUrl) {
+      window.open(sponsor.websiteUrl, "_blank", "noopener,noreferrer");
+    }
+  };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-3xl font-extrabold mb-4">
-          Nasi Partnerzy i Sponsorzy
-        </h1>
-        <p
+    <div className="space-y-6 max-w-5xl">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-stretch">
+        <div
           className={classNames(
-            "leading-relaxed",
-            darkMode ? "text-gray-400" : "text-gray-600"
+            "rounded-3xl border p-6",
+            darkMode
+              ? "border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03]"
+              : "border-gray-200 bg-gradient-to-br from-white to-blue-50"
           )}
         >
-          Dziękujemy wszystkim firmom i osobom, które wspierają rozwój Miejskiej
-          Ligi Piłki Nożnej w Sulejówku. Bez Waszego wsparcia nie bylibyśmy w
-          stanie organizować rozgrywek na takim poziomie!
-        </p>
-      </div>
+          <div className={classNames("text-xs font-black uppercase tracking-[0.2em]", darkMode ? "text-green-300" : "text-green-700")}>
+            Partnerzy rozgrywek
+          </div>
+          <h1 className="mt-2 text-3xl font-extrabold leading-tight">
+            Sponsorzy, którzy pomagają grać MLPN
+          </h1>
+          <p className={classNames("mt-3 max-w-2xl leading-relaxed", darkMode ? "text-gray-300" : "text-gray-600")}>
+            Tu pokazujemy firmy wspierające ligę. Kliknij sponsora, żeby otworzyć jego profil z opisem, logo i linkami.
+          </p>
+        </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        {sponsors.map((sponsor, idx) => (
-          <div
-            key={idx}
+        {titleSponsor && (
+          <button
+            type="button"
+            onClick={() => open(titleSponsor)}
             className={classNames(
-              "p-6 rounded-2xl border",
-              darkMode
-                ? "bg-white/5 border-white/10"
-                : "bg-white border-gray-200"
+              "group rounded-3xl border p-5 text-left transition-all hover:-translate-y-0.5",
+              darkMode ? "border-amber-300/30 bg-amber-300/10" : "border-amber-200 bg-amber-50"
             )}
           >
-            <div className="flex items-start gap-4">
-              <div
-                className={classNames(
-                  "w-24 h-24 rounded-xl flex items-center justify-center flex-shrink-0 p-2",
-                  darkMode ? "bg-white/10" : "bg-gray-100"
-                )}
-              >
-                <img
-                  src={sponsor.logo}
-                  alt={sponsor.name}
-                  className="w-full h-full object-contain"
-                />
-              </div>
+            <div className={classNames("text-[10px] font-black uppercase tracking-[0.18em]", darkMode ? "text-amber-100" : "text-amber-700")}>
+              Sponsor tytularny
+            </div>
+            <div className="mt-4 flex h-28 items-center justify-center rounded-2xl bg-white p-4 shadow-sm">
+              {titleSponsor.logoUrl ? (
+                <img src={titleSponsor.logoUrl} alt={titleSponsor.name} className="h-full w-full object-contain" />
+              ) : (
+                <Trophy size={42} className="text-amber-500" />
+              )}
+            </div>
+            <div className="mt-4 text-xl font-black">{titleSponsor.name}</div>
+            <div className={classNames("mt-1 text-sm", darkMode ? "text-gray-300" : "text-gray-600")}>
+              {titleSponsor.shortDescription || titleSponsor.description || "Główny partner rozgrywek."}
+            </div>
+          </button>
+        )}
+      </div>
 
-              <div className="flex-1">
-                <h3 className="font-extrabold text-lg mb-2">{sponsor.name}</h3>
-                <p
-                  className={classNames(
-                    "text-sm mb-3",
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  )}
-                >
-                  {sponsor.desc}
-                </p>
-                {sponsor.website !== "#" && (
-                  <a
-                    href={sponsor.website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={classNames(
-                      "text-sm font-bold hover:underline",
-                      darkMode ? "text-green-400" : "text-green-600"
-                    )}
-                  >
-                    Odwiedź stronę →
-                  </a>
-                )}
+      <div className="space-y-5">
+        {grouped.map((group) => (
+          <section key={group.key}>
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div>
+                <div className="text-xl font-black">{group.title}</div>
+                <div className={classNames("text-xs", darkMode ? "text-gray-400" : "text-gray-500")}>
+                  {group.items.length} {group.items.length === 1 ? "partner" : "partnerów"}
+                </div>
               </div>
             </div>
-          </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              {group.items.map((sponsor) => (
+                <article
+                  key={sponsorRouteId(sponsor) || sponsor.name}
+                  className={classNames(
+                    "rounded-2xl border p-4 transition-colors",
+                    darkMode ? "border-white/10 bg-white/[0.04]" : "border-gray-200 bg-white"
+                  )}
+                >
+                  <div className="flex items-start gap-4">
+                    <button
+                      type="button"
+                      onClick={() => open(sponsor)}
+                      className={classNames(
+                        "flex h-20 w-24 shrink-0 items-center justify-center rounded-2xl border bg-white p-2 transition-transform hover:scale-[1.02]",
+                        darkMode ? "border-white/10" : "border-gray-200"
+                      )}
+                    >
+                      {sponsor.logoUrl ? (
+                        <img src={sponsor.logoUrl} alt={sponsor.name} className="h-full w-full object-contain" />
+                      ) : (
+                        <Trophy size={26} className="text-gray-400" />
+                      )}
+                    </button>
+
+                    <div className="min-w-0 flex-1">
+                      <div className={classNames("text-[10px] font-black uppercase tracking-[0.16em]", darkMode ? "text-gray-400" : "text-gray-500")}>
+                        {sponsorCategoryLabel(sponsor.category)}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => open(sponsor)}
+                        className="mt-1 block max-w-full truncate text-left text-lg font-black hover:underline"
+                      >
+                        {sponsor.name}
+                      </button>
+                      <p className={classNames("mt-2 line-clamp-2 text-sm", darkMode ? "text-gray-300" : "text-gray-600")}>
+                        {sponsor.shortDescription || sponsor.description || "Partner MLPN Sulejówek."}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => open(sponsor)}
+                      className={classNames(
+                        "rounded-xl border px-3 py-2 text-xs font-black transition-colors",
+                        darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-gray-200 bg-gray-50 hover:bg-white"
+                      )}
+                    >
+                      Profil sponsora
+                    </button>
+                    {sponsor.websiteUrl && (
+                      <a
+                        href={sponsor.websiteUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={classNames(
+                          "rounded-xl border px-3 py-2 text-xs font-black transition-colors",
+                          darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-gray-200 bg-gray-50 hover:bg-white"
+                        )}
+                      >
+                        Strona WWW
+                      </a>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
 
-      <div
-        className={classNames(
-          "p-6 rounded-2xl text-center",
-          darkMode ? "bg-green-500/10" : "bg-green-50"
-        )}
-      >
-        <h3 className="font-bold text-xl mb-2">Zostań sponsorem!</h3>
-        <p
-          className={classNames(
-            "mb-4",
-            darkMode ? "text-gray-300" : "text-gray-700"
-          )}
-        >
-          Chcesz wesprzeć lokalny sport i promować swoją firmę? Skontaktuj się z
-          nami!
+      <div className={classNames("rounded-2xl p-6 text-center", darkMode ? "bg-green-500/10" : "bg-green-50")}>
+        <h3 className="mb-2 text-xl font-bold">Chcesz dołączyć do partnerów ligi?</h3>
+        <p className={classNames("mb-4", darkMode ? "text-gray-300" : "text-gray-700")}>
+          Napisz do nas, a przygotujemy miejsce dla Twojej firmy na stronie i w komunikacji MLPN.
         </p>
         <a
           href="mailto:kontakt@mlpn.pl"
           className={classNames(
-            "inline-block px-6 py-3 rounded-xl font-bold",
-            darkMode
-              ? "bg-green-500 text-white hover:bg-green-600"
-              : "bg-green-600 text-white hover:bg-green-700"
+            "inline-block rounded-xl px-6 py-3 font-bold",
+            darkMode ? "bg-green-500 text-white hover:bg-green-600" : "bg-green-600 text-white hover:bg-green-700"
           )}
         >
           Napisz do nas
         </a>
+      </div>
+    </div>
+  );
+}
+
+function SponsorProfilePage({ darkMode, sponsor, onBack }) {
+  if (!sponsor) {
+    return (
+      <div className="space-y-3">
+        <BackHeader darkMode={darkMode} title="Profil sponsora" onBack={onBack} />
+        <Card darkMode={darkMode}>
+          <div className={darkMode ? "text-gray-300" : "text-gray-700"}>
+            Nie znaleziono sponsora. Sprawdź, czy profil jest aktywny w panelu admina.
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  const links = [
+    sponsor.websiteUrl ? { label: sponsor.ctaLabel || "Odwiedź stronę", href: sponsor.websiteUrl } : null,
+    sponsor.facebookUrl ? { label: "Facebook", href: sponsor.facebookUrl } : null,
+    sponsor.instagramUrl ? { label: "Instagram", href: sponsor.instagramUrl } : null,
+    sponsor.contactEmail ? { label: sponsor.contactEmail, href: `mailto:${sponsor.contactEmail}`, icon: "mail" } : null,
+    sponsor.phone ? { label: sponsor.phone, href: `tel:${sponsor.phone.replace(/\s+/g, "")}`, icon: "phone" } : null,
+  ].filter(Boolean);
+
+  return (
+    <div className="space-y-4">
+      <BackHeader darkMode={darkMode} title={`Sponsor: ${sponsor.name}`} onBack={onBack} />
+
+      <Card darkMode={darkMode} className="p-0 overflow-hidden">
+        <div
+          className={classNames(
+            "relative overflow-hidden p-5 md:p-8",
+            darkMode
+              ? "bg-gradient-to-br from-[#112a54] via-[#163a70] to-[#0b1324]"
+              : "bg-gradient-to-br from-blue-50 via-white to-emerald-50"
+          )}
+        >
+          <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)] md:items-center">
+            <div className="flex h-44 items-center justify-center rounded-3xl bg-white p-5 shadow-lg md:h-52">
+              {sponsor.logoUrl ? (
+                <img src={sponsor.logoUrl} alt={sponsor.name} className="h-full w-full object-contain" />
+              ) : (
+                <Trophy size={64} className="text-gray-400" />
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <div className={classNames("inline-flex rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.16em]", darkMode ? "border-white/15 bg-white/10 text-white" : "border-gray-200 bg-white text-gray-700")}>
+                {sponsorCategoryLabel(sponsor.category)}
+              </div>
+              <h1 className="mt-4 text-3xl font-black leading-tight md:text-5xl">{sponsor.name}</h1>
+              <p className={classNames("mt-3 max-w-2xl text-base leading-relaxed", darkMode ? "text-gray-200" : "text-gray-700")}>
+                {sponsor.shortDescription || sponsor.description || "Partner Miejskiej Ligi Piłki Nożnej w Sulejówku."}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <Card darkMode={darkMode}>
+          <div className="mb-3 text-xl font-black">O firmie</div>
+          <div className={classNames("whitespace-pre-line leading-relaxed", darkMode ? "text-gray-300" : "text-gray-700")}>
+            {sponsor.description || sponsor.shortDescription || "Opis firmy zostanie uzupełniony w panelu admina."}
+          </div>
+        </Card>
+
+        <Card darkMode={darkMode}>
+          <div className="mb-3 text-xl font-black">Kontakt i linki</div>
+          {links.length > 0 ? (
+            <div className="space-y-2">
+              {links.map((link) => (
+                <a
+                  key={`${link.href}-${link.label}`}
+                  href={link.href}
+                  target={link.href.startsWith("http") ? "_blank" : undefined}
+                  rel={link.href.startsWith("http") ? "noreferrer" : undefined}
+                  className={classNames(
+                    "flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm font-black transition-colors",
+                    darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-gray-200 bg-gray-50 hover:bg-white"
+                  )}
+                >
+                  <span className="flex min-w-0 items-center gap-2 truncate">
+                    {link.icon === "mail" && <Mail size={16} />}
+                    {link.icon === "phone" && <Phone size={16} />}
+                    <span className="truncate">{link.label}</span>
+                  </span>
+                  <ChevronRight size={16} className="shrink-0" />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+              Linki i dane kontaktowe zostaną uzupełnione w panelu admina.
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );
@@ -3946,6 +4240,7 @@ export default function App() {
     polls,
     freeAgents,
     tournaments,
+    sponsors,
     typerConfig,
     seasonSummary,
     matchGalleries,
@@ -4018,6 +4313,7 @@ export default function App() {
   const [selectedTeam, setSelectedTeam] = useState(null); // team name
   const [selectedMatchId, setSelectedMatchId] = useState(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
+  const [selectedSponsorId, setSelectedSponsorId] = useState(null);
   const [matchViewMode, setMatchViewMode] = useState("inline");
 
   // Historia nawigacji - stos poprzednich widoków
@@ -4050,12 +4346,14 @@ export default function App() {
       setSelectedTeam(route.selectedTeam || null);
       setSelectedMatchId(route.selectedMatchId || null);
       setSelectedPlayerId(route.selectedPlayerId || null);
+      setSelectedSponsorId(route.selectedSponsorId || null);
       setMatchViewMode(route.matchViewMode === "page" ? "page" : "inline");
       setMobileMenuOpen(false);
 
       if (
         route.selectedTeam ||
         route.selectedPlayerId ||
+        route.selectedSponsorId ||
         (route.selectedMatchId && route.matchViewMode === "page")
       ) {
         setNavigationHistory([
@@ -4065,6 +4363,7 @@ export default function App() {
             selectedTeam: null,
             selectedMatchId: null,
             selectedPlayerId: null,
+            selectedSponsorId: null,
             matchViewMode: "inline",
             round: route.round || 1,
           },
@@ -4191,6 +4490,8 @@ export default function App() {
     () => createTeamLogoRegistry({ standings: stats, fixtures, matches }),
     [stats, fixtures, matches]
   );
+
+  const publicSponsors = useMemo(() => getRenderableSponsors(sponsors), [sponsors]);
 
   const teamAbbrMap = useMemo(() => makeUniqueAbbrMap(currentLeagues), [currentLeagues]);
 
@@ -4510,6 +4811,7 @@ export default function App() {
     setSelectedTeam(null);
     setSelectedMatchId(null);
     setSelectedPlayerId(null);
+    setSelectedSponsorId(null);
     setMatchViewMode("inline");
     setActiveContext(nextContext);
     setActiveSection(nextSection);
@@ -4540,6 +4842,7 @@ export default function App() {
     setSelectedTeam(null);
     setSelectedMatchId(null);
     setSelectedPlayerId(null);
+    setSelectedSponsorId(null);
     setMatchViewMode("inline");
     setActiveContext(nextContext);
     setActiveSection(nextSection);
@@ -4561,6 +4864,7 @@ export default function App() {
       selectedTeam,
       selectedMatchId,
       selectedPlayerId,
+      selectedSponsorId,
       matchViewMode,
       round,
     };
@@ -4574,6 +4878,7 @@ export default function App() {
         last.selectedTeam === nextEntry.selectedTeam &&
         last.selectedMatchId === nextEntry.selectedMatchId &&
         last.selectedPlayerId === nextEntry.selectedPlayerId &&
+        last.selectedSponsorId === nextEntry.selectedSponsorId &&
         last.matchViewMode === nextEntry.matchViewMode &&
         last.round === nextEntry.round
       ) {
@@ -4609,6 +4914,7 @@ export default function App() {
     setSelectedTeam(previous.selectedTeam);
     setSelectedMatchId(previous.selectedMatchId);
     setSelectedPlayerId(previous.selectedPlayerId);
+    setSelectedSponsorId(previous.selectedSponsorId || null);
     setMatchViewMode(previous.matchViewMode === "page" ? "page" : "inline");
     calendarRoundAutoRef.current = false;
     setRound(previous.round);
@@ -4622,6 +4928,7 @@ export default function App() {
     setSelectedTeam(null);
     setSelectedMatchId(null);
     setSelectedPlayerId(null);
+    setSelectedSponsorId(null);
     setMatchViewMode("inline");
     setNavigationHistory([]); // Czyść historię przy powrocie do domu
     // Przywróć bieżący sezon - strona główna zawsze pokazuje aktualne dane
@@ -4640,6 +4947,7 @@ export default function App() {
     saveToHistory();
     setSelectedMatchId(null);
     setSelectedPlayerId(null);
+    setSelectedSponsorId(null);
     setSelectedTeam(team);
   };
 
@@ -4648,6 +4956,7 @@ export default function App() {
     setMatchViewMode("inline");
     setSelectedTeam(null);
     setSelectedPlayerId(null);
+    setSelectedSponsorId(null);
     setSelectedMatchId((prev) => {
       const next = prev === matchId ? null : matchId;
       if (next) {
@@ -4675,6 +4984,7 @@ export default function App() {
     setMatchViewMode("page");
     setSelectedTeam(null);
     setSelectedPlayerId(null);
+    setSelectedSponsorId(null);
     setSelectedMatchId(matchId);
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4685,7 +4995,22 @@ export default function App() {
     saveToHistory();
     setSelectedTeam(null);
     setSelectedMatchId(null);
+    setSelectedSponsorId(null);
     setSelectedPlayerId(playerId);
+  };
+
+  const openSponsor = (sponsor) => {
+    const sponsorId = typeof sponsor === "string" ? sponsor : sponsorRouteId(sponsor);
+    if (!sponsorId) return;
+    saveToHistory();
+    setSelectedTeam(null);
+    setSelectedMatchId(null);
+    setSelectedPlayerId(null);
+    setSelectedSponsorId(sponsorId);
+    setMatchViewMode("inline");
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 0);
   };
 
   const goToLeague = (leagueId) => {
@@ -4696,6 +5021,7 @@ export default function App() {
     setSelectedTeam(null);
     setSelectedMatchId(null);
     setSelectedPlayerId(null);
+    setSelectedSponsorId(null);
   };
 
   const closeDetail = () => {
@@ -4703,6 +5029,7 @@ export default function App() {
     setSelectedTeam(null);
     setSelectedMatchId(null);
     setSelectedPlayerId(null);
+    setSelectedSponsorId(null);
   };
 
   const LEAGUE_NAMES = { "1st": "I Liga", "2nd": "II Liga", "3rd": "III Liga" };
@@ -4731,6 +5058,7 @@ export default function App() {
       selectedTeam,
       selectedMatchId,
       selectedPlayerId,
+      selectedSponsorId,
       matchViewMode,
       round,
       currentSeason,
@@ -4753,6 +5081,7 @@ export default function App() {
     selectedTeam,
     selectedMatchId,
     selectedPlayerId,
+    selectedSponsorId,
     matchViewMode,
     round,
     currentSeason,
@@ -4790,6 +5119,18 @@ export default function App() {
   // render main "page"
   const renderPage = () => {
     // details have priority
+    if (selectedSponsorId) {
+      const sponsor = publicSponsors.find((item) => sponsorMatchesRoute(item, selectedSponsorId));
+      return (
+        <SponsorProfilePage
+          darkMode={darkMode}
+          sponsor={sponsor}
+          onBack={goBack}
+          openSponsor={openSponsor}
+        />
+      );
+    }
+
     if (selectedPlayerId) {
       return (
         <PlayerProfile
@@ -4898,6 +5239,8 @@ export default function App() {
           darkMode={darkMode}
           activeTab={activeSection}
           setActiveTab={setActiveSection}
+          sponsors={publicSponsors}
+          openSponsor={openSponsor}
         />
       );
     }
@@ -4958,6 +5301,7 @@ export default function App() {
                   stats={stats}
                   news={news}
                   polls={polls}
+                  sponsors={publicSponsors}
                   typerMatches={typerMatches}
                   openTeam={openTeam}
                   openMatch={openMatchInline}
@@ -4965,6 +5309,7 @@ export default function App() {
                   expandedMatchId={selectedMatchId}
                   playersByTeam={playersByTeam}
                   openPlayer={openPlayer}
+                  openSponsor={openSponsor}
                   currentLeagues={currentLeagues}
                   goToLeague={goToLeague}
                   setHomeSection={setActiveSection}
@@ -5652,7 +5997,8 @@ export default function App() {
           {activeContext !== "home" &&
             activeSection === "calendar" &&
             !selectedTeam &&
-            !selectedMatchId && (() => {
+            !selectedMatchId &&
+            !selectedSponsorId && (() => {
               const maxRound = totalRoundsByLeague[activeContext] || _totalRounds;
               return (
               <div className="flex items-center gap-4 mb-4">
@@ -5695,7 +6041,7 @@ export default function App() {
 
           <PageRenderErrorBoundary
             darkMode={darkMode}
-            resetKey={`${activeContext}:${activeSection}:${currentSeason || "no-season"}:${selectedTeam || "no-team"}:${selectedMatchId || "no-match"}:${selectedPlayerId || "no-player"}`}
+            resetKey={`${activeContext}:${activeSection}:${currentSeason || "no-season"}:${selectedTeam || "no-team"}:${selectedMatchId || "no-match"}:${selectedPlayerId || "no-player"}:${selectedSponsorId || "no-sponsor"}`}
           >
             <PageRenderer renderPage={renderPage} />
           </PageRenderErrorBoundary>
@@ -12569,6 +12915,104 @@ function HomeDashboardMatchStrip({
   );
 }
 
+function HomeDashboardSponsorBand({ darkMode, sponsors = [], openSponsor }) {
+  const visibleSponsors = getRenderableSponsors(sponsors).slice(0, 7);
+  const titleSponsor =
+    visibleSponsors.find((sponsor) => sponsor.category === "sponsor_tytularny") ||
+    visibleSponsors[0] ||
+    null;
+  const restSponsors = visibleSponsors.filter((sponsor) => sponsor !== titleSponsor).slice(0, 6);
+
+  if (!titleSponsor) return null;
+
+  const open = (sponsor) => {
+    if (sponsor?.id || sponsor?.profileSlug) {
+      openSponsor?.(sponsor);
+    } else if (sponsor?.websiteUrl) {
+      window.open(sponsor.websiteUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  return (
+    <Card darkMode={darkMode} className="p-0 overflow-hidden">
+      <div className={classNames("p-3 sm:p-4", darkMode ? "bg-white/[0.03]" : "bg-white")}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className={classNames("text-[10px] font-black uppercase tracking-[0.18em]", darkMode ? "text-gray-400" : "text-gray-500")}>
+              Partnerzy MLPN
+            </div>
+            <div className="text-lg font-black leading-tight">Grają z nami</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => open(titleSponsor)}
+            className={classNames(
+              "hidden rounded-full border px-3 py-1.5 text-xs font-black transition-colors sm:inline-flex",
+              darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-gray-200 bg-gray-50 hover:bg-white"
+            )}
+          >
+            Profil sponsora
+          </button>
+        </div>
+
+        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+          <button
+            type="button"
+            onClick={() => open(titleSponsor)}
+            className={classNames(
+              "group flex items-center gap-3 rounded-2xl border p-3 text-left transition-all hover:-translate-y-0.5",
+              darkMode ? "border-amber-300/25 bg-amber-300/10 hover:bg-amber-300/15" : "border-amber-200 bg-amber-50 hover:bg-amber-100/70"
+            )}
+          >
+            <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-2xl bg-white p-2 shadow-sm">
+              {titleSponsor.logoUrl ? (
+                <img src={titleSponsor.logoUrl} alt={titleSponsor.name} className="h-full w-full object-contain" />
+              ) : (
+                <Trophy size={28} className="text-amber-500" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className={classNames("text-[10px] font-black uppercase tracking-[0.16em]", darkMode ? "text-amber-100" : "text-amber-700")}>
+                {sponsorCategoryLabel(titleSponsor.category)}
+              </div>
+              <div className="truncate text-base font-black">{titleSponsor.name}</div>
+              <div className={classNames("mt-1 line-clamp-2 text-xs", darkMode ? "text-gray-300" : "text-gray-600")}>
+                {titleSponsor.shortDescription || titleSponsor.description || "Partner wspierający rozgrywki MLPN."}
+              </div>
+            </div>
+          </button>
+
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-3">
+            {restSponsors.map((sponsor) => (
+              <button
+                key={sponsorRouteId(sponsor) || sponsor.name}
+                type="button"
+                onClick={() => open(sponsor)}
+                className={classNames(
+                  "group flex min-h-[74px] flex-col items-center justify-center rounded-2xl border p-2 transition-colors",
+                  darkMode ? "border-white/10 bg-white/[0.04] hover:bg-white/10" : "border-gray-200 bg-gray-50 hover:bg-white"
+                )}
+                title={sponsor.name}
+              >
+                <div className="flex h-9 w-full items-center justify-center">
+                  {sponsor.logoUrl ? (
+                    <img src={sponsor.logoUrl} alt={sponsor.name} className="max-h-9 max-w-full object-contain" />
+                  ) : (
+                    <Trophy size={20} className={darkMode ? "text-gray-500" : "text-gray-400"} />
+                  )}
+                </div>
+                <div className="mt-1 w-full truncate text-center text-[10px] font-black">
+                  {sponsor.name}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function HomeDashboard({
   darkMode,
   fixtures = [],
@@ -12576,6 +13020,7 @@ function HomeDashboard({
   stats = {},
   news = [],
   polls = [],
+  sponsors = [],
   typerMatches = [],
   openTeam,
   openMatch,
@@ -12583,6 +13028,7 @@ function HomeDashboard({
   expandedMatchId,
   playersByTeam,
   openPlayer,
+  openSponsor,
   currentLeagues = [],
   goToLeague,
   setHomeSection,
@@ -12610,6 +13056,7 @@ function HomeDashboard({
   const safePolls = Array.isArray(polls)
     ? polls.filter((item) => item && typeof item === "object")
     : [];
+  const safeSponsors = getRenderableSponsors(sponsors);
   const safeTyperMatches = Array.isArray(typerMatches)
     ? typerMatches.filter((item) => item && typeof item === "object")
     : [];
@@ -13113,6 +13560,12 @@ function HomeDashboard({
                 currentRound={currentRound}
               />
             )}
+
+            <HomeDashboardSponsorBand
+              darkMode={darkMode}
+              sponsors={safeSponsors}
+              openSponsor={openSponsor}
+            />
           </div>
 
           <div className="grid gap-3">

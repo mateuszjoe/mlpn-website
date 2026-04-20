@@ -67,6 +67,15 @@ export const ADMIN_PERMISSION_GROUPS = [
     ],
   },
   {
+    key: "sponsors",
+    label: "Sponsorzy",
+    permissions: [
+      { key: "sponsors.create", label: "Dodawanie sponsorow" },
+      { key: "sponsors.delete", label: "Usuwanie sponsorow" },
+      { key: "sponsors.edit", label: "Edycja sponsorow" },
+    ],
+  },
+  {
     key: "polls",
     label: "Ankiety",
     permissions: [
@@ -110,6 +119,7 @@ export const ADMIN_SECTION_PERMISSIONS = {
   results: ["results.enter", "results.edit"],
   referees: ["referees.create", "referees.edit", "referees.delete"],
   news: ["news.create", "news.edit", "news.delete"],
+  sponsors: ["sponsors.create", "sponsors.edit", "sponsors.delete"],
   "control-center": [
     "polls.create",
     "polls.edit",
@@ -141,6 +151,9 @@ export const LEGACY_EDITOR_PERMISSION_KEYS = new Set([
   "news.create",
   "news.edit",
   "news.delete",
+  "sponsors.create",
+  "sponsors.edit",
+  "sponsors.delete",
   "polls.create",
   "polls.edit",
   "polls.delete",

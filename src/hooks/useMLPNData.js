@@ -11,6 +11,7 @@ import {
   fetchTopRed,
   fetchNews,
   fetchPolls,
+  fetchSponsors,
   fetchActiveTyperConfig,
   fetchFreeAgents,
   fetchTournaments,
@@ -52,6 +53,7 @@ export function useMLPNData() {
   const [polls, setPolls] = useState([]);
   const [freeAgents, setFreeAgents] = useState([]);
   const [tournaments, setTournaments] = useState([]);
+  const [sponsors, setSponsors] = useState([]);
   const [typerConfig, setTyperConfig] = useState(null);
 
   // Cache sezonów
@@ -59,6 +61,7 @@ export function useMLPNData() {
   const seasonsRef = useRef([]); // pełne dane sezonów (z polem status)
   const [defaultSeason, setDefaultSeason] = useState(null); // sezon z is_current=true
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [contentRefreshTrigger, setContentRefreshTrigger] = useState(0);
 
   // Fikcyjni gracze (puste - brak w bazie na razie)
   const [players, setPlayers] = useState([]);
@@ -262,9 +265,10 @@ export function useMLPNData() {
 
     async function loadContent() {
       try {
-        const [newsData, pollsData, freeData, tourData] = await Promise.all([
+        const [newsData, pollsData, sponsorData, freeData, tourData] = await Promise.all([
           fetchNews(),
           fetchPolls(),
+          fetchSponsors(),
           fetchFreeAgents(),
           fetchTournaments(),
         ]);
@@ -273,6 +277,7 @@ export function useMLPNData() {
 
         setNews(newsData);
         setPolls(pollsData);
+        setSponsors(sponsorData);
         setFreeAgents(freeData);
         setTournaments(tourData);
       } catch (err) {
@@ -282,7 +287,7 @@ export function useMLPNData() {
 
     loadContent();
     return () => { cancelled = true; };
-  }, []);
+  }, [contentRefreshTrigger]);
 
   // Stats obiekt kompatybilny z App.js
   const stats = {
@@ -307,6 +312,7 @@ export function useMLPNData() {
   const refreshData = useCallback(() => {
     if (currentSeason) delete cache.current[currentSeason];
     setRefreshTrigger(t => t + 1);
+    setContentRefreshTrigger(t => t + 1);
   }, [currentSeason]);
 
   return {
@@ -331,6 +337,7 @@ export function useMLPNData() {
     polls,
     freeAgents,
     tournaments,
+    sponsors,
     typerConfig,
     seasonSummary,
     matchGalleries,

@@ -547,6 +547,47 @@ export async function fetchPolls() {
   });
 }
 
+export function normalizeSponsorRow(row = {}) {
+  return {
+    id: row.id,
+    name: row.name || '',
+    logoUrl: row.logo_url || '',
+    websiteUrl: row.website_url || '',
+    description: row.description || '',
+    shortDescription: row.short_description || '',
+    category: row.category || 'sponsor',
+    displayOrder: Number(row.display_order || 0),
+    isActive: row.is_active !== false,
+    profileSlug: row.profile_slug || '',
+    facebookUrl: row.facebook_url || '',
+    instagramUrl: row.instagram_url || '',
+    contactEmail: row.contact_email || '',
+    phone: row.phone || '',
+    ctaLabel: row.cta_label || '',
+  };
+}
+
+export async function fetchSponsors({ onlyActive = true } = {}) {
+  let query = publicSupabase
+    .from('sponsors')
+    .select('*')
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (onlyActive) {
+    query = query.eq('is_active', true);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.warn('Blad pobierania sponsorow:', error.message);
+    return [];
+  }
+
+  return (data || []).map(normalizeSponsorRow).filter((sponsor) => sponsor.name);
+}
+
 export async function fetchActiveTyperConfig(seasonYear, round) {
   if (!seasonYear || !round) return null;
 
