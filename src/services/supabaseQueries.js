@@ -265,6 +265,8 @@ export async function fetchAllMatches(seasonYear) {
       round: row.round,
       date: scheduleHidden ? null : row.match_date,
       time: scheduleHidden ? '' : (row.match_time ? row.match_time.slice(0, 5) : ''),
+      scheduleDate: row.match_date || null,
+      scheduleTime: row.match_time ? row.match_time.slice(0, 5) : '',
       scheduleHidden,
       venue: row.venue || '',
       home: row.home_team_name,
@@ -369,14 +371,16 @@ export async function fetchTopScorers(seasonYear) {
 
   if (error) throw error;
 
-  return (data || []).map(row => ({
-    playerId: row.player_id,
-    name: row.display_name,
-    team: row.team_name,
-    league: row.league_code,
-    goals: row.goals || 0,
-    assists: row.assists || 0,
-  }));
+  return (data || [])
+    .filter(row => Number(row.goals || 0) > 0)
+    .map(row => ({
+      playerId: row.player_id,
+      name: row.display_name,
+      team: row.team_name,
+      league: row.league_code,
+      goals: row.goals || 0,
+      assists: row.assists || 0,
+    }));
 }
 
 export async function fetchTopAssists(seasonYear) {
@@ -389,14 +393,16 @@ export async function fetchTopAssists(seasonYear) {
 
   if (error) throw error;
 
-  return (data || []).map(row => ({
-    playerId: row.player_id,
-    name: row.display_name,
-    team: row.team_name,
-    league: row.league_code,
-    goals: row.goals || 0,
-    assists: row.assists || 0,
-  }));
+  return (data || [])
+    .filter(row => Number(row.assists || 0) > 0)
+    .map(row => ({
+      playerId: row.player_id,
+      name: row.display_name,
+      team: row.team_name,
+      league: row.league_code,
+      goals: row.goals || 0,
+      assists: row.assists || 0,
+    }));
 }
 
 export async function fetchTopYellow(seasonYear) {
@@ -408,14 +414,16 @@ export async function fetchTopYellow(seasonYear) {
 
   if (error) throw error;
 
-  return (data || []).map(row => ({
-    playerId: row.player_id,
-    name: row.display_name,
-    team: row.team_name,
-    league: row.league_code,
-    yellow: row.yellow_cards || 0,
-    red: row.red_cards || 0,
-  }));
+  return (data || [])
+    .filter(row => Number(row.yellow_cards || 0) > 0)
+    .map(row => ({
+      playerId: row.player_id,
+      name: row.display_name,
+      team: row.team_name,
+      league: row.league_code,
+      yellow: row.yellow_cards || 0,
+      red: row.red_cards || 0,
+    }));
 }
 
 export async function fetchTopRed(seasonYear) {
@@ -460,14 +468,16 @@ export async function fetchTopRed(seasonYear) {
     }));
   }
 
-  return (data || []).map(row => ({
-    playerId: row.player_id,
-    name: row.display_name,
-    team: row.team_name,
-    league: row.league_code,
-    red: row.red_cards || 0,
-    yellow: row.yellow_cards || 0,
-  }));
+  return (data || [])
+    .filter(row => Number(row.red_cards || 0) > 0)
+    .map(row => ({
+      playerId: row.player_id,
+      name: row.display_name,
+      team: row.team_name,
+      league: row.league_code,
+      red: row.red_cards || 0,
+      yellow: row.yellow_cards || 0,
+    }));
 }
 
 // ============================================================

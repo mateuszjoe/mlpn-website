@@ -2274,9 +2274,82 @@ function fixtureCenterTimeLabel(f) {
   if (statusKey === "unplayed") return "Nierozegrany";
   if (statusKey === "postponed") return "Przełożony";
   if (statusKey === "cancelled") return "Odwołany";
-  if (f?.scheduleHidden) return "Godzina wkrótce";
+  if (f?.scheduleHidden) return "Termin wkrótce";
   if (f?.time) return f.time;
   return "Godzina TBD";
+}
+
+function isPositiveStatLeader(row, statKey) {
+  return (
+    !!row &&
+    String(row.name || "").trim().length > 0 &&
+    String(row.team || "").trim().length > 0 &&
+    Number(row[statKey] || 0) > 0
+  );
+}
+
+function hasLeagueTableResults(rows) {
+  return (rows || []).some(
+    (row) =>
+      Number(row?.played || 0) > 0 ||
+      Number(row?.win || 0) > 0 ||
+      Number(row?.draw || 0) > 0 ||
+      Number(row?.loss || 0) > 0 ||
+      Number(row?.gf || 0) > 0 ||
+      Number(row?.ga || 0) > 0 ||
+      Number(row?.pts || 0) > 0
+  );
+}
+
+function normalizeFormItem(item) {
+  const result = typeof item === "string" ? item : item?.result;
+  if (!["W", "R", "P"].includes(result)) return null;
+  return {
+    ...(typeof item === "object" && item ? item : {}),
+    result,
+  };
+}
+
+function fixtureDashboardMetaLine(fixture, roundLabel, leagueLabel = "") {
+  if (!fixture) return "";
+  if (fixture.scheduleHidden) {
+    return [roundLabel, "termin zostanie podany"].filter(Boolean).join(" • ");
+  }
+  const parts = [];
+  if (fixture.date) parts.push(fixture.date);
+  else parts.push("Termin do ustalenia");
+  if (fixture.time) parts.push(fixture.time);
+  parts.push(roundLabel);
+  if (leagueLabel) parts.push(leagueLabel);
+  return parts.filter(Boolean).join(" • ");
+}
+
+function fixtureDateSortValue(item, fallback = "9999-12-31") {
+  return item?.date || item?.scheduleDate || fallback;
+}
+
+function fixtureTimeSortValue(item, fallback = "23:59") {
+  return item?.time || item?.scheduleTime || fallback;
+}
+
+function formatNumericDate(dateStr) {
+  if (!dateStr) return "";
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  if (!y || !m || !d) return String(dateStr);
+  return `${pad2(d)}.${pad2(m)}.${y}`;
+}
+
+function formatFixtureDateRange(items) {
+  const dates = (items || [])
+    .map((item) => item?.scheduleDate || item?.date)
+    .filter(Boolean)
+    .sort();
+
+  if (!dates.length) return "";
+  const first = dates[0];
+  const last = dates[dates.length - 1];
+  if (first === last) return formatNumericDate(first);
+  return `${formatNumericDate(first)} - ${formatNumericDate(last)}`;
 }
 
 function fixtureDateHeaderParts(dateStr) {
@@ -6020,6 +6093,7 @@ function LeagueHomePage({
 
   // Tabela - wszystkie drużyny (bez limitu)
   const simpleTable = table;
+  const leagueHasResults = hasLeagueTableResults(table);
 
   // Podsumowanie sezonu dla sezonów archiwalnych
   const leagueSummary = seasonSummary?.[leagueId];
@@ -6106,7 +6180,7 @@ function LeagueHomePage({
               darkMode ? "text-gray-400" : "text-gray-600"
             )}
           >
-            Sezon {leaguePlayedRounds}/{leagueTotalRounds} kolejek
+            Sezon {leaguePlayedRounds || 0}/{leagueTotalRounds || 0} kolejek
           </div>
         </div>
         <div className="w-full sm:w-auto self-stretch sm:self-auto">
@@ -6483,7 +6557,7 @@ function LeagueHomePage({
       )}
 
       {/* Karta mistrza gdy wszystkie mecze rozegrane i brak nadchodzącego */}
-      {!isArchived && !upcomingMatch && leaguePlayedRounds >= leagueTotalRounds && table[0] && (
+      {!isArchived && !upcomingMatch && leagueHasResults && leagueTotalRounds > 0 && leaguePlayedRounds >= leagueTotalRounds && table[0] && (
         <div
           className={classNames(
             "relative overflow-hidden rounded-2xl border-2 p-8 text-center e3d-card",
@@ -6591,7 +6665,7 @@ function LeagueHomePage({
                   )}
                   title="Kliknij aby rozwinąć szczegóły"
                 >
-                  {upcomingMatch.date || "Termin do ustalenia"}
+                  {upcomingMatch.scheduleHidden ? "Termin wkrótce" : upcomingMatch.date || "Termin do ustalenia"}
                 </button>
               </div>
 
@@ -6635,7 +6709,7 @@ function LeagueHomePage({
                   )}
                   title="Kliknij aby rozwinąć szczegóły"
                 >
-                  {upcomingMatch.date || "Termin"}
+                  {upcomingMatch.scheduleHidden ? "Termin wkrótce" : upcomingMatch.date || "Termin"}
                 </button>
               </div>
 
@@ -6654,7 +6728,7 @@ function LeagueHomePage({
                 </button>
                 <div className="min-w-[98px] flex items-center justify-center gap-2">
                   <div className={classNames("text-[11px] font-semibold", darkMode ? "text-gray-300" : "text-gray-700")}>
-                    {upcomingMatch.time || "--:--"}
+                    {fixtureCenterTimeLabel(upcomingMatch)}
                   </div>
                   <VideoIcon
                     darkMode={darkMode}
@@ -6797,6 +6871,18 @@ function LeagueHomePage({
         <Card darkMode={darkMode}>
           <div className="font-extrabold mb-3 text-lg">Ostatnie spotkania</div>
           <div className="space-y-2">
+            {recentMatches.length === 0 && (
+              <div
+                className={classNames(
+                  "rounded-xl border p-4 text-sm",
+                  darkMode
+                    ? "border-white/10 bg-black/10 text-gray-300"
+                    : "border-gray-200 bg-gray-50 text-gray-600"
+                )}
+              >
+                Ostatnie spotkania pojawią się po wpisaniu pierwszych wyników.
+              </div>
+            )}
             {recentMatches.map((m) => {
               const isExpanded = expandedMatchId === m.id;
               return (
@@ -7163,10 +7249,10 @@ function CalendarPage({
 }) {
   const groupedFixtures = useMemo(() => {
     const sortedFixtures = [...(fixtures || [])].sort((a, b) => {
-      const dateCompare = String(a?.date || "").localeCompare(String(b?.date || ""));
+      const dateCompare = fixtureDateSortValue(a).localeCompare(fixtureDateSortValue(b));
       if (dateCompare !== 0) return dateCompare;
 
-      const timeCompare = String(a?.time || "").localeCompare(String(b?.time || ""));
+      const timeCompare = fixtureTimeSortValue(a).localeCompare(fixtureTimeSortValue(b));
       if (timeCompare !== 0) return timeCompare;
 
       return String(a?.home || "").localeCompare(String(b?.home || ""));
@@ -7175,14 +7261,23 @@ function CalendarPage({
     const groups = [];
     let currentKey = null;
     let currentItems = [];
+    let currentHidden = false;
 
     sortedFixtures.forEach((f) => {
-      const key = f?.date || "__no_date__";
+      const hidden = !!f?.scheduleHidden;
+      const key = hidden ? `hidden-round-${f?.round || round || "x"}` : f?.date || "__no_date__";
       if (key !== currentKey) {
         if (currentItems.length) {
-          groups.push({ key: currentKey, date: currentKey === "__no_date__" ? null : currentKey, items: currentItems });
+          groups.push({
+            key: currentKey,
+            date: currentHidden || currentKey === "__no_date__" ? null : currentKey,
+            hidden: currentHidden,
+            dateRange: currentHidden ? formatFixtureDateRange(currentItems) : "",
+            items: currentItems,
+          });
         }
         currentKey = key;
+        currentHidden = hidden;
         currentItems = [f];
       } else {
         currentItems.push(f);
@@ -7190,11 +7285,17 @@ function CalendarPage({
     });
 
     if (currentItems.length) {
-      groups.push({ key: currentKey, date: currentKey === "__no_date__" ? null : currentKey, items: currentItems });
+      groups.push({
+        key: currentKey,
+        date: currentHidden || currentKey === "__no_date__" ? null : currentKey,
+        hidden: currentHidden,
+        dateRange: currentHidden ? formatFixtureDateRange(currentItems) : "",
+        items: currentItems,
+      });
     }
 
     return groups;
-  }, [fixtures]);
+  }, [fixtures, round]);
 
   const byeTeam = useMemo(() => {
     const teams = (leagueTeams || []).filter(Boolean);
@@ -7261,7 +7362,13 @@ function CalendarPage({
       <div className="grid gap-3">
         {groupedFixtures.map((group) => {
           const header = fixtureDateHeaderParts(group.date);
-          const isHiddenScheduleGroup = group.items.some((item) => item?.scheduleHidden);
+          const isHiddenScheduleGroup = group.hidden || group.items.some((item) => item?.scheduleHidden);
+          const headerKicker = isHiddenScheduleGroup
+            ? `Kolejka ${round}`
+            : header.weekday;
+          const headerDate = isHiddenScheduleGroup
+            ? group.dateRange || "Termin do ustalenia"
+            : header.date;
           return (
           <div key={group.key} className="space-y-2">
             <div
@@ -7286,16 +7393,16 @@ function CalendarPage({
                       darkMode ? "text-cyan-200" : "text-blue-700"
                     )}
                   >
-                    {header.weekday}
+                    {headerKicker}
                   </div>
-                  {header.date ? (
+                  {headerDate ? (
                     <div
                       className={classNames(
                         "text-base sm:text-lg font-black leading-tight",
                         darkMode ? "text-white" : "text-gray-900"
                       )}
                     >
-                      {header.date}
+                      {headerDate}
                     </div>
                   ) : null}
                   {isHiddenScheduleGroup && (
@@ -11486,7 +11593,7 @@ function HomeDashboardFeatureCard({
                 </div>
                 <div className="mt-3 max-w-3xl text-sm sm:text-base text-white/80 leading-relaxed">
                   {featuredMatchData
-                    ? "Wybrany mecz kolejki z godziną, tabelą i szybkim wejściem do szczegółów."
+                    ? "Wybrany mecz kolejki z kontekstem tabeli i szybkim wejściem do szczegółów."
                     : "Najważniejsze informacje z ligi w jednym miejscu."}
                 </div>
               </div>
@@ -11556,11 +11663,11 @@ function HomeDashboardFeatureCard({
                     </div>
                     <div className="mt-3 flex items-center gap-1 lg:justify-end">
                       {featuredHomeForm.length ? (
-                        featuredHomeForm.map((value, idx) => (
+                        featuredHomeForm.map((item, idx) => (
                           <FormDot
                             key={`featured-home-form-${featuredMatchData?.id || "none"}-${idx}`}
-                            v={value}
-                            title={`Forma: ${value}`}
+                            v={item.result}
+                            title={item.score ? `${item.score} ${displayTeamName(item.opponent)}` : `Forma: ${item.result}`}
                             small
                           />
                         ))
@@ -11594,11 +11701,18 @@ function HomeDashboardFeatureCard({
                     </>
                   ) : (
                     <>
-                      <div className="mt-3 text-4xl sm:text-5xl font-black leading-none text-white">
-                        {featuredMatchData.time || "--:--"}
+                      <div className={classNames(
+                        "mt-3 font-black leading-none text-white",
+                        featuredMatchData.scheduleHidden ? "text-2xl sm:text-3xl" : "text-4xl sm:text-5xl"
+                      )}>
+                        {featuredMatchData.scheduleHidden
+                          ? "Termin wkrótce"
+                          : featuredMatchData.time || "Godzina TBD"}
                       </div>
                       <div className="mt-2 text-sm font-semibold text-white/72">
-                        Start spotkania
+                        {featuredMatchData.scheduleHidden
+                          ? "Dokładny dzień i godzina zostaną podane później"
+                          : "Start spotkania"}
                       </div>
                     </>
                   )
@@ -11668,11 +11782,11 @@ function HomeDashboardFeatureCard({
                     </div>
                     <div className="mt-3 flex items-center gap-1">
                       {featuredAwayForm.length ? (
-                        featuredAwayForm.map((value, idx) => (
+                        featuredAwayForm.map((item, idx) => (
                           <FormDot
                             key={`featured-away-form-${featuredMatchData?.id || "none"}-${idx}`}
-                            v={value}
-                            title={`Forma: ${value}`}
+                            v={item.result}
+                            title={item.score ? `${item.score} ${displayTeamName(item.opponent)}` : `Forma: ${item.result}`}
                             small
                           />
                         ))
@@ -11695,8 +11809,13 @@ function HomeDashboardFeatureCard({
                 {featuredMatchData?.league ? leagueLabel(featuredMatchData.league) : "MLPN"}
               </div>
               <div className="mt-1 text-sm text-white/70">
-                {featuredRoundLabel}
-                {featuredMatchData?.date ? ` • ${featuredMatchData.date}` : ""}
+                {featuredMatchData?.scheduleHidden
+                  ? "Dokładny termin zostanie podany."
+                  : [
+                      featuredRoundLabel,
+                      featuredMatchData?.date || "Termin do ustalenia",
+                      featuredMatchData?.time || "",
+                    ].filter(Boolean).join(" • ")}
               </div>
             </div>
 
@@ -11833,7 +11952,9 @@ function HomeDashboardSeasonPulseCard({
                     {leagueLabel(lg.id)}
                   </div>
                   <div className="mt-1 text-sm font-black truncate">
-                    {lg.leader ? displayTeamName(lg.leader.team) : "Czekamy na lidera"}
+                    {lg.hasResults && lg.leader
+                      ? displayTeamName(lg.leader.team)
+                      : "Tabela ruszy po pierwszym wyniku"}
                   </div>
                   <div
                     className={classNames(
@@ -11844,7 +11965,7 @@ function HomeDashboardSeasonPulseCard({
                     {lg.nextMatch
                       ? `Następny mecz: ${displayTeamName(lg.nextMatch.home)} vs ${displayTeamName(
                           lg.nextMatch.away
-                        )}`
+                        )}${lg.nextMatch.scheduleHidden ? " • termin wkrótce" : ""}`
                       : "Brak kolejnego meczu w terminarzu"}
                   </div>
                 </div>
@@ -11877,7 +11998,7 @@ function HomeDashboardSeasonPulseCard({
                       ? "bg-sky-400"
                       : "bg-emerald-400"
                   )}
-                  style={{ width: `${Math.max(8, lg.playedPct || 0)}%` }}
+                  style={{ width: `${lg.playedPct || 0}%` }}
                 />
               </div>
             </button>
@@ -12270,9 +12391,12 @@ function HomeDashboard({
     : [];
   const tableByLeague = safeStats.tableByLeague || {};
   const teamStatsByTeam = safeStats.teamStats || {};
-  const topScorers = Array.isArray(safeStats.topScorers) ? safeStats.topScorers : [];
-  const topAssists = Array.isArray(safeStats.topAssists) ? safeStats.topAssists : [];
-  const topYellow = Array.isArray(safeStats.topYellow) ? safeStats.topYellow : [];
+  const topScorers = (Array.isArray(safeStats.topScorers) ? safeStats.topScorers : [])
+    .filter((row) => isPositiveStatLeader(row, "goals"));
+  const topAssists = (Array.isArray(safeStats.topAssists) ? safeStats.topAssists : [])
+    .filter((row) => isPositiveStatLeader(row, "assists"));
+  const topYellow = (Array.isArray(safeStats.topYellow) ? safeStats.topYellow : [])
+    .filter((row) => isPositiveStatLeader(row, "yellow"));
 
   // last results (global) and upcoming
   const lastMatches = useMemo(() => {
@@ -12327,7 +12451,8 @@ function HomeDashboard({
   const leagueOverview = useMemo(() => {
     return (currentLeagues || []).map((lg) => {
       const table = tableByLeague[lg.id] || [];
-      const leader = table[0] || null;
+      const hasResults = hasLeagueTableResults(table);
+      const leader = hasResults ? table.find((row) => !row.withdrawn) || null : null;
       const top3 = table.slice(0, 3);
       const topScorer = topScorers.find((p) => p.league === lg.id);
       const leagueFixturesAll = (fixtures || []).filter((f) => f.league === lg.id);
@@ -12336,9 +12461,15 @@ function HomeDashboard({
       const nextMatch = leagueFixturesAll
         .filter((f) => !matchById[f.id])
         .filter((f) => !isExcludedFromUpcoming(f.status))
-        .sort((a, b) => (a.round - b.round) || (a.date || "").localeCompare(b.date || ""))[0] || null;
-      const playedPct = leagueFixtures.length ? Math.round((leagueMatches.length / leagueFixtures.length) * 100) : 0;
-      return { ...lg, table, leader, top3, topScorer, leagueFixtures, leagueMatches, nextMatch, playedPct };
+        .sort((a, b) => (
+          (a.round || 0) - (b.round || 0) ||
+          fixtureDateSortValue(a).localeCompare(fixtureDateSortValue(b)) ||
+          fixtureTimeSortValue(a).localeCompare(fixtureTimeSortValue(b))
+        ))[0] || null;
+      const playedPct = leagueFixtures.length
+        ? Math.min(100, Math.max(0, Math.round((leagueMatches.length / leagueFixtures.length) * 100)))
+        : 0;
+      return { ...lg, table, hasResults, leader, top3, topScorer, leagueFixtures, leagueMatches, nextMatch, playedPct };
     });
   }, [currentLeagues, tableByLeague, topScorers, fixtures, matches, matchById]);
 
@@ -12389,6 +12520,9 @@ function HomeDashboard({
         : [],
     [latestPoll]
   );
+  const latestPollVotesKey = Array.isArray(latestPoll?.votes)
+    ? latestPoll.votes.map((value) => Number(value || 0)).join("|")
+    : "";
   const [heroPollCounts, setHeroPollCounts] = useState([]);
   const [heroPollVoteIdx, setHeroPollVoteIdx] = useState(null);
   useEffect(() => {
@@ -12397,9 +12531,11 @@ function HomeDashboard({
       setHeroPollVoteIdx(null);
       return;
     }
-    setHeroPollCounts(latestPollOptions.map(() => 8 + Math.floor(Math.random() * 30)));
+    setHeroPollCounts(
+      latestPollOptions.map((_, idx) => Number(latestPoll?.votes?.[idx] || 0))
+    );
     setHeroPollVoteIdx(null);
-  }, [latestPoll?.id, latestPollOptions.length]);
+  }, [latestPoll?.id, latestPollOptions.length, latestPollVotesKey]);
 
   const heroSlides = useMemo(() => {
     const slides = [];
@@ -12453,14 +12589,17 @@ function HomeDashboard({
         kicker: "Najbliższy mecz",
         title: `${displayTeamName(heroUpcoming.home)} vs ${displayTeamName(heroUpcoming.away)}`,
         body: "Nadchodzące spotkanie w bieżącej kolejce.",
-        meta: `${heroUpcoming.date || "--"} • ${heroUpcoming.time || "--:--"} • kolejka ${heroUpcoming.round || "-"}`,
+        meta: fixtureDashboardMetaLine(
+          heroUpcoming,
+          heroUpcoming.round ? `kolejka ${heroUpcoming.round}` : "kolejka"
+        ),
         ctaLabel: "Szczegóły meczu",
         onClick: () => openMatch?.(heroUpcoming.id),
       });
     }
 
     return slides.filter(Boolean);
-  }, [heroTyperMatches, currentRound, heroRecent, latestNews, latestPoll, latestPollOptions, heroUpcoming]);
+  }, [currentRound, heroRecent, latestNews, latestPoll, latestPollOptions, heroUpcoming]);
 
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   useEffect(() => {
@@ -12609,11 +12748,14 @@ function HomeDashboard({
   const featuredLeagueTable = featuredMatchData?.league
     ? tableByLeague[featuredMatchData.league] || []
     : [];
+  const featuredLeagueHasResults = hasLeagueTableResults(featuredLeagueTable);
   const featuredPositionOf = (team) =>
-    featuredLeagueTable.find((row) => row.team === team)?.pos || null;
+    featuredLeagueHasResults
+      ? featuredLeagueTable.find((row) => row.team === team)?.pos || null
+      : null;
   const featuredFormOf = (team) =>
     Array.isArray(teamStatsByTeam?.[team]?.form5)
-      ? teamStatsByTeam[team].form5.slice(0, 5)
+      ? teamStatsByTeam[team].form5.slice(0, 5).map(normalizeFormItem).filter(Boolean)
       : [];
   const featuredHomeForm = featuredMatchData?.home
     ? featuredFormOf(featuredMatchData.home)
@@ -12625,8 +12767,10 @@ function HomeDashboard({
   const bestFormTeam = useMemo(() => {
     return Object.values(teamStatsByTeam || {})
       .map((team) => {
-        const form5 = Array.isArray(team?.form5) ? team.form5.slice(0, 5) : [];
-        if (!form5.length || !team?.team) return null;
+        const form5 = Array.isArray(team?.form5)
+          ? team.form5.slice(0, 5).map(normalizeFormItem).filter(Boolean)
+          : [];
+        if (!form5.length || !team?.team || team?.withdrawn) return null;
         const points = form5.reduce(
           (sum, item) => sum + (item?.result === "W" ? 3 : item?.result === "R" ? 1 : 0),
           0
@@ -12675,11 +12819,11 @@ function HomeDashboard({
   const featuredRoundLabel =
     featuredMatchData?.round != null ? `Kolejka ${featuredMatchData.round}` : "MLPN";
   const featuredMetaLine = featuredMatchData
-    ? featuredMatchPlayed
-      ? `${featuredMatchData.date || "--"} • ${featuredRoundLabel} • ${leagueLabel(
-          featuredMatchData.league
-        )}`
-      : `${featuredMatchData.date || "--"} • ${featuredMatchData.time || "--:--"} • ${featuredRoundLabel}`
+    ? fixtureDashboardMetaLine(
+        featuredMatchData,
+        featuredRoundLabel,
+        featuredMatchPlayed ? leagueLabel(featuredMatchData.league) : ""
+      )
     : seasonPulseLabel;
   const featuredActionLabel = featuredMatchPlayed
     ? "Pełen raport meczu"
@@ -13581,7 +13725,9 @@ function HomeDashboard({
               {currentLeagues.length > 0 && (() => {
                 // Drużyna z najmniejszą liczbą straconych bramek (z I Ligi)
                 const firstLeague = tableByLeague['1st'] || tableByLeague[currentLeagues[0]?.id] || [];
-                const bestDefense = [...firstLeague].sort((a, b) => a.ga - b.ga)[0];
+                const bestDefense = [...firstLeague]
+                  .filter((row) => Number(row.played || 0) > 0 && !row.withdrawn)
+                  .sort((a, b) => a.ga - b.ga || b.pts - a.pts)[0];
                 if (!bestDefense) return null;
                 return (
                   <div
@@ -13663,7 +13809,9 @@ function HomeDashboard({
                             darkMode ? "text-gray-400" : "text-gray-600"
                           )}
                         >
-                          {upcomingDate.weekday
+                          {f.scheduleHidden
+                            ? `Kolejka ${f.round} • termin zostanie podany`
+                            : upcomingDate.weekday
                             ? `${upcomingDate.weekday}, ${upcomingDate.date || f.date || "Termin do ustalenia"}`
                             : (upcomingDate.date || f.date || "Termin do ustalenia")}
                         </div>
@@ -14009,7 +14157,7 @@ function HomeDashboard({
                 darkMode ? "text-gray-400" : "text-gray-600"
               )}
             >
-              Mini tabela, lider ligi i postep rozgrywek
+              Mini tabela i postęp rozgrywek bez startowych liderów na siłę
             </div>
           </div>
 
@@ -14071,42 +14219,55 @@ function HomeDashboard({
                 </div>
 
                 <div className="space-y-2">
-                  {lg.top3.map((r) => (
+                  {lg.hasResults ? (
+                    lg.top3.map((r) => (
+                      <div
+                        key={r.team}
+                        className={classNames(
+                          "p-2 rounded-xl border flex items-center justify-between gap-2",
+                          darkMode
+                            ? "border-white/10 bg-black/10"
+                            : "border-gray-200 bg-white"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div
+                            className={classNames(
+                              "w-6 h-6 rounded-lg border text-xs font-extrabold flex items-center justify-center flex-shrink-0",
+                              darkMode
+                                ? "bg-white/5 border-white/10"
+                                : "bg-gray-50 border-gray-200"
+                            )}
+                          >
+                            {r.pos}
+                          </div>
+                          <TeamLogo
+                            team={r.team}
+                            darkMode={darkMode}
+                            size={30}
+                            onClick={() => openTeam(r.team)}
+                          />
+                          <TeamLink
+                            team={displayTeamName(r.team)}
+                            onClick={() => openTeam(r.team)}
+                            className="font-bold e3d-link text-sm truncate"
+                          />
+                        </div>
+                        <div className="font-extrabold">{r.pts}</div>
+                      </div>
+                    ))
+                  ) : (
                     <div
-                      key={r.team}
                       className={classNames(
-                        "p-2 rounded-xl border flex items-center justify-between gap-2",
+                        "rounded-xl border p-3 text-sm",
                         darkMode
-                          ? "border-white/10 bg-black/10"
-                          : "border-gray-200 bg-white"
+                          ? "border-white/10 bg-black/10 text-gray-300"
+                          : "border-gray-200 bg-white text-gray-600"
                       )}
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div
-                          className={classNames(
-                            "w-6 h-6 rounded-lg border text-xs font-extrabold flex items-center justify-center flex-shrink-0",
-                            darkMode
-                              ? "bg-white/5 border-white/10"
-                              : "bg-gray-50 border-gray-200"
-                          )}
-                        >
-                          {r.pos}
-                        </div>
-                        <TeamLogo
-                          team={r.team}
-                          darkMode={darkMode}
-                          size={30}
-                          onClick={() => openTeam(r.team)}
-                        />
-                        <TeamLink
-                          team={displayTeamName(r.team)}
-                          onClick={() => openTeam(r.team)}
-                          className="font-bold e3d-link text-sm truncate"
-                        />
-                      </div>
-                      <div className="font-extrabold">{r.pts}</div>
+                      Tabela zostanie wyróżniona po pierwszych wynikach.
                     </div>
-                  ))}
+                  )}
 
                   {lg.topScorer && (
                     <div
@@ -14176,8 +14337,10 @@ function HomeDashboard({
                           darkMode ? "text-gray-400" : "text-gray-600"
                         )}
                       >
-                        {lg.nextMatch.date} • {lg.nextMatch.time || "--:--"} •
-                        {" "}kolejka {lg.nextMatch.round}
+                        {fixtureDashboardMetaLine(
+                          lg.nextMatch,
+                          lg.nextMatch.round ? `kolejka ${lg.nextMatch.round}` : "kolejka"
+                        )}
                       </div>
                     </button>
                   )}
@@ -15218,13 +15381,14 @@ function UpcomingMatchDetailsInline({
   const away = fixture.away;
 
   const table = stats?.tableByLeague?.[fixture.league] || [];
-  const posOf = (team) => table.find((r) => r.team === team)?.pos || "—";
-  const formOf = (team) => (stats?.teamStats?.[team]?.form5 || []).slice(0, 5);
+  const tableHasResults = hasLeagueTableResults(table);
+  const posOf = (team) =>
+    tableHasResults ? table.find((r) => r.team === team)?.pos || "—" : "po pierwszym wyniku";
+  const formOf = (team) =>
+    (stats?.teamStats?.[team]?.form5 || []).slice(0, 5).map(normalizeFormItem).filter(Boolean);
 
   const topScorerOf = (team) => {
-    const arr = Object.values(stats?.playerStats || {}).filter(
-      (p) => p.team === team
-    );
+    const arr = (playersByTeam?.[team] || []).filter((p) => Number(p.goals || 0) > 0);
     if (!arr.length) return null;
     arr.sort(
       (a, b) =>
@@ -15235,9 +15399,7 @@ function UpcomingMatchDetailsInline({
 
   const captainOf = (team) => {
     const arr = playersByTeam?.[team] || [];
-    if (!arr.length) return null;
-    const rng = mulberry32(hashString("captain|" + team));
-    return arr[Math.floor(rng() * arr.length)];
+    return arr.find((player) => player?.isCaptain) || null;
   };
 
   const h2hLast5 = (() => {
@@ -15271,13 +15433,19 @@ function UpcomingMatchDetailsInline({
           <div>
             <div className="text-sm font-bold mb-1">Forma (ostatnie 5):</div>
             <div className="flex gap-1">
-              {formOf(home).map((f, i) => (
-                <FormDot
-                  key={i}
-                  v={f.result}
-                  title={`${f.score} ${displayTeamName(f.opponent)}`}
-                />
-              ))}
+              {formOf(home).length ? (
+                formOf(home).map((f, i) => (
+                  <FormDot
+                    key={i}
+                    v={f.result}
+                    title={`${f.score} ${displayTeamName(f.opponent)}`}
+                  />
+                ))
+              ) : (
+                <span className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+                  Brak rozegranych meczów.
+                </span>
+              )}
             </div>
           </div>
 
@@ -15321,13 +15489,19 @@ function UpcomingMatchDetailsInline({
           <div>
             <div className="text-sm font-bold mb-1">Forma (ostatnie 5):</div>
             <div className="flex gap-1">
-              {formOf(away).map((f, i) => (
-                <FormDot
-                  key={i}
-                  v={f.result}
-                  title={`${f.score} ${displayTeamName(f.opponent)}`}
-                />
-              ))}
+              {formOf(away).length ? (
+                formOf(away).map((f, i) => (
+                  <FormDot
+                    key={i}
+                    v={f.result}
+                    title={`${f.score} ${displayTeamName(f.opponent)}`}
+                  />
+                ))
+              ) : (
+                <span className={classNames("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+                  Brak rozegranych meczów.
+                </span>
+              )}
             </div>
           </div>
 
@@ -15413,14 +15587,15 @@ function UpcomingMatchDetails({
 
   const table = stats?.tableByLeague?.[fixture.league] || [];
 
-  const posOf = (team) => table.find((r) => r.team === team)?.pos || "—";
+  const tableHasResults = hasLeagueTableResults(table);
+  const posOf = (team) =>
+    tableHasResults ? table.find((r) => r.team === team)?.pos || "—" : "po pierwszym wyniku";
 
-  const formOf = (team) => (stats?.teamStats?.[team]?.form5 || []).slice(0, 5);
+  const formOf = (team) =>
+    (stats?.teamStats?.[team]?.form5 || []).slice(0, 5).map(normalizeFormItem).filter(Boolean);
 
   const topScorerOf = (team) => {
-    const arr = Object.values(stats?.playerStats || {}).filter(
-      (p) => p.team === team
-    );
+    const arr = (playersByTeam?.[team] || []).filter((p) => Number(p.goals || 0) > 0);
     if (!arr.length) return null;
     arr.sort(
       (a, b) =>
@@ -15433,10 +15608,7 @@ function UpcomingMatchDetails({
 
   const captainOf = (team) => {
     const arr = playersByTeam?.[team] || [];
-    if (!arr.length) return null;
-    const rng = mulberry32(hashString("captain|" + team));
-    const idx = Math.floor(rng() * arr.length);
-    return arr[idx];
+    return arr.find((player) => player?.isCaptain) || null;
   };
 
   const last5MatchesOf = (team) =>
@@ -15545,9 +15717,19 @@ function UpcomingMatchDetails({
           </div>
 
           <div className="flex gap-2">
-            {formOf(team).map((v, i) => (
-              <FormDot key={i} v={v} />
-            ))}
+            {formOf(team).length ? (
+              formOf(team).map((item, i) => (
+                <FormDot
+                  key={i}
+                  v={item.result}
+                  title={item.score ? `${item.score} ${displayTeamName(item.opponent)}` : `Forma: ${item.result}`}
+                />
+              ))
+            ) : (
+              <span className={classNames("text-xs", darkMode ? "text-gray-400" : "text-gray-600")}>
+                Brak formy
+              </span>
+            )}
           </div>
         </div>
 
@@ -15567,7 +15749,7 @@ function UpcomingMatchDetails({
               {top ? (
                 <span>
                   <button
-                    onClick={() => openPlayer?.(top.playerId)}
+                    onClick={() => openPlayer?.(top.id || top.playerId)}
                     className="font-extrabold hover:underline"
                     title="Profil zawodnika"
                   >
@@ -15653,7 +15835,9 @@ function UpcomingMatchDetails({
                 : "bg-black/5 border-black/10"
             )}
           >
-            {fixture.date} {fixture.time}
+            {fixture.scheduleHidden
+              ? "Termin wkrótce"
+              : [fixture.date || "Termin do ustalenia", fixture.time || ""].filter(Boolean).join(" ")}
           </div>
 
           <div className="flex items-center gap-3">
