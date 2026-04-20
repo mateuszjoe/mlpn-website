@@ -12122,16 +12122,7 @@ function HomeDashboardStoryPulseCard({
 
 function HomeDashboardTyperLeadersCard({
   darkMode,
-  heroTyperMatches,
-  heroTyperAnsweredCount,
-  heroTyperProgressPct,
-  heroTyperCurrentMatch,
-  heroTyperPicks,
-  selectHeroTyperPickInstant,
   openTeam,
-  heroTyperAllPicked,
-  setHeroTyperSubmitted,
-  heroTyperSubmitted,
   globalLeaders,
   openPlayer,
   leagueLabel,
@@ -12144,148 +12135,18 @@ function HomeDashboardTyperLeadersCard({
           darkMode ? "border-white/10" : "border-gray-200"
         )}
       >
-        <div className="text-lg font-extrabold">Typowanie i liderzy</div>
+        <div className="text-lg font-extrabold">Liderzy sezonu</div>
         <div
           className={classNames(
             "text-xs",
             darkMode ? "text-gray-400" : "text-gray-600"
           )}
         >
-          Kompaktowy kupon tygodnia i najgorętsze nazwiska sezonu
+          Najmocniejsze nazwiska w aktualnych rankingach
         </div>
       </div>
 
-      <div className="p-3 space-y-3">
-        <div
-          className={classNames(
-            "rounded-[22px] border p-4",
-            darkMode
-              ? "bg-black/10 border-white/10"
-              : "bg-white border-gray-200"
-          )}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div
-                className={classNames(
-                  "text-[10px] uppercase tracking-[0.18em] font-black",
-                  darkMode ? "text-gray-400" : "text-gray-500"
-                )}
-              >
-                Typowanie tygodnia
-              </div>
-              <div className="mt-1 text-base font-black">
-                {heroTyperMatches.length
-                  ? `${heroTyperAnsweredCount}/${heroTyperMatches.length} typów`
-                  : "Brak meczów do typowania"}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-black leading-none">
-                {heroTyperProgressPct}%
-              </div>
-              <div
-                className={classNames(
-                  "text-[10px] uppercase tracking-[0.15em]",
-                  darkMode ? "text-gray-400" : "text-gray-500"
-                )}
-              >
-                komplet
-              </div>
-            </div>
-          </div>
-
-          <div
-            className={classNames(
-              "mt-3 h-2 overflow-hidden rounded-full",
-              darkMode ? "bg-white/8" : "bg-gray-200"
-            )}
-          >
-            <div
-              className="h-full rounded-full bg-emerald-400"
-              style={{ width: `${Math.max(heroTyperMatches.length ? 8 : 0, heroTyperProgressPct)}%` }}
-            />
-          </div>
-
-          {heroTyperCurrentMatch ? (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => openTeam?.(heroTyperCurrentMatch.home)}
-                  className="min-w-0 text-left text-sm font-black hover:underline"
-                >
-                  {displayTeamName(heroTyperCurrentMatch.home)}
-                </button>
-                <span
-                  className={classNames(
-                    "text-[10px] uppercase tracking-[0.15em]",
-                    darkMode ? "text-gray-400" : "text-gray-500"
-                  )}
-                >
-                  vs
-                </span>
-                <button
-                  type="button"
-                  onClick={() => openTeam?.(heroTyperCurrentMatch.away)}
-                  className="min-w-0 text-right text-sm font-black hover:underline"
-                >
-                  {displayTeamName(heroTyperCurrentMatch.away)}
-                </button>
-              </div>
-
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {["1", "X", "2"].map((pick) => (
-                  <button
-                    key={`featured-typer-${heroTyperCurrentMatch.id}-${pick}`}
-                    type="button"
-                    onClick={() => selectHeroTyperPickInstant(heroTyperCurrentMatch.id, pick)}
-                    className={classNames(
-                      "rounded-xl border py-2.5 text-sm font-black transition-colors",
-                      heroTyperPicks[heroTyperCurrentMatch.id] === pick
-                        ? "bg-emerald-400 text-black border-emerald-300"
-                        : darkMode
-                        ? "bg-white/5 text-white border-white/10 hover:bg-white/10"
-                        : "bg-gray-50 text-gray-800 border-gray-200 hover:bg-gray-100"
-                    )}
-                  >
-                    {pick}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div
-              className={classNames(
-                "mt-4 rounded-2xl border p-3 text-sm",
-                darkMode
-                  ? "bg-white/5 border-white/10 text-gray-400"
-                  : "bg-gray-50 border-gray-200 text-gray-600"
-              )}
-            >
-              {heroTyperMatches.length
-                ? "Komplet typów zaznaczony. Możesz jeszcze wrócić i zmienić wybory."
-                : "Typowanie pojawi się, gdy liga doda mecze do kuponu."}
-            </div>
-          )}
-
-          <button
-            type="button"
-            disabled={!heroTyperAllPicked}
-            onClick={() => setHeroTyperSubmitted(true)}
-            className={classNames(
-              "mt-4 w-full rounded-2xl border px-4 py-3 text-sm font-black transition-colors",
-              heroTyperAllPicked
-                ? "bg-emerald-400 text-black border-emerald-300 hover:brightness-110"
-                : darkMode
-                ? "bg-white/5 text-white/50 border-white/10 cursor-not-allowed"
-                : "bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed"
-            )}
-          >
-            {heroTyperSubmitted ? "Typy zapisane lokalnie" : "Zapisz typy tygodnia"}
-          </button>
-        </div>
-
+      <div className="p-3">
         <div className="space-y-2">
           {globalLeaders.length === 0 ? (
             <div
@@ -12889,16 +12750,7 @@ function HomeDashboard({
             />
             <HomeDashboardTyperLeadersCard
               darkMode={darkMode}
-              heroTyperMatches={heroTyperMatches}
-              heroTyperAnsweredCount={heroTyperAnsweredCount}
-              heroTyperProgressPct={heroTyperProgressPct}
-              heroTyperCurrentMatch={heroTyperCurrentMatch}
-              heroTyperPicks={heroTyperPicks}
-              selectHeroTyperPickInstant={selectHeroTyperPickInstant}
               openTeam={openTeam}
-              heroTyperAllPicked={heroTyperAllPicked}
-              setHeroTyperSubmitted={setHeroTyperSubmitted}
-              heroTyperSubmitted={heroTyperSubmitted}
               globalLeaders={globalLeaders}
               openPlayer={openPlayer}
               leagueLabel={leagueLabel}
