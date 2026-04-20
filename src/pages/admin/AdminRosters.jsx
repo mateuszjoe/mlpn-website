@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 import AdminFormField from "./components/AdminFormField";
 import AdminModal from "./components/AdminModal";
 import AdminAlert from "./components/AdminAlert";
-import { Plus, UserMinus, Shield, Star, Copy, Loader2 } from "lucide-react";
+import { Plus, UserMinus, Shield, Star, Copy, Loader2, Pencil } from "lucide-react";
 
 const ADMIN_PAGE_SIZE = 1000;
 const defaultJoinDate = () => new Date().toISOString().split("T")[0];
@@ -16,6 +16,18 @@ const defaultNewPlayerForm = () => ({
   preferred_foot: "",
   city: "",
   is_active: true,
+});
+const defaultEditPlayerForm = () => ({
+  first_name: "",
+  last_name: "",
+  position: "POM",
+  birth_year: "",
+  preferred_foot: "",
+  city: "",
+  is_active: true,
+  shirt_number: "",
+  joined_date: "",
+  is_captain: false,
 });
 
 async function fetchAllAdminRows(queryFactory, pageSize = ADMIN_PAGE_SIZE) {
@@ -51,11 +63,15 @@ export default function AdminRosters({ darkMode }) {
   const [alert, setAlert] = useState({ type: null, message: null });
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [showCreatePlayer, setShowCreatePlayer] = useState(false);
+  const [showEditPlayer, setShowEditPlayer] = useState(false);
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
   const [addForm, setAddForm] = useState(defaultAddForm);
   const [newPlayerForm, setNewPlayerForm] = useState(defaultNewPlayerForm);
+  const [editPlayerForm, setEditPlayerForm] = useState(defaultEditPlayerForm);
+  const [editingRosterRow, setEditingRosterRow] = useState(null);
   const [creatingPlayer, setCreatingPlayer] = useState(false);
+  const [savingPlayerEdit, setSavingPlayerEdit] = useState(false);
   const [copyingRosters, setCopyingRosters] = useState(false);
 
   const card = darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-200";
@@ -69,7 +85,7 @@ export default function AdminRosters({ darkMode }) {
         fetchAllAdminRows((from, to) =>
           supabase
             .from("players")
-            .select("id, first_name, last_name, display_name, position")
+            .select("id, first_name, last_name, display_name, position, birth_year, preferred_foot, city, is_active")
             .eq("is_active", true)
             .order("last_name")
             .order("id")
@@ -117,7 +133,7 @@ export default function AdminRosters({ darkMode }) {
   async function loadRoster() {
     const { data } = await supabase
       .from("team_players")
-      .select("*, players(id, first_name, last_name, display_name, position)")
+      .select("*, players(id, first_name, last_name, display_name, position, birth_year, preferred_foot, city, is_active)")
       .eq("team_id", selectedTeam)
       .eq("season_id", selectedSeason)
       .eq("league_id", selectedLeague)
@@ -204,7 +220,7 @@ export default function AdminRosters({ darkMode }) {
       const { data, error } = await supabase
         .from("players")
         .insert(payload)
-        .select("id, first_name, last_name, display_name, position")
+        .select("id, first_name, last_name, display_name, position, birth_year, preferred_foot, city, is_active")
         .single();
 
       if (error) throw error;
@@ -230,6 +246,123 @@ export default function AdminRosters({ darkMode }) {
       setAlert({ type: "error", message: error.message || "Nie udało się dodać zawodnika do bazy." });
     } finally {
       setCreatingPlayer(false);
+    }
+  }
+
+  function openEditPlayerFromRoster(row) {
+    const player = Array.isArray(row.players) ? row.players[0] : row.players;
+    if (!player?.id) {
+      setAlert({ type: "error", message: "Brak danych zawodnika do edycji." });
+      return;
+    }
+
+    setEditingRosterRow(row);
+    setEditPlayerForm({
+      first_name: player.first_name || "",
+      last_name: player.last_name || "",
+      position: player.position || "POM",
+      birth_year: player.birth_year || "",
+      preferred_foot: player.preferred_foot || "",
+      city: player.city || "",
+      is_active: player.is_active !== false,
+      shirt_number: row.shirt_number || "",
+      joined_date: row.joined_date || "",
+      is_captain: !!row.is_captain,
+    });
+    setShowEditPlayer(true);
+  }
+
+  function handleEditPlayerChange(e) {
+    const { name, value } = e.target;
+    setEditPlayerForm((form) => ({ ...form, [name]: value }));
+  }
+
+  async function saveEditedRosterPlayer(e) {
+    e.preventDefault();
+    if (!editingRosterRow?.id || !editingRosterRow?.player_id) return;
+
+    const firstName = editPlayerForm.first_name.trim();
+    const lastName = editPlayerForm.last_name.trim();
+    if (!firstName || !lastName) {
+      setAlert({ type: "error", message: "Podaj imię i nazwisko zawodnika." });
+      return;
+    }
+
+    const shirtNumber =
+      editPlayerForm.shirt_number === "" || editPlayerForm.shirt_number === null
+        ? null
+        : Number.parseInt(editPlayerForm.shirt_number, 10);
+
+    if (shirtNumber !== null && (!Number.isFinite(shirtNumber) || shirtNumber < 1 || shirtNumber > 99)) {
+      setAlert({ type: "error", message: "Numer zawodnika musi być w zakresie 1-99." });
+      return;
+    }
+
+    setSavingPlayerEdit(true);
+    try {
+      const playerPayload = {
+        first_name: firstName,
+        last_name: lastName,
+        position: editPlayerForm.position || "POM",
+        birth_year: editPlayerForm.birth_year ? Number.parseInt(editPlayerForm.birth_year, 10) : null,
+        preferred_foot: editPlayerForm.preferred_foot || null,
+        city: editPlayerForm.city?.trim() || null,
+        is_active: editPlayerForm.is_active,
+      };
+
+      const rosterPayload = {
+        shirt_number: shirtNumber,
+        joined_date: editPlayerForm.joined_date || null,
+        is_captain: !!editPlayerForm.is_captain,
+      };
+
+      const { data: savedPlayer, error: playerError } = await supabase
+        .from("players")
+        .update(playerPayload)
+        .eq("id", editingRosterRow.player_id)
+        .select("id, first_name, last_name, display_name, position, birth_year, preferred_foot, city, is_active")
+        .single();
+
+      if (playerError) throw playerError;
+
+      const { error: rosterError } = await supabase
+        .from("team_players")
+        .update(rosterPayload)
+        .eq("id", editingRosterRow.id);
+
+      if (rosterError) throw rosterError;
+
+      setAllPlayers((prev) => {
+        const normalizedPlayer = {
+          ...savedPlayer,
+          display_name:
+            savedPlayer.display_name ||
+            `${savedPlayer.first_name || ""} ${savedPlayer.last_name || ""}`.trim(),
+        };
+
+        const next = normalizedPlayer.is_active
+          ? [
+              ...prev.filter((player) => player.id !== normalizedPlayer.id),
+              normalizedPlayer,
+            ]
+          : prev.filter((player) => player.id !== normalizedPlayer.id);
+
+        return next.sort((a, b) =>
+          String(a.last_name || "").localeCompare(String(b.last_name || ""), "pl") ||
+          String(a.first_name || "").localeCompare(String(b.first_name || ""), "pl") ||
+          String(a.id).localeCompare(String(b.id))
+        );
+      });
+
+      setAlert({ type: "success", message: "Dane zawodnika z kadry zostały zaktualizowane." });
+      setShowEditPlayer(false);
+      setEditingRosterRow(null);
+      setEditPlayerForm(defaultEditPlayerForm());
+      await loadRoster();
+    } catch (error) {
+      setAlert({ type: "error", message: error.message || "Nie udało się zaktualizować zawodnika." });
+    } finally {
+      setSavingPlayerEdit(false);
     }
   }
 
@@ -437,16 +570,30 @@ export default function AdminRosters({ darkMode }) {
           </div>
           <div className="space-y-2">
             {roster.map(r => (
-              <div key={r.id} className={`flex items-center justify-between px-3 py-2 rounded-xl border ${darkMode ? "border-white/5" : "border-gray-100"}`}>
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs font-mono w-6 text-center ${textMuted}`}>{r.shirt_number || "—"}</span>
-                  <span className="font-medium">{r.players?.display_name}</span>
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? "bg-white/10" : "bg-gray-100"}`}>{posLabels[r.players?.position]}</span>
-                  {r.is_captain && <Star size={14} className="text-yellow-400" />}
+              <div key={r.id} className={`flex flex-col gap-3 px-3 py-3 rounded-xl border sm:flex-row sm:items-center sm:justify-between ${darkMode ? "border-white/5" : "border-gray-100"}`}>
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className={`shrink-0 text-xs font-mono w-8 text-center ${textMuted}`}>{r.shirt_number || "—"}</span>
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{r.players?.display_name}</div>
+                    <div className={`mt-1 flex flex-wrap items-center gap-2 text-xs ${textMuted}`}>
+                      <span className={`px-1.5 py-0.5 rounded ${darkMode ? "bg-white/10 text-gray-200" : "bg-gray-100 text-gray-700"}`}>{posLabels[r.players?.position] || r.players?.position || "Pozycja?"}</span>
+                      {r.players?.birth_year && <span>Rocznik {r.players.birth_year}</span>}
+                      {r.players?.preferred_foot && <span>{r.players.preferred_foot}</span>}
+                      {r.is_captain && <span className="inline-flex items-center gap-1 text-yellow-400"><Star size={13} /> Kapitan</span>}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                   <button onClick={() => toggleCaptain(r.id, r.is_captain)} className={`text-xs ${r.is_captain ? "text-yellow-400" : textMuted} hover:text-yellow-400`}>
                     {r.is_captain ? "Kapitan" : "Kapitan?"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEditPlayerFromRoster(r)}
+                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-blue-400 hover:bg-blue-500/10 hover:text-blue-300"
+                    title="Edytuj zawodnika"
+                  >
+                    <Pencil size={13} /> Edytuj
                   </button>
                   <button onClick={() => removeFromRoster(r.id)} className="text-red-400 hover:text-red-300">
                     <UserMinus size={14} />
@@ -539,6 +686,155 @@ export default function AdminRosters({ darkMode }) {
             </button>
           </div>
         </div>
+      </AdminModal>
+
+      <AdminModal
+        isOpen={showEditPlayer}
+        onClose={() => {
+          setShowEditPlayer(false);
+          setEditingRosterRow(null);
+          setEditPlayerForm(defaultEditPlayerForm());
+        }}
+        title="Edytuj zawodnika z kadry"
+        darkMode={darkMode}
+        wide
+      >
+        <form onSubmit={saveEditedRosterPlayer} className="space-y-4">
+          <div className={`rounded-xl border p-3 text-sm ${darkMode ? "border-blue-500/20 bg-blue-500/5 text-gray-300" : "border-blue-200 bg-blue-50 text-gray-700"}`}>
+            Zmieniasz dane zawodnika bezpośrednio z aktualnej kadry. Pozycja, imię, nazwisko i dane podstawowe zapisują się w bazie zawodników, a numer/kapitan/data dotyczą tej konkretnej kadry.
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AdminFormField
+              label="Imię"
+              name="first_name"
+              value={editPlayerForm.first_name}
+              onChange={handleEditPlayerChange}
+              required
+              darkMode={darkMode}
+            />
+            <AdminFormField
+              label="Nazwisko"
+              name="last_name"
+              value={editPlayerForm.last_name}
+              onChange={handleEditPlayerChange}
+              required
+              darkMode={darkMode}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <AdminFormField
+              label="Pozycja"
+              name="position"
+              type="select"
+              value={editPlayerForm.position}
+              onChange={handleEditPlayerChange}
+              required
+              darkMode={darkMode}
+              options={[
+                { value: "BR", label: "Bramkarz" },
+                { value: "OBR", label: "Obrońca" },
+                { value: "POM", label: "Pomocnik" },
+                { value: "NAP", label: "Napastnik" },
+              ]}
+            />
+            <AdminFormField
+              label="Rocznik"
+              name="birth_year"
+              type="number"
+              value={editPlayerForm.birth_year}
+              onChange={handleEditPlayerChange}
+              darkMode={darkMode}
+              min={1960}
+              max={2015}
+            />
+            <AdminFormField
+              label="Noga"
+              name="preferred_foot"
+              type="select"
+              value={editPlayerForm.preferred_foot}
+              onChange={handleEditPlayerChange}
+              darkMode={darkMode}
+              options={[
+                { value: "Prawa", label: "Prawa" },
+                { value: "Lewa", label: "Lewa" },
+                { value: "Obie", label: "Obie" },
+              ]}
+            />
+          </div>
+
+          <AdminFormField
+            label="Miasto"
+            name="city"
+            value={editPlayerForm.city}
+            onChange={handleEditPlayerChange}
+            darkMode={darkMode}
+          />
+
+          <div className={`rounded-xl border p-4 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
+            <div className="mb-3 text-sm font-semibold">Dane w tej kadrze</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <AdminFormField
+                label="Numer"
+                name="shirt_number"
+                type="number"
+                value={editPlayerForm.shirt_number}
+                onChange={handleEditPlayerChange}
+                darkMode={darkMode}
+                min={1}
+                max={99}
+              />
+              <AdminFormField
+                label="Data dołączenia"
+                name="joined_date"
+                type="date"
+                value={editPlayerForm.joined_date}
+                onChange={handleEditPlayerChange}
+                darkMode={darkMode}
+              />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-4">
+              <AdminFormField
+                label="Kapitan"
+                name="is_captain"
+                type="checkbox"
+                value={editPlayerForm.is_captain}
+                onChange={handleEditPlayerChange}
+                darkMode={darkMode}
+              />
+              <AdminFormField
+                label="Aktywny zawodnik"
+                name="is_active"
+                type="checkbox"
+                value={editPlayerForm.is_active}
+                onChange={handleEditPlayerChange}
+                darkMode={darkMode}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowEditPlayer(false);
+                setEditingRosterRow(null);
+                setEditPlayerForm(defaultEditPlayerForm());
+              }}
+              className={`px-4 py-2 rounded-xl text-sm ${textMuted}`}
+            >
+              Anuluj
+            </button>
+            <button
+              type="submit"
+              disabled={savingPlayerEdit}
+              className="px-4 py-2 rounded-xl bg-yellow-500 text-black font-medium text-sm hover:bg-yellow-400 disabled:opacity-50"
+            >
+              {savingPlayerEdit ? "Zapisywanie..." : "Zapisz zmiany"}
+            </button>
+          </div>
+        </form>
       </AdminModal>
 
       <AdminModal isOpen={showCreatePlayer} onClose={() => setShowCreatePlayer(false)} title="Dodaj nowego zawodnika do bazy" darkMode={darkMode}>
