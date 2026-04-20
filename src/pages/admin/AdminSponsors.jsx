@@ -21,6 +21,8 @@ const SPONSOR_CATEGORIES = [
   { value: "sponsor", label: "Sponsor" },
 ];
 
+const SPONSOR_PROFILE_MARKER = "[MLPN_SPONSOR_PROFILE]";
+
 const emptyForm = () => ({
   name: "",
   category: "sponsor",
@@ -52,17 +54,53 @@ function categoryLabel(value) {
   return SPONSOR_CATEGORIES.find((item) => item.value === value)?.label || "Sponsor";
 }
 
+function parseCompatDescription(rawDescription = "") {
+  const raw = String(rawDescription || "");
+  if (!raw.startsWith(SPONSOR_PROFILE_MARKER)) {
+    return { description: raw, meta: {} };
+  }
+
+  try {
+    const meta = JSON.parse(raw.slice(SPONSOR_PROFILE_MARKER.length).trim());
+    return {
+      description: meta.description || "",
+      meta: meta && typeof meta === "object" ? meta : {},
+    };
+  } catch {
+    return { description: raw, meta: {} };
+  }
+}
+
+function buildCompatDescription(payload) {
+  return `${SPONSOR_PROFILE_MARKER}${JSON.stringify({
+    description: payload.description || "",
+    category: payload.category || "sponsor",
+    profileSlug: payload.profile_slug || "",
+    shortDescription: payload.short_description || "",
+    facebookUrl: payload.facebook_url || "",
+    instagramUrl: payload.instagram_url || "",
+    contactEmail: payload.contact_email || "",
+    phone: payload.phone || "",
+    ctaLabel: payload.cta_label || "",
+  })}`;
+}
+
 function normalizeSponsor(row = {}) {
+  const { description, meta } = parseCompatDescription(row.description);
+  const rowCategory = row.category || "";
+  const metaCategory = meta.category || "";
+
   return {
     ...row,
-    category: row.category || "sponsor",
-    profile_slug: row.profile_slug || "",
-    short_description: row.short_description || "",
-    facebook_url: row.facebook_url || "",
-    instagram_url: row.instagram_url || "",
-    contact_email: row.contact_email || "",
-    phone: row.phone || "",
-    cta_label: row.cta_label || "Odwiedz strone",
+    description,
+    category: rowCategory && rowCategory !== "sponsor" ? rowCategory : metaCategory || rowCategory || "sponsor",
+    profile_slug: row.profile_slug || meta.profileSlug || "",
+    short_description: row.short_description || meta.shortDescription || "",
+    facebook_url: row.facebook_url || meta.facebookUrl || "",
+    instagram_url: row.instagram_url || meta.instagramUrl || "",
+    contact_email: row.contact_email || meta.contactEmail || "",
+    phone: row.phone || meta.phone || "",
+    cta_label: row.cta_label || meta.ctaLabel || "Odwiedz strone",
     is_active: row.is_active !== false,
   };
 }
@@ -73,6 +111,19 @@ function schemaHint(error) {
     return "Brakuje nowych kolumn sponsorow w Supabase. Uruchom migracje 019_sponsor_profiles.sql, a potem zapisz ponownie.";
   }
   return message || "Operacja nie powiodla sie.";
+}
+
+function isMissingSponsorColumnError(error) {
+  const message = error?.message || "";
+  return (
+    message.includes("category") ||
+    message.includes("profile_slug") ||
+    message.includes("short_description") ||
+    message.includes("facebook_url") ||
+    message.includes("instagram_url") ||
+    message.includes("contact_email") ||
+    message.includes("cta_label")
+  );
 }
 
 export default function AdminSponsors({ darkMode }) {
@@ -188,13 +239,37 @@ export default function AdminSponsors({ darkMode }) {
         updated_at: new Date().toISOString(),
       };
 
-      const result = editingId
+      let result = editingId
         ? await supabase.from("sponsors").update(payload).eq("id", editingId)
         : await supabase.from("sponsors").insert(payload);
 
+      let savedInCompatMode = false;
+      if (result.error && isMissingSponsorColumnError(result.error)) {
+        const fallbackPayload = {
+          name: payload.name,
+          logo_url: payload.logo_url,
+          website_url: payload.website_url,
+          description: buildCompatDescription(payload),
+          display_order: payload.display_order,
+          is_active: payload.is_active,
+          updated_at: payload.updated_at,
+        };
+        result = editingId
+          ? await supabase.from("sponsors").update(fallbackPayload).eq("id", editingId)
+          : await supabase.from("sponsors").insert(fallbackPayload);
+        savedInCompatMode = true;
+      }
+
       if (result.error) throw result.error;
 
-      setAlert({ type: "success", message: editingId ? "Sponsor zaktualizowany." : "Sponsor dodany." });
+      setAlert({
+        type: savedInCompatMode ? "warning" : "success",
+        message: savedInCompatMode
+          ? "Sponsor zapisany. Baza dziala jeszcze w trybie kompatybilnym - po migracji pola profilu beda osobnymi kolumnami."
+          : editingId
+          ? "Sponsor zaktualizowany."
+          : "Sponsor dodany.",
+      });
       closeForm();
       await loadSponsors();
     } catch (error) {

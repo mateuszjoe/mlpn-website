@@ -547,23 +547,47 @@ export async function fetchPolls() {
   });
 }
 
+const SPONSOR_PROFILE_MARKER = '[MLPN_SPONSOR_PROFILE]';
+
+function parseSponsorDescription(rawDescription = '') {
+  const raw = String(rawDescription || '');
+  if (!raw.startsWith(SPONSOR_PROFILE_MARKER)) {
+    return { description: raw, meta: {} };
+  }
+
+  const json = raw.slice(SPONSOR_PROFILE_MARKER.length).trim();
+  try {
+    const meta = JSON.parse(json);
+    return {
+      description: meta.description || '',
+      meta: meta && typeof meta === 'object' ? meta : {},
+    };
+  } catch {
+    return { description: raw, meta: {} };
+  }
+}
+
 export function normalizeSponsorRow(row = {}) {
+  const { description, meta } = parseSponsorDescription(row.description);
+  const rowCategory = row.category || '';
+  const metaCategory = meta.category || '';
+
   return {
     id: row.id,
     name: row.name || '',
     logoUrl: row.logo_url || '',
     websiteUrl: row.website_url || '',
-    description: row.description || '',
-    shortDescription: row.short_description || '',
-    category: row.category || 'sponsor',
+    description,
+    shortDescription: row.short_description || meta.shortDescription || '',
+    category: rowCategory && rowCategory !== 'sponsor' ? rowCategory : metaCategory || rowCategory || 'sponsor',
     displayOrder: Number(row.display_order || 0),
     isActive: row.is_active !== false,
-    profileSlug: row.profile_slug || '',
-    facebookUrl: row.facebook_url || '',
-    instagramUrl: row.instagram_url || '',
-    contactEmail: row.contact_email || '',
-    phone: row.phone || '',
-    ctaLabel: row.cta_label || '',
+    profileSlug: row.profile_slug || meta.profileSlug || '',
+    facebookUrl: row.facebook_url || meta.facebookUrl || '',
+    instagramUrl: row.instagram_url || meta.instagramUrl || '',
+    contactEmail: row.contact_email || meta.contactEmail || '',
+    phone: row.phone || meta.phone || '',
+    ctaLabel: row.cta_label || meta.ctaLabel || '',
   };
 }
 
