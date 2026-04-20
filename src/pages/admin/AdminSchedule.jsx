@@ -13,6 +13,8 @@ import {
   GripVertical,
   Users,
   ArrowLeftRight,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import {
   buildSafeRegenerationBatches,
@@ -38,6 +40,24 @@ import {
   getSuggestedStructureRound,
   isSeasonTeamActiveOnRound,
 } from "./utils/seasonScheduleAdjustments";
+
+const SCHEDULE_HIDDEN_MARKER = "[MLPN_SCHEDULE_HIDDEN]";
+
+function hasScheduleHiddenMarker(notes) {
+  return String(notes || "").includes(SCHEDULE_HIDDEN_MARKER);
+}
+
+function setScheduleHiddenMarker(notes, hidden) {
+  const cleaned = String(notes || "")
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim() !== SCHEDULE_HIDDEN_MARKER)
+    .join("\n")
+    .trim();
+
+  if (!hidden) return cleaned || null;
+  return [cleaned, SCHEDULE_HIDDEN_MARKER].filter(Boolean).join("\n");
+}
 
 export default function AdminSchedule({ darkMode }) {
   const [seasons, setSeasons] = useState([]);
@@ -954,6 +974,37 @@ export default function AdminSchedule({ darkMode }) {
     setAlert({ type: "success", message: "Mecz zaktualizowany." });
   }
 
+  async function toggleRoundScheduleVisibility(roundNumber, shouldHide) {
+    if (hasPendingEdits) {
+      setAlert({ type: "error", message: "Najpierw zapisz reczne zmiany terminow meczow." });
+      return;
+    }
+
+    const roundMatches = matches.filter((match) => Number(match.round) === Number(roundNumber));
+    if (!roundMatches.length) return;
+
+    try {
+      const updates = roundMatches.map((match) => ({
+        matchId: match.id,
+        payload: {
+          notes: setScheduleHiddenMarker(match.notes, shouldHide),
+        },
+      }));
+
+      await persistMatchPayloadUpdates(updates);
+      applyMatchUpdatesLocally(updates);
+
+      setAlert({
+        type: "success",
+        message: shouldHide
+          ? `Ukryto dokladne terminy kolejki ${roundNumber}. Na stronie zostana pary meczowe bez daty i godziny.`
+          : `Odkryto dokladne terminy kolejki ${roundNumber}.`,
+      });
+    } catch (error) {
+      setAlert({ type: "error", message: `Nie udalo sie zmienic widocznosci kolejki: ${error.message}` });
+    }
+  }
+
   async function swapMatchSchedules(sourceMatchId, targetMatchId) {
     if (!sourceMatchId || !targetMatchId || String(sourceMatchId) === String(targetMatchId)) return;
 
@@ -1185,10 +1236,39 @@ export default function AdminSchedule({ darkMode }) {
 
           {Object.entries(rounds)
             .sort(([a], [b]) => Number(a) - Number(b))
-            .map(([roundNum, roundMatches]) => (
+            .map(([roundNum, roundMatches]) => {
+              const roundScheduleHidden = roundMatches.some((match) => hasScheduleHiddenMarker(match.notes));
+
+              return (
               <div key={roundNum} className={`rounded-2xl border overflow-hidden ${card}`}>
-                <div className={`px-4 py-2 font-semibold text-sm ${darkMode ? "bg-white/5" : "bg-gray-50"}`}>
-                  Kolejka {roundNum}
+                <div className={`px-4 py-2 text-sm ${darkMode ? "bg-white/5" : "bg-gray-50"}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="font-semibold">Kolejka {roundNum}</div>
+                      {roundScheduleHidden && (
+                        <div className={`mt-0.5 text-xs ${textMuted}`}>
+                          Publicznie widoczne są tylko pary meczowe.
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleRoundScheduleVisibility(roundNum, !roundScheduleHidden)}
+                      className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+                        roundScheduleHidden
+                          ? darkMode
+                            ? "border-cyan-300/30 bg-cyan-400/10 text-cyan-200 hover:bg-cyan-400/15"
+                            : "border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100"
+                          : darkMode
+                          ? "border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"
+                          : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                      }`}
+                      title={roundScheduleHidden ? "Odkryj daty i godziny tej kolejki" : "Ukryj daty i godziny tej kolejki"}
+                    >
+                      {roundScheduleHidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                      {roundScheduleHidden ? "Odkryj kolejkę" : "Ukryj kolejkę"}
+                    </button>
+                  </div>
                 </div>
                 <div className="divide-y" style={{ borderColor: darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
                   {roundMatches.map((match) => {
@@ -1196,6 +1276,7 @@ export default function AdminSchedule({ darkMode }) {
                     const hasEdits = Object.keys(edits).length > 0;
                     const isDragged = String(draggedMatchId) === String(match.id);
                     const isDropTarget = String(dropTargetMatchId) === String(match.id);
+                    const matchScheduleHidden = hasScheduleHiddenMarker(match.notes);
 
                     return (
                       <div className="px-4 py-3" key={match.id}>
@@ -1235,6 +1316,11 @@ export default function AdminSchedule({ darkMode }) {
                               <span className="font-medium">{match.home_team_name}</span>
                               <span className={`mx-2 ${textMuted}`}>vs</span>
                               <span className="font-medium">{match.away_team_name}</span>
+                              {matchScheduleHidden && (
+                                <span className="ml-2 inline-flex rounded-full bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-400">
+                                  termin ukryty
+                                </span>
+                              )}
                             </div>
 
                             <input
@@ -1273,7 +1359,8 @@ export default function AdminSchedule({ darkMode }) {
                   })}
                 </div>
               </div>
-            ))}
+              );
+            })}
         </div>
       )}
 

@@ -5,6 +5,8 @@ const PLACEHOLDER_TEAMS = ['przerwa', '-przerwa-', 'xxx', 'wolne miejsce', 'woln
 const isPlaceholder = (name) => PLACEHOLDER_TEAMS.includes(name?.toLowerCase().trim());
 const PUBLIC_PAGE_SIZE = 1000;
 const getSeasonTeamKey = (leagueId, teamId) => `${leagueId}:${teamId}`;
+const SCHEDULE_HIDDEN_MARKER = "[MLPN_SCHEDULE_HIDDEN]";
+const hasScheduleHiddenMarker = (notes) => String(notes || "").includes(SCHEDULE_HIDDEN_MARKER);
 
 async function fetchAllPublicRows(queryFactory, pageSize = PUBLIC_PAGE_SIZE) {
   const rows = [];
@@ -249,6 +251,11 @@ export async function fetchAllMatches(seasonYear) {
     // Filtruj mecze z drużynami-atrapami
     if (isPlaceholder(row.home_team_name) || isPlaceholder(row.away_team_name)) continue;
 
+    const isCompleted = row.status === 'completed' ||
+      row.status === 'walkover_home' ||
+      row.status === 'walkover_away';
+    const scheduleHidden = hasScheduleHiddenMarker(row.notes) && !isCompleted;
+
     const fixture = {
       id: row.id,
       league: row.league_code,
@@ -256,8 +263,9 @@ export async function fetchAllMatches(seasonYear) {
       awayTeamId: row.away_team_id,
       status: row.status || 'scheduled',
       round: row.round,
-      date: row.match_date,
-      time: row.match_time ? row.match_time.slice(0, 5) : '',
+      date: scheduleHidden ? null : row.match_date,
+      time: scheduleHidden ? '' : (row.match_time ? row.match_time.slice(0, 5) : ''),
+      scheduleHidden,
       venue: row.venue || '',
       home: row.home_team_name,
       away: row.away_team_name,
@@ -267,10 +275,6 @@ export async function fetchAllMatches(seasonYear) {
       awayLogoUrl: row.away_team_logo,
     };
     fixtures.push(fixture);
-
-    const isCompleted = row.status === 'completed' ||
-      row.status === 'walkover_home' ||
-      row.status === 'walkover_away';
 
     if (isCompleted) {
       matches.push({

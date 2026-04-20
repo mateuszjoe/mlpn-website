@@ -2262,6 +2262,7 @@ function fixtureCenterLabel(f) {
   if (statusKey === "unplayed") return "Nierozegrany";
   if (statusKey === "postponed") return "Przełożony";
   if (statusKey === "cancelled") return "Odwołany";
+  if (f?.scheduleHidden) return "Termin wkrótce";
   if (f?.date && f?.time) return `${f.date} • ${f.time}`;
   if (f?.date) return f.date;
   if (f?.time) return f.time;
@@ -2273,6 +2274,7 @@ function fixtureCenterTimeLabel(f) {
   if (statusKey === "unplayed") return "Nierozegrany";
   if (statusKey === "postponed") return "Przełożony";
   if (statusKey === "cancelled") return "Odwołany";
+  if (f?.scheduleHidden) return "Godzina wkrótce";
   if (f?.time) return f.time;
   return "Godzina TBD";
 }
@@ -7259,6 +7261,7 @@ function CalendarPage({
       <div className="grid gap-3">
         {groupedFixtures.map((group) => {
           const header = fixtureDateHeaderParts(group.date);
+          const isHiddenScheduleGroup = group.items.some((item) => item?.scheduleHidden);
           return (
           <div key={group.key} className="space-y-2">
             <div
@@ -7295,6 +7298,16 @@ function CalendarPage({
                       {header.date}
                     </div>
                   ) : null}
+                  {isHiddenScheduleGroup && (
+                    <div
+                      className={classNames(
+                        "mt-1 text-xs font-semibold",
+                        darkMode ? "text-cyan-100/80" : "text-blue-700/80"
+                      )}
+                    >
+                      Dokładny dzień i godzina zostaną podane później.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
