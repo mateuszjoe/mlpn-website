@@ -11558,10 +11558,12 @@ function HomeDashboardFeatureCard({
   goToLeague,
   openMatch,
   openTeam,
+  openPlayer,
   openGallery,
   openHomeTab,
 }) {
   const primaryLeagueId = featuredMatchData?.league || spotlightLeagues[0]?.id || null;
+  const focusedLeagueTitle = featuredMatchData?.league ? leagueLabel(featuredMatchData.league) : "MLPN";
   const bestFormSummary = bestFormTeam?.form5?.length
     ? bestFormTeam.form5.map((item) => item.result).join(" ")
     : null;
@@ -11800,28 +11802,15 @@ function HomeDashboardFeatureCard({
             </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-[22px] border border-white/10 bg-black/15 p-4">
+          <div className="grid gap-2 md:grid-cols-3">
+            <button
+              type="button"
+              disabled={!topScorer}
+              onClick={() => topScorer?.playerId && openPlayer?.(topScorer.playerId)}
+              className="rounded-[22px] border border-white/10 bg-black/15 p-4 text-left transition-colors enabled:hover:bg-white/10 disabled:cursor-default"
+            >
               <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
-                Info
-              </div>
-              <div className="mt-2 text-lg font-black text-white">
-                {featuredMatchData?.league ? leagueLabel(featuredMatchData.league) : "MLPN"}
-              </div>
-              <div className="mt-1 text-sm text-white/70">
-                {featuredMatchData?.scheduleHidden
-                  ? "Dokładny termin zostanie podany."
-                  : [
-                      featuredRoundLabel,
-                      featuredMatchData?.date || "Termin do ustalenia",
-                      featuredMatchData?.time || "",
-                    ].filter(Boolean).join(" • ")}
-              </div>
-            </div>
-
-            <div className="rounded-[22px] border border-white/10 bg-black/15 p-4">
-              <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
-                Najlepszy strzelec
+                Strzelec • {focusedLeagueTitle}
               </div>
               <div className="mt-2 text-lg font-black text-white">
                 {topScorer?.name || "Brak danych"}
@@ -11829,13 +11818,18 @@ function HomeDashboardFeatureCard({
               <div className="mt-1 text-sm text-white/70">
                 {topScorer
                   ? `${displayTeamName(topScorer.team)} • ${topScorer.goals || 0} goli`
-                  : "Ranking strzelców pojawi się po rozegraniu spotkań."}
+                  : "Po pierwszych golach pokażemy lidera tej ligi."}
               </div>
-            </div>
+            </button>
 
-            <div className="rounded-[22px] border border-white/10 bg-black/15 p-4">
+            <button
+              type="button"
+              disabled={!bestFormTeam?.team}
+              onClick={() => bestFormTeam?.team && openTeam?.(bestFormTeam.team)}
+              className="rounded-[22px] border border-white/10 bg-black/15 p-4 text-left transition-colors enabled:hover:bg-white/10 disabled:cursor-default"
+            >
               <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
-                Najlepsza forma
+                Forma • {focusedLeagueTitle}
               </div>
               <div className="mt-2 text-lg font-black text-white">
                 {bestFormTeam?.team ? displayTeamName(bestFormTeam.team) : "Brak danych"}
@@ -11845,11 +11839,16 @@ function HomeDashboardFeatureCard({
                   ? `${bestFormTeam.points} pkt w ostatnich ${bestFormTeam.games} meczach${bestFormSummary ? ` • ${bestFormSummary}` : ""}`
                   : "Forma zespołów pojawi się po rozegraniu spotkań."}
               </div>
-            </div>
+            </button>
 
-            <div className="rounded-[22px] border border-white/10 bg-black/15 p-4">
+            <button
+              type="button"
+              disabled={!topAssister}
+              onClick={() => topAssister?.playerId && openPlayer?.(topAssister.playerId)}
+              className="rounded-[22px] border border-white/10 bg-black/15 p-4 text-left transition-colors enabled:hover:bg-white/10 disabled:cursor-default"
+            >
               <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
-                Najlepszy asystent
+                Asystent • {focusedLeagueTitle}
               </div>
               <div className="mt-2 text-lg font-black text-white">
                 {topAssister?.name || "Brak danych"}
@@ -11859,7 +11858,7 @@ function HomeDashboardFeatureCard({
                   ? `${displayTeamName(topAssister.team)} • ${topAssister.assists || 0} asyst`
                   : "Ranking asyst pojawi się po rozegraniu spotkań."}
               </div>
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -12345,6 +12344,231 @@ function HomeDashboardTyperLeadersCard({
   );
 }
 
+function HomeDashboardMatchStrip({
+  darkMode,
+  upcoming,
+  lastMatches,
+  matchById,
+  openTeam,
+  openMatch,
+  openGallery,
+  leagueLabel,
+  currentRound,
+}) {
+  const renderUpcoming = (f) => {
+    const playedMatch = matchById?.[f.id];
+    return (
+      <div
+        key={`home-upcoming-${f.id}`}
+        role="button"
+        tabIndex={0}
+        onClick={() => openMatch?.(f.id)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openMatch?.(f.id);
+          }
+        }}
+        className={classNames(
+          "cursor-pointer",
+          "w-full rounded-2xl border p-3 text-left transition-colors",
+          darkMode
+            ? "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+            : "border-gray-200 bg-white hover:bg-gray-50"
+        )}
+      >
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <TeamLogo
+              team={f.home}
+              darkMode={darkMode}
+              size={32}
+              onClick={(event) => {
+                event.stopPropagation();
+                openTeam?.(f.home);
+              }}
+            />
+            <span className="truncate text-sm font-black">{displayTeamName(f.home)}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span onClick={(event) => event.stopPropagation()}>
+              <VideoIcon
+                darkMode={darkMode}
+                videoUrl={playedMatch?.videoUrl || f.videoUrl}
+                played={!!playedMatch}
+                galleryUrl={playedMatch?.galleryUrl || f.galleryUrl}
+                hasGallery={!!(playedMatch?.hasGallery || f.hasGallery)}
+                galleryCount={playedMatch?.galleryCount || f.galleryCount || 0}
+                onOpenGallery={
+                  playedMatch?.hasGallery || f.hasGallery
+                    ? () => {
+                        openGallery?.(playedMatch || f);
+                      }
+                    : undefined
+                }
+                size={14}
+              />
+            </span>
+            <span
+              className={classNames(
+                "rounded-xl border px-3 py-1.5 text-xs font-black",
+                darkMode
+                  ? "border-white/10 bg-black/20 text-white"
+                  : "border-gray-200 bg-gray-50 text-gray-900"
+              )}
+            >
+              {fixtureCenterTimeLabel(f)}
+            </span>
+          </div>
+
+          <div className="flex min-w-0 items-center justify-end gap-2">
+            <span className="truncate text-right text-sm font-black">{displayTeamName(f.away)}</span>
+            <TeamLogo
+              team={f.away}
+              darkMode={darkMode}
+              size={32}
+              onClick={(event) => {
+                event.stopPropagation();
+                openTeam?.(f.away);
+              }}
+            />
+          </div>
+        </div>
+        <div
+          className={classNames(
+            "mt-2 text-xs",
+            darkMode ? "text-gray-400" : "text-gray-600"
+          )}
+        >
+          {fixtureDashboardMetaLine(f, f.round ? `kolejka ${f.round}` : "kolejka", leagueLabel?.(f.league))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderResult = (m) => (
+    <div
+      key={`home-result-${m.id}`}
+      role="button"
+      tabIndex={0}
+      onClick={() => openMatch?.(m.id)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openMatch?.(m.id);
+        }
+      }}
+      className={classNames(
+        "cursor-pointer",
+        "w-full rounded-2xl border p-3 text-left transition-colors",
+        darkMode
+          ? "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+          : "border-gray-200 bg-white hover:bg-gray-50"
+      )}
+    >
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <TeamLogo
+            team={m.home}
+            darkMode={darkMode}
+            size={32}
+            onClick={(event) => {
+              event.stopPropagation();
+              openTeam?.(m.home);
+            }}
+          />
+          <span className="truncate text-sm font-black">{displayTeamName(m.home)}</span>
+        </div>
+        <ScorePill
+          homeGoals={m.homeGoals}
+          awayGoals={m.awayGoals}
+          darkMode={darkMode}
+          status={m.status}
+          date={compactDateLabel(m.date)}
+          time={m.time}
+        />
+        <div className="flex min-w-0 items-center justify-end gap-2">
+          <span className="truncate text-right text-sm font-black">{displayTeamName(m.away)}</span>
+          <TeamLogo
+            team={m.away}
+            darkMode={darkMode}
+            size={32}
+            onClick={(event) => {
+              event.stopPropagation();
+              openTeam?.(m.away);
+            }}
+          />
+        </div>
+      </div>
+      <div
+        className={classNames(
+          "mt-2 flex items-center justify-between gap-3 text-xs",
+          darkMode ? "text-gray-400" : "text-gray-600"
+        )}
+      >
+        <span>{leagueLabel?.(m.league)} • kolejka {m.round}</span>
+        <span onClick={(event) => event.stopPropagation()}>
+          <MediaIcons
+            darkMode={darkMode}
+            videoUrl={m.videoUrl}
+            galleryUrl={m.galleryUrl}
+            onOpenGallery={
+              m.hasGallery
+                ? () => {
+                    openGallery?.(m);
+                  }
+                : undefined
+            }
+            galleryCount={m.galleryCount}
+            size={13}
+          />
+        </span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="grid gap-3 lg:grid-cols-2">
+      <Card darkMode={darkMode} className="p-0 overflow-hidden">
+        <div className={classNames("px-4 pt-4 pb-2 border-b", darkMode ? "border-white/10" : "border-gray-200")}>
+          <div className="text-lg font-extrabold">Najbliższe mecze</div>
+          <div className={classNames("text-xs", darkMode ? "text-gray-400" : "text-gray-600")}>
+            Kolejka {currentRound} • kliknij mecz, żeby wejść w szczegóły
+          </div>
+        </div>
+        <div className="grid gap-2 p-3">
+          {upcoming.length ? (
+            upcoming.slice(0, 4).map(renderUpcoming)
+          ) : (
+            <div className={classNames("rounded-2xl border p-4 text-sm", darkMode ? "border-white/10 bg-white/[0.04] text-gray-300" : "border-gray-200 bg-gray-50 text-gray-600")}>
+              Brak zaplanowanych meczów w aktualnej kolejce.
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <Card darkMode={darkMode} className="p-0 overflow-hidden">
+        <div className={classNames("px-4 pt-4 pb-2 border-b", darkMode ? "border-white/10" : "border-gray-200")}>
+          <div className="text-lg font-extrabold">Ostatnie wyniki</div>
+          <div className={classNames("text-xs", darkMode ? "text-gray-400" : "text-gray-600")}>
+            Najnowsze rozegrane spotkania
+          </div>
+        </div>
+        <div className="grid gap-2 p-3">
+          {lastMatches.length ? (
+            lastMatches.slice(0, 5).map(renderResult)
+          ) : (
+            <div className={classNames("rounded-2xl border p-4 text-sm", darkMode ? "border-white/10 bg-white/[0.04] text-gray-300" : "border-gray-200 bg-gray-50 text-gray-600")}>
+              Wyniki pojawią się po rozegraniu pierwszych meczów.
+            </div>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 function HomeDashboard({
   darkMode,
   fixtures = [],
@@ -12764,7 +12988,7 @@ function HomeDashboard({
     ? featuredFormOf(featuredMatchData.away)
     : [];
   const spotlightLeagues = leagueOverview.slice(0, 3);
-  const bestFormTeam = useMemo(() => {
+  const bestFormTeams = useMemo(() => {
     return Object.values(teamStatsByTeam || {})
       .map((team) => {
         const form5 = Array.isArray(team?.form5)
@@ -12790,8 +13014,19 @@ function HomeDashboard({
         if (b.points !== a.points) return b.points - a.points;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.team.localeCompare(b.team, "pl");
-      })[0] || null;
+      });
   }, [teamStatsByTeam]);
+  const bestFormTeam = bestFormTeams[0] || null;
+  const featuredStatsLeagueId = featuredMatchData?.league || null;
+  const featuredTopScorer = featuredStatsLeagueId
+    ? topScorers.find((row) => row.league === featuredStatsLeagueId) || null
+    : topScorers[0] || null;
+  const featuredTopAssister = featuredStatsLeagueId
+    ? topAssists.find((row) => row.league === featuredStatsLeagueId) || null
+    : topAssists[0] || null;
+  const featuredBestFormTeam = featuredStatsLeagueId
+    ? bestFormTeams.find((row) => row.league === featuredStatsLeagueId) || null
+    : bestFormTeam;
   const featuredTone =
     featuredMatchData?.league === "1st"
       ? {
@@ -12837,31 +13072,48 @@ function HomeDashboard({
         resetKey={`hero:${currentSeason}:${currentRound}:${matches.length}:${fixtures.length}:${latestNews.length}:${latestPoll?.id || "no-poll"}:${heroTyperMatches.length}`}
         sectionTitle="Pulpit główny"
       >
-        <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1.45fr)_400px]">
-          <HomeDashboardFeatureCard
-            darkMode={darkMode}
-            featuredMatchData={featuredMatchData}
-            featuredMatchPlayed={featuredMatchPlayed}
-            featuredTone={featuredTone}
-            seasonPulseLabel={seasonPulseLabel}
-            featuredStatusLabel={featuredStatusLabel}
-            featuredRoundLabel={featuredRoundLabel}
-            featuredMetaLine={featuredMetaLine}
-            featuredActionLabel={featuredActionLabel}
-            featuredHomeForm={featuredHomeForm}
-            featuredAwayForm={featuredAwayForm}
-            featuredPositionOf={featuredPositionOf}
-            spotlightLeagues={spotlightLeagues}
-            leagueLabel={leagueLabel}
-            topScorer={topScorers[0] || null}
-            topAssister={topAssists[0] || null}
-            bestFormTeam={bestFormTeam}
-            goToLeague={goToLeague}
-            openMatch={openMatch}
-            openTeam={openTeam}
-            openGallery={openGallery}
-            openHomeTab={openHomeTab}
-          />
+        <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1.55fr)_360px]">
+          <div className="grid gap-3">
+            <HomeDashboardFeatureCard
+              darkMode={darkMode}
+              featuredMatchData={featuredMatchData}
+              featuredMatchPlayed={featuredMatchPlayed}
+              featuredTone={featuredTone}
+              seasonPulseLabel={seasonPulseLabel}
+              featuredStatusLabel={featuredStatusLabel}
+              featuredRoundLabel={featuredRoundLabel}
+              featuredMetaLine={featuredMetaLine}
+              featuredActionLabel={featuredActionLabel}
+              featuredHomeForm={featuredHomeForm}
+              featuredAwayForm={featuredAwayForm}
+              featuredPositionOf={featuredPositionOf}
+              spotlightLeagues={spotlightLeagues}
+              leagueLabel={leagueLabel}
+              topScorer={featuredTopScorer}
+              topAssister={featuredTopAssister}
+              bestFormTeam={featuredBestFormTeam}
+              goToLeague={goToLeague}
+              openMatch={openMatch}
+              openTeam={openTeam}
+              openPlayer={openPlayer}
+              openGallery={openGallery}
+              openHomeTab={openHomeTab}
+            />
+
+            {!isCompleted && (
+              <HomeDashboardMatchStrip
+                darkMode={darkMode}
+                upcoming={upcoming}
+                lastMatches={lastMatches}
+                matchById={matchById}
+                openTeam={openTeam}
+                openMatch={openMatch}
+                openGallery={openGallery}
+                leagueLabel={leagueLabel}
+                currentRound={currentRound}
+              />
+            )}
+          </div>
 
           <div className="grid gap-3">
             <HomeDashboardSeasonPulseCard
@@ -12891,13 +13143,6 @@ function HomeDashboard({
               setHeroSlideIndex={setHeroSlideIndex}
               prevHeroSlide={prevHeroSlide}
               nextHeroSlide={nextHeroSlide}
-            />
-            <HomeDashboardTyperLeadersCard
-              darkMode={darkMode}
-              openTeam={openTeam}
-              globalLeaders={globalLeaders}
-              openPlayer={openPlayer}
-              leagueLabel={leagueLabel}
             />
           </div>
         </div>
@@ -13772,8 +14017,8 @@ function HomeDashboard({
         </div>
       )}
 
-      {/* WIDOK BIEŻĄCEGO SEZONU */}
-      {!isCompleted && (
+      {/* WIDOK BIEŻĄCEGO SEZONU przeniesiony wyżej, pod główny kafel */}
+      {false && !isCompleted && (
         <div className="grid lg:grid-cols-2 gap-3">
           <Card darkMode={darkMode}>
             <div className="font-extrabold mb-2">
