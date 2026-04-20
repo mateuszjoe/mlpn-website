@@ -9,6 +9,7 @@ import AdminPlayers from "./AdminPlayers";
 import AdminRosters from "./AdminRosters";
 import AdminSchedule from "./AdminSchedule";
 import AdminMatchResults from "./AdminMatchResults";
+import AdminNews from "./AdminNews";
 import AdminSeasonWizard from "./AdminSeasonWizard";
 import AdminControlCenter from "./AdminControlCenter";
 import AdminUsers from "./AdminUsers";
@@ -29,6 +30,7 @@ import {
   Wand2,
   SlidersHorizontal,
   Scale,
+  Newspaper,
 } from "lucide-react";
 
 const ADMIN_MENU_ITEMS = [
@@ -40,6 +42,7 @@ const ADMIN_MENU_ITEMS = [
   { id: "rosters", label: "Kadry", icon: <UserCog size={18} /> },
   { id: "schedule", label: "Terminarz", icon: <ListChecks size={18} /> },
   { id: "results", label: "Wyniki", icon: <Trophy size={18} /> },
+  { id: "news", label: "Aktualności", icon: <Newspaper size={18} /> },
   { id: "referees", label: "Sedziowie", icon: <Scale size={18} /> },
   { id: "control-center", label: "Ustawienia", icon: <SlidersHorizontal size={18} /> },
   { id: "users", label: "Konta", icon: <UserPlus size={18} /> },
@@ -130,6 +133,8 @@ export default function AdminPanel({ darkMode, goHome }) {
         return <AdminSchedule darkMode={darkMode} />;
       case "results":
         return <AdminMatchResults darkMode={darkMode} />;
+      case "news":
+        return <AdminNews darkMode={darkMode} />;
       case "referees":
         return <AdminReferees darkMode={darkMode} />;
       case "control-center":

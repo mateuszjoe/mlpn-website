@@ -58,6 +58,15 @@ export const ADMIN_PERMISSION_GROUPS = [
     ],
   },
   {
+    key: "news",
+    label: "Aktualnosci",
+    permissions: [
+      { key: "news.create", label: "Tworzenie aktualnosci" },
+      { key: "news.delete", label: "Usuwanie aktualnosci" },
+      { key: "news.edit", label: "Edycja aktualnosci" },
+    ],
+  },
+  {
     key: "polls",
     label: "Ankiety",
     permissions: [
@@ -100,6 +109,7 @@ export const ADMIN_SECTION_PERMISSIONS = {
   schedule: ["schedule.edit"],
   results: ["results.enter", "results.edit"],
   referees: ["referees.create", "referees.edit", "referees.delete"],
+  news: ["news.create", "news.edit", "news.delete"],
   "control-center": [
     "polls.create",
     "polls.edit",
@@ -128,6 +138,9 @@ export const LEGACY_EDITOR_PERMISSION_KEYS = new Set([
   "referees.create",
   "referees.edit",
   "referees.delete",
+  "news.create",
+  "news.edit",
+  "news.delete",
   "polls.create",
   "polls.edit",
   "polls.delete",

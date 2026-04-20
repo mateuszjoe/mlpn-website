@@ -14338,7 +14338,7 @@ function NewsPage({ darkMode, news, openTeam, openMatch, openPlayer }) {
         cls: "bg-yellow-300 text-black border-yellow-400/40",
         icon: "⏸",
       };
-    if (cat === "ważne")
+    if (cat === "ważne" || cat === "wazne")
       return {
         label: "ważne",
         cls: "bg-rose-400 text-black border-rose-500/40",
@@ -14423,6 +14423,11 @@ function NewsPage({ darkMode, news, openTeam, openMatch, openPlayer }) {
                 >
                   {p.category === "pauza" ? (
                     <div className="space-y-2">
+                      {p.body && (
+                        <div className={classNames("text-sm", darkMode ? "text-gray-200" : "text-gray-800")}>
+                          {p.body}
+                        </div>
+                      )}
                       <div
                         className={classNames(
                           "text-sm font-bold",
@@ -14433,9 +14438,17 @@ function NewsPage({ darkMode, news, openTeam, openMatch, openPlayer }) {
                       </div>
 
                       <div className="grid sm:grid-cols-2 gap-2">
-                        {(p.suspended || []).map((s) => (
+                        {(p.suspended || []).map((s, idx) => {
+                          const suspendedName =
+                            typeof s === "string" ? s : s?.name || "Zawodnik";
+                          const suspendedTeam =
+                            typeof s === "string" ? "" : s?.team || "";
+                          const suspendedPlayerId =
+                            typeof s === "string" ? "" : s?.playerId || "";
+
+                          return (
                           <div
-                            key={s.playerId}
+                            key={suspendedPlayerId || `${suspendedName}-${idx}`}
                             className={classNames(
                               "p-2 rounded-xl border",
                               darkMode
@@ -14444,21 +14457,28 @@ function NewsPage({ darkMode, news, openTeam, openMatch, openPlayer }) {
                             )}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <button
-                                onClick={() => openPlayer(s.playerId)}
-                                className="font-extrabold underline"
-                              >
-                                {s.name}
-                              </button>
-                              <button
-                                onClick={() => openTeam(s.team)}
-                                className="text-xs font-extrabold underline"
-                              >
-                                {displayTeamName(s.team)}
-                              </button>
+                              {suspendedPlayerId ? (
+                                <button
+                                  onClick={() => openPlayer(suspendedPlayerId)}
+                                  className="font-extrabold underline"
+                                >
+                                  {suspendedName}
+                                </button>
+                              ) : (
+                                <span className="font-extrabold">{suspendedName}</span>
+                              )}
+                              {suspendedTeam ? (
+                                <button
+                                  onClick={() => openTeam(suspendedTeam)}
+                                  className="text-xs font-extrabold underline"
+                                >
+                                  {displayTeamName(suspendedTeam)}
+                                </button>
+                              ) : null}
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ) : (
