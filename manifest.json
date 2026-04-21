@@ -1,0 +1,20 @@
+{
+  "short_name": "MLPN",
+  "name": "MLPN Sulejowek",
+  "icons": [
+    {
+      "src": "logo1.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo1big.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#163c78",
+  "background_color": "#f4f7fb"
+}
