@@ -1,14 +1,13 @@
 {
   "files": {
-    "main.css": "/static/css/main.1c194e2b.css",
+    "main.css": "/static/css/main.f554eccd.css",
     "main.js": "/static/js/main.6744ea0f.js",
     "index.html": "/index.html",
-    "static/media/soccer-ball-loader.svg": "/static/media/soccer-ball-loader.484f41bf98383621c32a.svg",
-    "main.1c194e2b.css.map": "/static/css/main.1c194e2b.css.map",
+    "main.f554eccd.css.map": "/static/css/main.f554eccd.css.map",
     "main.6744ea0f.js.map": "/static/js/main.6744ea0f.js.map"
   },
   "entrypoints": [
-    "static/css/main.1c194e2b.css",
+    "static/css/main.f554eccd.css",
     "static/js/main.6744ea0f.js"
   ]
 }
