@@ -7,6 +7,50 @@ const PUBLIC_PAGE_SIZE = 1000;
 const getSeasonTeamKey = (leagueId, teamId) => `${leagueId}:${teamId}`;
 const SCHEDULE_HIDDEN_MARKER = "[MLPN_SCHEDULE_HIDDEN]";
 const hasScheduleHiddenMarker = (notes) => String(notes || "").includes(SCHEDULE_HIDDEN_MARKER);
+const STANDINGS_SELECT = [
+  'season_id',
+  'league_id',
+  'team_id',
+  'team_name',
+  'league_code',
+  'position',
+  'played',
+  'won',
+  'drawn',
+  'lost',
+  'goals_for',
+  'goals_against',
+  'points',
+  'form_last5',
+  'streak_unbeaten',
+  'streak_wins',
+  'streak_winless',
+  'team_logo_url',
+].join(',');
+const MATCHES_SELECT = [
+  'id',
+  'league_code',
+  'home_team_id',
+  'away_team_id',
+  'status',
+  'round',
+  'match_date',
+  'match_time',
+  'venue',
+  'home_team_name',
+  'away_team_name',
+  'home_goals',
+  'away_goals',
+  'video_url',
+  'gallery_url',
+  'home_team_logo',
+  'away_team_logo',
+  'referee',
+  'mvp_player_id',
+  'mvp_name',
+  'mvp_team_id',
+  'notes',
+].join(',');
 
 async function fetchAllPublicRows(queryFactory, pageSize = PUBLIC_PAGE_SIZE) {
   const rows = [];
@@ -141,7 +185,7 @@ export async function fetchSeasonConfig(seasonYear) {
 export async function fetchStandings(seasonYear) {
   const { data, error } = await publicSupabase
     .from('v_standings')
-    .select('*')
+    .select(STANDINGS_SELECT)
     .eq('season_year', seasonYear)
     .order('league_code')
     .order('position');
@@ -236,7 +280,7 @@ export async function fetchStandings(seasonYear) {
 export async function fetchAllMatches(seasonYear) {
   const { data, error } = await publicSupabase
     .from('v_matches')
-    .select('*')
+    .select(MATCHES_SELECT)
     .eq('season_year', seasonYear)
     .order('round')
     .order('match_date')
@@ -364,7 +408,7 @@ export async function fetchTeamsForSeason(seasonYear) {
 export async function fetchTopScorers(seasonYear) {
   const { data, error } = await publicSupabase
     .from('v_top_scorers')
-    .select('*')
+    .select('player_id, display_name, team_name, league_code, goals, assists')
     .eq('season_year', seasonYear)
     .order('goals', { ascending: false })
     .order('assists', { ascending: false });
@@ -386,7 +430,7 @@ export async function fetchTopScorers(seasonYear) {
 export async function fetchTopAssists(seasonYear) {
   const { data, error } = await publicSupabase
     .from('v_top_assists')
-    .select('*')
+    .select('player_id, display_name, team_name, league_code, goals, assists')
     .eq('season_year', seasonYear)
     .order('assists', { ascending: false })
     .order('goals', { ascending: false });
@@ -408,7 +452,7 @@ export async function fetchTopAssists(seasonYear) {
 export async function fetchTopYellow(seasonYear) {
   const { data, error } = await publicSupabase
     .from('v_top_yellow_cards')
-    .select('*')
+    .select('player_id, display_name, team_name, league_code, yellow_cards, red_cards')
     .eq('season_year', seasonYear)
     .order('yellow_cards', { ascending: false });
 
@@ -430,7 +474,7 @@ export async function fetchTopRed(seasonYear) {
   // Próbuj widok v_top_red_cards, fallback na puste
   const { data, error } = await publicSupabase
     .from('v_top_red_cards')
-    .select('*')
+    .select('player_id, display_name, team_name, league_code, red_cards, yellow_cards')
     .eq('season_year', seasonYear)
     .order('red_cards', { ascending: false });
 
@@ -487,7 +531,7 @@ export async function fetchTopRed(seasonYear) {
 export async function fetchNews() {
   const { data, error } = await publicSupabase
     .from('news')
-    .select('*')
+    .select('id, published_at, category, title, body, suspended_players, related_match_id')
     .eq('is_published', true)
     .order('published_at', { ascending: false })
     .limit(30);
@@ -511,7 +555,7 @@ export async function fetchNews() {
 export async function fetchPolls() {
   const { data: polls, error } = await publicSupabase
     .from('polls')
-    .select('*, poll_options(*)')
+    .select('id, title, status, end_date, poll_options(option_text, vote_count, display_order)')
     .eq('is_published', true)
     .order('end_date', { ascending: false });
 
@@ -696,6 +740,20 @@ function normalizeGalleryAlbum(album) {
   };
 }
 
+function normalizeGallerySummaryAlbum(album) {
+  const photoCount = Array.isArray(album?.gallery_photos) ? album.gallery_photos.length : 0;
+  return {
+    id: album?.id || null,
+    matchId: album?.match_id || null,
+    title: album?.title || '',
+    description: album?.description || '',
+    coverUrl: album?.cover_photo_url || '',
+    publishedAt: album?.published_at || album?.created_at || null,
+    photoCount,
+    photos: [],
+  };
+}
+
 export async function fetchSeasonMatchGalleries(seasonYear) {
   const { data: season, error: seasonError } = await publicSupabase
     .from('seasons')
@@ -716,10 +774,7 @@ export async function fetchSeasonMatchGalleries(seasonYear) {
       published_at,
       created_at,
       gallery_photos (
-        id,
-        photo_url,
-        display_order,
-        created_at
+        id
       )
     `)
     .eq('season_id', season.id)
@@ -733,7 +788,7 @@ export async function fetchSeasonMatchGalleries(seasonYear) {
   }
 
   return (data || [])
-    .map(normalizeGalleryAlbum)
+    .map(normalizeGallerySummaryAlbum)
     .filter((album) => album.matchId && album.photoCount > 0);
 }
 
@@ -775,7 +830,7 @@ export async function fetchMatchGallery(matchId) {
 export async function fetchFreeAgents() {
   const { data, error } = await publicSupabase
     .from('free_agents')
-    .select('*')
+    .select('id, name, age, positions, region, experience, phone, email, instagram, facebook')
     .eq('is_active', true)
     .eq('is_approved', true)
     .order('created_at', { ascending: false });
@@ -802,7 +857,7 @@ export async function fetchFreeAgents() {
 export async function fetchTournaments() {
   const { data: tournaments, error } = await publicSupabase
     .from('tournaments')
-    .select('*')
+    .select('id, name, date_start, location, format, champion_team, runner_up_team, third_place_team, mvp_name, top_scorer_name, top_scorer_goals, best_gk_name')
     .order('date_start', { ascending: false });
 
   if (error || !tournaments?.length) return [];
@@ -814,9 +869,9 @@ export async function fetchTournaments() {
     { data: tMatches },
     { data: standings },
   ] = await Promise.all([
-    publicSupabase.from('tournament_teams').select('*').in('tournament_id', ids),
-    publicSupabase.from('tournament_matches').select('*').in('tournament_id', ids).order('match_order'),
-    publicSupabase.from('tournament_group_standings').select('*').in('tournament_id', ids).order('position'),
+    publicSupabase.from('tournament_teams').select('tournament_id, group_letter, team_name').in('tournament_id', ids),
+    publicSupabase.from('tournament_matches').select('tournament_id, stage, group_letter, home_team_name, away_team_name, home_goals, away_goals, winner_name, match_order').in('tournament_id', ids).order('match_order'),
+    publicSupabase.from('tournament_group_standings').select('tournament_id, group_letter, team_name, played, won, drawn, lost, goals_for, goals_against, points, position').in('tournament_id', ids).order('position'),
   ]);
 
   return tournaments.map(t => {
@@ -978,7 +1033,7 @@ export async function fetchTeamProfile(teamName) {
 export async function fetchTeamRoster(teamName, seasonYear) {
   const { data } = await publicSupabase
     .from('v_team_roster')
-    .select('*')
+    .select('player_id, display_name, position, shirt_number, is_captain, birth_year, goals, assists, yellow_cards, red_cards, appearances')
     .eq('team_name', teamName)
     .eq('season_year', seasonYear)
     .is('left_date', null)

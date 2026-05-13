@@ -4,6 +4,8 @@ import { supabase } from "../../../lib/supabase";
 
 const BUCKET = "match-galleries";
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
+const MAX_IMAGE_SIDE = 1600;
+const WEBP_QUALITY = 0.82;
 
 function sortPhotos(rows) {
   return (rows || [])
@@ -26,6 +28,61 @@ function sanitizeFileName(name) {
     .replace(/[^a-zA-Z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
+}
+
+function fitIntoBox(width, height, maxSide) {
+  if (!maxSide || Math.max(width, height) <= maxSide) {
+    return { width, height };
+  }
+
+  const scale = maxSide / Math.max(width, height);
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
+}
+
+async function loadImage(file) {
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    return await new Promise((resolve, reject) => {
+      const image = new window.Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Nie udalo sie odczytac zdjecia."));
+      image.src = objectUrl;
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function compressGalleryImage(file) {
+  const image = await loadImage(file);
+  const target = fitIntoBox(image.naturalWidth || image.width, image.naturalHeight || image.height, MAX_IMAGE_SIDE);
+  const canvas = document.createElement("canvas");
+  canvas.width = target.width;
+  canvas.height = target.height;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Przegladarka nie obsluguje kompresji zdjec.");
+  }
+
+  ctx.drawImage(image, 0, 0, target.width, target.height);
+
+  const blob = await new Promise((resolve) => {
+    canvas.toBlob(resolve, "image/webp", WEBP_QUALITY);
+  });
+
+  if (!blob) {
+    throw new Error("Nie udalo sie przygotowac zdjecia do wyslania.");
+  }
+
+  return new File([blob], `${sanitizeFileName(file.name.replace(/\.[^.]+$/, ""))}.webp`, {
+    type: "image/webp",
+    lastModified: Date.now(),
+  });
 }
 
 function extractStoragePath(publicUrl) {
@@ -188,12 +245,15 @@ export default function AdminMatchGalleryManager({ match, darkMode, onAlert }) {
 
       for (let index = 0; index < files.length; index += 1) {
         const file = files[index];
-        const ext = String(file.name.split(".").pop() || "jpg").toLowerCase();
-        const objectPath = `${match.season_id || "season"}/${match.id}/${Date.now()}_${index}_${sanitizeFileName(file.name.replace(/\.[^.]+$/, ""))}.${ext}`;
+        const uploadFile = await compressGalleryImage(file);
+        const objectPath = `${match.season_id || "season"}/${match.id}/${Date.now()}_${index}_${sanitizeFileName(file.name.replace(/\.[^.]+$/, ""))}.webp`;
 
         const { error: uploadError } = await supabase.storage
           .from(BUCKET)
-          .upload(objectPath, file, { upsert: false });
+          .upload(objectPath, uploadFile, {
+            upsert: false,
+            contentType: "image/webp",
+          });
 
         if (uploadError) throw uploadError;
 

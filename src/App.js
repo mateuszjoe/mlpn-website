@@ -180,7 +180,49 @@ const logoByTeam = {
   "Hard Impet Team": `${PU}/hard impet team.png`,
   Huragan: `${PU}/huragan.png`,
   "ES Chobot Meat": `${PU}/ES CHOBOT MEAT.png`,
+  "FC Restart": `${PU}/team-logos/fc-restart.png`,
+  "Huragan Por\u0119by Nowe": `${PU}/team-logos/huragan-poreby-nowe.webp`,
+  "RKS Pendrachy": `${PU}/team-logos/rks-pendrachy.png`,
+  "RKS Pendrachy II": `${PU}/team-logos/rks-pendrachy-ii.png`,
+  "RMB Bulls": `${PU}/team-logos/rmb-bulls.png`,
+  "Sami Swoi FC": `${PU}/team-logos/sami-swoi-fc.png`,
+  "SDK Warszawa": `${PU}/team-logos/sdk-warszawa.png`,
+  "TPS Azbest Wo\u0142omin": `${PU}/team-logos/tps-azbest-wolomin.png`,
 };
+
+function normalizeTeamLogoKey(value) {
+  return String(value || "")
+    .replace(/[\u0142\u0141]/g, "l")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+const localLogoByNormalizedTeam = Object.fromEntries(
+  Object.entries(logoByTeam).map(([team, logoUrl]) => [normalizeTeamLogoKey(team), logoUrl])
+);
+
+function getLocalTeamLogo(team) {
+  return logoByTeam[team] || localLogoByNormalizedTeam[normalizeTeamLogoKey(team)] || "";
+}
+
+function isSupabaseStorageUrl(value) {
+  return /supabase\.co\/storage\/v1\/object\//i.test(String(value || ""));
+}
+
+function resolvePreferredTeamLogo(team, logoUrl) {
+  const localLogo = getLocalTeamLogo(team);
+  if (localLogo && (!logoUrl || isSupabaseStorageUrl(logoUrl))) return localLogo;
+  return logoUrl || localLogo || "";
+}
+
+function assignTeamLogo(map, team, logoUrl) {
+  if (!team) return;
+  const resolvedLogo = resolvePreferredTeamLogo(team, logoUrl);
+  if (resolvedLogo) map[team] = resolvedLogo;
+}
 
 let activeTeamLogoRegistry = { ...logoByTeam };
 
@@ -316,27 +358,17 @@ function createTeamLogoRegistry({ standings, fixtures, matches }) {
   const map = { ...logoByTeam };
 
   for (const entry of Object.values(standings?.teamStats || {})) {
-    if (entry?.team && entry?.logoUrl) {
-      map[entry.team] = entry.logoUrl;
-    }
+    assignTeamLogo(map, entry?.team, entry?.logoUrl);
   }
 
   for (const fixture of fixtures || []) {
-    if (fixture?.home && fixture?.homeLogoUrl) {
-      map[fixture.home] = fixture.homeLogoUrl;
-    }
-    if (fixture?.away && fixture?.awayLogoUrl) {
-      map[fixture.away] = fixture.awayLogoUrl;
-    }
+    assignTeamLogo(map, fixture?.home, fixture?.homeLogoUrl);
+    assignTeamLogo(map, fixture?.away, fixture?.awayLogoUrl);
   }
 
   for (const match of matches || []) {
-    if (match?.home && match?.homeLogoUrl) {
-      map[match.home] = match.homeLogoUrl;
-    }
-    if (match?.away && match?.awayLogoUrl) {
-      map[match.away] = match.awayLogoUrl;
-    }
+    assignTeamLogo(map, match?.home, match?.homeLogoUrl);
+    assignTeamLogo(map, match?.away, match?.awayLogoUrl);
   }
 
   return map;
@@ -2055,7 +2087,7 @@ function TeamLogo({
   imgScale = 0.96,
 }) {
   const [imgFailed, setImgFailed] = useState(false);
-  const resolvedSrc = src || activeTeamLogoRegistry[team] || logoByTeam[team] || "";
+  const resolvedSrc = resolvePreferredTeamLogo(team, src || activeTeamLogoRegistry[team]);
   const logoFilter = [
     darkMode
       ? "drop-shadow(0 0 1.5px rgba(255,255,255,0.98)) drop-shadow(0 0 4px rgba(255,255,255,0.55))"
@@ -2095,6 +2127,8 @@ function TeamLogo({
           src={encodeURI(resolvedSrc)}
           alt={team}
           className="object-contain e3d-logo"
+          loading="lazy"
+          decoding="async"
           style={{
             width: `${imgScale * 100}%`,
             height: `${imgScale * 100}%`,
