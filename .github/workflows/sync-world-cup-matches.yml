@@ -1,0 +1,33 @@
+name: Sync World Cup Typer Matches
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-world-cup-matches
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Skrypt nie ma zaleznosci npm (tylko wbudowane moduly Node + global fetch),
+      # wiec pomijamy npm install dla szybkosci i stabilnosci.
+      - name: Sync matches
+        env:
+          SUPABASE_URL: ${{ secrets.REACT_APP_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/sync-world-cup-matches.js

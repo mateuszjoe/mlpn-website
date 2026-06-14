@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    # Zmiany dotyczace tylko robota wynikow / skryptow NIE przebudowuja strony.
+    # Strona jest wdrazana osobno; deploy z main moglby cofnac zywa wersje.
+    paths-ignore:
+      - ".github/**"
+      - "scripts/**"
   workflow_dispatch:
 
 permissions:
