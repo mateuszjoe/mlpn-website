@@ -637,10 +637,11 @@ function matchEspnEventToMatch(match, espnEvents) {
   return best ? { event: best.event, swapped: best.swapped } : null;
 }
 
-// Mapuje wszystkie nasze mecze -> wynik na żywo z ESPN (id meczu -> { status,
-// home, away, clock }). Bierzemy mecze w toku (state "in") ORAZ świeżo
-// zakończone w ESPN (state "post"), żeby wynik końcowy był widoczny od razu,
-// zanim robot zapisze go do bazy.
+// Mapuje nasze mecze -> wynik na żywo z ESPN (id meczu -> { home, away, clock }).
+// WAŻNE: tylko mecze AKTUALNIE W TOKU (state "in"). Meczów zakończonych ("post")
+// celowo NIE wliczamy — ich wynik wchodzi do oficjalnych punktów przez robota, a
+// "+X live" ma znikać po gwizdku końcowym (jak w typerze wzorcowym). Inaczej tuż
+// po meczu naliczałyby się tymczasowe punkty z dopiero co zakończonych spotkań.
 function buildLiveByMatchId(matches, espnEvents) {
   const liveByMatchId = {};
 
@@ -649,10 +650,11 @@ function buildLiveByMatchId(matches, espnEvents) {
     if (!matched) continue;
 
     const { event, swapped } = matched;
+    if (event.state !== "in") continue;
     if (event.homeScore === null || event.awayScore === null) continue;
 
     liveByMatchId[match.id] = {
-      status: event.state === "post" ? "FINISHED" : "IN_PLAY",
+      status: "IN_PLAY",
       home: swapped ? event.awayScore : event.homeScore,
       away: swapped ? event.homeScore : event.awayScore,
       clock: event.clock,
