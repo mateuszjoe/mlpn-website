@@ -102,7 +102,7 @@ export default function HomePage({ darkMode, activeLeague }) {
             <div>R</div>
             <div>P</div>
             <div>RÓŻ</div>
-            <div>PKT</div>
+            <div className="font-black">PKT</div>
             <div>OBECNA FORMA</div>
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function HomePage({ darkMode, activeLeague }) {
               >
                 {r.roz}
               </div>
-              <div className="font-extrabold">{r.pkt}</div>
+              <div className="font-black">{r.pkt}</div>
 
               <div className="flex gap-2">
                 {(r.form || []).slice(0, 5).map((v, i) => (

@@ -3,6 +3,7 @@ import {
   Edit3,
   ExternalLink,
   Eye,
+  EyeOff,
   Handshake,
   Plus,
   Save,
@@ -18,6 +19,7 @@ import AdminImageUpload from "./components/AdminImageUpload";
 const SPONSOR_CATEGORIES = [
   { value: "sponsor_tytularny", label: "Sponsor tytularny" },
   { value: "sponsor_techniczny", label: "Sponsor techniczny" },
+  { value: "partner_sportowy", label: "Partner sportowy" },
   { value: "sponsor", label: "Sponsor" },
 ];
 
@@ -32,7 +34,7 @@ const emptyForm = () => ({
   instagram_url: "",
   contact_email: "",
   phone: "",
-  cta_label: "Odwiedz strone",
+  cta_label: "Odwiedź stronę",
   short_description: "",
   description: "",
   profile_slug: "",
@@ -52,6 +54,22 @@ function slugify(value) {
 
 function categoryLabel(value) {
   return SPONSOR_CATEGORIES.find((item) => item.value === value)?.label || "Sponsor";
+}
+
+function normalizePolishCtaLabel(value, fallback = "Odwiedź stronę") {
+  const raw = String(value || "").trim();
+  if (!raw) return fallback;
+
+  const key = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (key === "odwiedz strone") return "Odwiedź stronę";
+  if (key === "odwiedz profil") return "Odwiedź profil";
+  if (key === "zobacz wiecej") return "Zobacz więcej";
+  if (key === "czytaj wiecej") return "Czytaj więcej";
+  return raw;
 }
 
 function parseCompatDescription(rawDescription = "") {
@@ -100,7 +118,7 @@ function normalizeSponsor(row = {}) {
     instagram_url: row.instagram_url || meta.instagramUrl || "",
     contact_email: row.contact_email || meta.contactEmail || "",
     phone: row.phone || meta.phone || "",
-    cta_label: row.cta_label || meta.ctaLabel || "Odwiedz strone",
+    cta_label: normalizePolishCtaLabel(row.cta_label || meta.ctaLabel),
     is_active: row.is_active !== false,
   };
 }
@@ -108,9 +126,9 @@ function normalizeSponsor(row = {}) {
 function schemaHint(error) {
   const message = error?.message || "";
   if (message.includes("category") || message.includes("profile_slug") || message.includes("short_description")) {
-    return "Brakuje nowych kolumn sponsorow w Supabase. Uruchom migracje 019_sponsor_profiles.sql, a potem zapisz ponownie.";
+    return "Brakuje nowych kolumn sponsorów w Supabase. Uruchom migrację 019_sponsor_profiles.sql, a potem zapisz ponownie.";
   }
-  return message || "Operacja nie powiodla sie.";
+  return message || "Operacja nie powiodła się.";
 }
 
 function isMissingSponsorColumnError(error) {
@@ -131,6 +149,7 @@ export default function AdminSponsors({ darkMode }) {
   const [sponsors, setSponsors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [visibilitySavingId, setVisibilitySavingId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -141,7 +160,7 @@ export default function AdminSponsors({ darkMode }) {
   const canDelete = isAdmin || can("sponsors.delete");
   const card = darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-200";
   const muted = darkMode ? "text-gray-400" : "text-gray-500";
-  const inputHelp = "Docelowo wklej tutaj adres pliku z hostingu strony. Upload ponizej dziala pomocniczo, jesli bucket sponsor-logos jest skonfigurowany w Supabase.";
+  const inputHelp = "Możesz wkleić gotowy URL albo użyć uploadu po prawej. Jeśli Storage odmówi zapisu, logo zostanie dodane bezpośrednio do rekordu sponsora.";
 
   const loadSponsors = useCallback(async () => {
     setLoading(true);
@@ -155,7 +174,7 @@ export default function AdminSponsors({ darkMode }) {
       if (error) throw error;
       setSponsors((data || []).map(normalizeSponsor));
     } catch (error) {
-      setAlert({ type: "error", message: error.message || "Nie udalo sie wczytac sponsorow." });
+      setAlert({ type: "error", message: error.message || "Nie udało się wczytać sponsorów." });
     } finally {
       setLoading(false);
     }
@@ -194,7 +213,7 @@ export default function AdminSponsors({ darkMode }) {
       instagram_url: sponsor.instagram_url || "",
       contact_email: sponsor.contact_email || "",
       phone: sponsor.phone || "",
-      cta_label: sponsor.cta_label || "Odwiedz strone",
+      cta_label: normalizePolishCtaLabel(sponsor.cta_label),
       short_description: sponsor.short_description || "",
       description: sponsor.description || "",
       profile_slug: sponsor.profile_slug || "",
@@ -215,7 +234,7 @@ export default function AdminSponsors({ darkMode }) {
     const name = form.name.trim();
 
     if (!name) {
-      setAlert({ type: "error", message: "Podaj nazwe sponsora." });
+      setAlert({ type: "error", message: "Podaj nazwę sponsora." });
       return;
     }
 
@@ -230,7 +249,7 @@ export default function AdminSponsors({ darkMode }) {
         instagram_url: form.instagram_url.trim() || null,
         contact_email: form.contact_email.trim() || null,
         phone: form.phone.trim() || null,
-        cta_label: form.cta_label.trim() || "Odwiedz strone",
+        cta_label: normalizePolishCtaLabel(form.cta_label),
         short_description: form.short_description.trim() || null,
         description: form.description.trim() || null,
         profile_slug: (form.profile_slug.trim() || slugify(name)) || null,
@@ -265,7 +284,7 @@ export default function AdminSponsors({ darkMode }) {
       setAlert({
         type: savedInCompatMode ? "warning" : "success",
         message: savedInCompatMode
-          ? "Sponsor zapisany. Baza dziala jeszcze w trybie kompatybilnym - po migracji pola profilu beda osobnymi kolumnami."
+          ? "Sponsor zapisany. Baza działa jeszcze w trybie kompatybilnym - po migracji pola profilu będą osobnymi kolumnami."
           : editingId
           ? "Sponsor zaktualizowany."
           : "Sponsor dodany.",
@@ -280,15 +299,47 @@ export default function AdminSponsors({ darkMode }) {
   }
 
   async function handleDelete(sponsor) {
-    if (!window.confirm(`Usunac sponsora "${sponsor.name}"?`)) return;
+    if (!window.confirm(`Usunąć sponsora "${sponsor.name}"?`)) return;
 
     try {
       const { error } = await supabase.from("sponsors").delete().eq("id", sponsor.id);
       if (error) throw error;
-      setAlert({ type: "success", message: "Sponsor usuniety." });
+      setAlert({ type: "success", message: "Sponsor usunięty." });
       await loadSponsors();
     } catch (error) {
-      setAlert({ type: "error", message: error.message || "Nie udalo sie usunac sponsora." });
+      setAlert({ type: "error", message: error.message || "Nie udało się usunąć sponsora." });
+    }
+  }
+
+  async function handleVisibilityToggle(sponsor) {
+    if (!canEdit || !sponsor?.id || visibilitySavingId) return;
+
+    const nextActive = sponsor.is_active === false;
+    setVisibilitySavingId(sponsor.id);
+    try {
+      const { error } = await supabase
+        .from("sponsors")
+        .update({
+          is_active: nextActive,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", sponsor.id);
+
+      if (error) throw error;
+
+      setSponsors((current) =>
+        current.map((item) =>
+          item.id === sponsor.id ? { ...item, is_active: nextActive } : item
+        )
+      );
+      setAlert({
+        type: "success",
+        message: nextActive ? "Sponsor odkryty na stronie." : "Sponsor ukryty na stronie.",
+      });
+    } catch (error) {
+      setAlert({ type: "error", message: error.message || "Nie udało się zmienić widoczności sponsora." });
+    } finally {
+      setVisibilitySavingId(null);
     }
   }
 
@@ -378,7 +429,7 @@ export default function AdminSponsors({ darkMode }) {
                   onChange={handleChange}
                   darkMode={darkMode}
                   placeholder={form.name ? slugify(form.name) : "np. isola-ristorante"}
-                  helpText="Jesli zostawisz puste, zostanie wygenerowany z nazwy firmy."
+                  helpText="Jeśli zostawisz puste, zostanie wygenerowany z nazwy firmy."
                 />
               </div>
 
@@ -483,7 +534,8 @@ export default function AdminSponsors({ darkMode }) {
                 maxFileSizeMB={2}
                 convertToWebp
                 webpMaxSide={1200}
-                helperText="Opcjonalnie: uzyj tylko wtedy, gdy w Supabase istnieje bucket sponsor-logos. W przeciwnym razie wklej URL logo z hostingu."
+                fallbackToDataUrl
+                helperText="Logo zostanie wysłane do Supabase Storage, a jeśli Storage odmówi zapisu, panel zapisze zoptymalizowany obraz bezpośrednio w profilu sponsora."
               />
 
               <div className={`mt-4 rounded-2xl border p-4 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-white"}`}>
@@ -491,11 +543,11 @@ export default function AdminSponsors({ darkMode }) {
                   Podglad karty
                 </div>
                 <div className="mt-3 flex items-center gap-3">
-                  <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border p-2 ${darkMode ? "border-white/10 bg-white" : "border-gray-200 bg-white"}`}>
+                  <div className="mlpn-sponsor-logo-frame flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl p-2">
                     {form.logo_url ? (
-                      <img src={form.logo_url} alt="" className="h-full w-full object-contain" />
+                      <img src={form.logo_url} alt="" className="mlpn-sponsor-logo-img h-full w-full object-contain" />
                     ) : (
-                      <Handshake size={24} className={darkMode ? "text-gray-500" : "text-gray-400"} />
+                      <Handshake size={24} className="text-white/70" />
                     )}
                   </div>
                   <div className="min-w-0">
@@ -524,7 +576,7 @@ export default function AdminSponsors({ darkMode }) {
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-2 font-semibold text-white transition-colors hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Save size={18} />
-              {saving ? "Zapisuje..." : "Zapisz sponsora"}
+              {saving ? "Zapisuję..." : "Zapisz sponsora"}
             </button>
           </div>
         </form>
@@ -544,7 +596,7 @@ export default function AdminSponsors({ darkMode }) {
               <div className={`py-6 text-center text-sm ${muted}`}>Ladowanie...</div>
             ) : group.sponsors.length === 0 ? (
               <div className={`rounded-xl border border-dashed p-4 text-sm ${darkMode ? "border-white/10 text-gray-400" : "border-gray-300 text-gray-500"}`}>
-                Brak sponsorow w tej kategorii.
+                Brak sponsorów w tej kategorii.
               </div>
             ) : (
               <div className="space-y-2">
@@ -554,11 +606,11 @@ export default function AdminSponsors({ darkMode }) {
                     className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border p-1.5 ${darkMode ? "border-white/10 bg-white" : "border-gray-200 bg-white"}`}>
+                      <div className="mlpn-sponsor-logo-frame flex h-12 w-12 shrink-0 items-center justify-center rounded-xl p-1.5">
                         {sponsor.logo_url ? (
-                          <img src={sponsor.logo_url} alt="" className="h-full w-full object-contain" />
+                          <img src={sponsor.logo_url} alt="" className="mlpn-sponsor-logo-img h-full w-full object-contain" />
                         ) : (
-                          <Handshake size={20} className={darkMode ? "text-gray-500" : "text-gray-400"} />
+                          <Handshake size={20} className="text-white/70" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -583,6 +635,20 @@ export default function AdminSponsors({ darkMode }) {
                       )}
                       {canEdit && (
                         <button
+                          onClick={() => handleVisibilityToggle(sponsor)}
+                          disabled={visibilitySavingId === sponsor.id}
+                          className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                            sponsor.is_active
+                              ? "border-amber-400/40 text-amber-500 hover:bg-amber-500/10"
+                              : "border-green-500/40 text-green-500 hover:bg-green-500/10"
+                          }`}
+                        >
+                          {sponsor.is_active ? <EyeOff size={13} /> : <Eye size={13} />}
+                          {visibilitySavingId === sponsor.id ? "Zapis..." : sponsor.is_active ? "Ukryj" : "Odkryj"}
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button
                           onClick={() => openEdit(sponsor)}
                           className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold ${darkMode ? "border-white/10 hover:bg-white/10" : "border-gray-200 hover:bg-white"}`}
                         >
@@ -596,7 +662,7 @@ export default function AdminSponsors({ darkMode }) {
                           className="inline-flex items-center gap-1 rounded-lg border border-red-400/30 px-2 py-1 text-xs font-semibold text-red-400 hover:bg-red-500/10"
                         >
                           <Trash2 size={13} />
-                          Usun
+                          Usuń
                         </button>
                       )}
                     </div>
@@ -611,9 +677,9 @@ export default function AdminSponsors({ darkMode }) {
       {!loading && sponsors.length === 0 && !showForm && (
         <div className={`rounded-2xl border p-8 text-center ${card}`}>
           <Eye size={34} className={`mx-auto mb-3 ${muted}`} />
-          <div className="text-lg font-bold">Nie ma jeszcze sponsorow</div>
+          <div className="text-lg font-bold">Nie ma jeszcze sponsorów</div>
           <p className={`mt-1 text-sm ${muted}`}>
-            Dodaj pierwszego sponsora, a pojawi sie na stronie publicznej i w module sponsorow.
+            Dodaj pierwszego sponsora, a pojawi się na stronie publicznej i w module sponsorów.
           </p>
         </div>
       )}

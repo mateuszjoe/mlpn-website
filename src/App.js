@@ -7,6 +7,9 @@ import {
   Users,
   BarChart3,
   FileText,
+  AlertTriangle,
+  CirclePause,
+  Megaphone,
   Vote,
   UserPlus,
   ArrowLeft,
@@ -27,6 +30,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "./contexts/AuthContext";
 import AdminPanel from "./pages/admin/AdminPanel";
+import WorldCupTyperPage from "./pages/TyperPage";
 import { useMLPNData } from "./hooks/useMLPNData";
 import {
   fetchMatchDetails,
@@ -38,6 +42,7 @@ import {
   fetchTeamsDirectory,
   fetchPlayersDirectory,
 } from "./services/supabaseQueries";
+import { syncStoredTyperData } from "./services/typerLocalSync";
 
 /* =========================================
    DRUŻYNY (legacy - dane teraz z Supabase)
@@ -181,18 +186,18 @@ const logoByTeam = {
   Huragan: `${PU}/huragan.png`,
   "ES Chobot Meat": `${PU}/ES CHOBOT MEAT.png`,
   "FC Restart": `${PU}/team-logos/fc-restart.png`,
-  "Huragan Por\u0119by Nowe": `${PU}/team-logos/huragan-poreby-nowe.webp`,
+  "Huragan Poręby Nowe": `${PU}/team-logos/huragan-poreby-nowe.webp`,
   "RKS Pendrachy": `${PU}/team-logos/rks-pendrachy.png`,
   "RKS Pendrachy II": `${PU}/team-logos/rks-pendrachy-ii.png`,
   "RMB Bulls": `${PU}/team-logos/rmb-bulls.png`,
   "Sami Swoi FC": `${PU}/team-logos/sami-swoi-fc.png`,
   "SDK Warszawa": `${PU}/team-logos/sdk-warszawa.png`,
-  "TPS Azbest Wo\u0142omin": `${PU}/team-logos/tps-azbest-wolomin.png`,
+  "TPS Azbest Wołomin": `${PU}/team-logos/tps-azbest-wolomin.png`,
 };
 
 function normalizeTeamLogoKey(value) {
   return String(value || "")
-    .replace(/[\u0142\u0141]/g, "l")
+    .replace(/[łŁ]/g, "l")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -237,6 +242,11 @@ const SPONSOR_CATEGORY_META = {
     shortLabel: "Techniczny",
     accent: "from-sky-300 to-cyan-500",
   },
+  partner_sportowy: {
+    label: "Partner sportowy",
+    shortLabel: "Sportowy",
+    accent: "from-lime-300 to-emerald-500",
+  },
   sponsor: {
     label: "Sponsor",
     shortLabel: "Sponsor",
@@ -244,62 +254,104 @@ const SPONSOR_CATEGORY_META = {
   },
 };
 
-const FALLBACK_PUBLIC_SPONSORS = [
+const FALLBACK_LOADING_SPONSORS = [
   {
-    id: "isola",
-    name: "Isola Ristorante",
-    logoUrl: `${PU}/isola.png`,
-    websiteUrl: "https://www.facebook.com/isolaristorante",
-    description:
-      "Sponsor tytularny MLPN Sulejówek. Lokalny partner, który wspiera rozwój ligi i sportowej społeczności.",
-    shortDescription: "Sponsor tytularny MLPN Sulejówek.",
-    category: "sponsor_tytularny",
-    displayOrder: 0,
-    isActive: true,
-    profileSlug: "isola-ristorante",
-    ctaLabel: "Odwiedź profil",
+    id: "0cdd86c5-99e0-40bd-87a7-1589806ba826",
+    name: "ISOLA Ristorante",
+    logoUrl: `${PU}/loading-sponsors/000-isola-ristorante.webp`,
   },
   {
-    id: "jadlostacja",
+    id: "be65ff5d-81ce-4bc5-bfac-0a383e867401",
+    name: "LEMAJ.pl",
+    logoUrl: `${PU}/loading-sponsors/100-lemaj-pl.webp`,
+  },
+  {
+    id: "ba8beffd-bd5d-411e-827d-703cb9c1232c",
     name: "Jadłostacja Sulejówek",
-    logoUrl: `${PU}/jadlostacja.png`,
-    websiteUrl:
-      "https://www.facebook.com/p/Jadłostacja-Sulejówek-100039844490108/?locale=pl_PL",
-    description: "Restauracja serwująca domowe obiady i smaczne dania na dowóz.",
-    shortDescription: "Domowe obiady i lokalne wsparcie rozgrywek.",
-    category: "sponsor",
-    displayOrder: 10,
-    isActive: true,
-    profileSlug: "jadlostacja-sulejowek",
-    ctaLabel: "Odwiedź stronę",
+    logoUrl: `${PU}/loading-sponsors/110-jad-ostacja-sulejowek.webp`,
   },
   {
-    id: "oslonydookien",
-    name: "Osłony do Okien",
-    logoUrl: `${PU}/oslonydookien.png`,
-    websiteUrl: "https://oslonydookien.pl",
-    description: "Kompleksowe rozwiązania w zakresie osłon okiennych.",
-    shortDescription: "Rolety, żaluzje, markizy i moskitiery.",
-    category: "sponsor",
-    displayOrder: 20,
-    isActive: true,
-    profileSlug: "oslony-do-okien",
-    ctaLabel: "Odwiedź stronę",
+    id: "b2792004-beb4-4912-acab-fb1c2bce7f7d",
+    name: "Pobudka Catering",
+    logoUrl: `${PU}/loading-sponsors/120-pobudka-catering.webp`,
   },
   {
-    id: "paelfasady",
-    name: "Pa-El Fasady",
-    logoUrl: `${PU}/paelfasady.png`,
-    websiteUrl: "https://www.facebook.com/profile.php?id=100063629406941",
-    description: "Profesjonalne usługi elewacyjne i tynkarskie.",
-    shortDescription: "Elewacje i prace fasadowe.",
-    category: "sponsor",
-    displayOrder: 30,
-    isActive: true,
-    profileSlug: "pa-el-fasady",
-    ctaLabel: "Odwiedź profil",
+    id: "c1827cff-b532-41de-92f3-a6c26cbd2b1b",
+    name: "OsłonyDoOkien.pl",
+    logoUrl: `${PU}/loading-sponsors/130-os-onydookien-pl.webp`,
+  },
+  {
+    id: "66990c70-ba35-4193-99f5-828d028cce38",
+    name: "AMER-POL",
+    logoUrl: `${PU}/loading-sponsors/140-amer-pol.webp`,
+  },
+  {
+    id: "e4ae98ee-cf47-4206-8bb0-1aee9ce1e685",
+    name: "PA-EL Fasady",
+    logoUrl: `${PU}/loading-sponsors/150-pa-el-fasady.webp`,
+  },
+  {
+    id: "32a329f9-416d-43b3-82b1-11371619fdaf",
+    name: "SiDAP Energy",
+    logoUrl: `${PU}/loading-sponsors/160-sidap-energy.webp`,
+  },
+  {
+    id: "9594b9f0-4419-4bd0-8792-7436531c5fa3",
+    name: "Szwagier-Kop",
+    logoUrl: `${PU}/loading-sponsors/170-szwagier-kop.webp`,
+  },
+  {
+    id: "6edf6c3f-0cb1-4306-bb6d-9dd1ab40ea20",
+    name: "RoboExpert",
+    logoUrl: `${PU}/loading-sponsors/180-roboexpert.webp`,
+  },
+  {
+    id: "6164d550-e1b6-4ece-b9ad-3d556ba442c6",
+    name: "HAMAG Fotowoltaika",
+    logoUrl: `${PU}/loading-sponsors/190-hamag-fotowoltaika.webp`,
+  },
+  {
+    id: "7d115c05-920d-4d93-bf5b-2780f177c34f",
+    name: "Miasto Sulejówek",
+    logoUrl: `${PU}/loading-sponsors/200-miasto-sulejowek.webp`,
+  },
+  {
+    id: "2507f8e9-5533-47a3-b929-1e24d70fbc29",
+    name: "IGMAT - sport",
+    logoUrl: `${PU}/loading-sponsors/210-igmat-sport.webp`,
+  },
+  {
+    id: "51e884d3-04f4-4067-a874-816551b47655",
+    name: "Vorwarts Pharma",
+    logoUrl: `${PU}/loading-sponsors/220-vorwarts-pharma.webp`,
+  },
+  {
+    id: "fe285b51-873e-452f-98c8-42e28a358162",
+    name: "SuperLiga6",
+    logoUrl: `${PU}/loading-sponsors/230-superliga6.webp`,
   },
 ];
+
+const LAST_LOADING_SPONSOR_KEY = "mlpn:last-loading-sponsor:v2";
+const LOADING_SPONSORS_CACHE_KEY = "mlpn:loading-sponsors-cache:v2";
+const LOADING_SPONSORS_CACHE_MAX_CHARS = 3200000;
+const HOME_NEWS_PREVIEW_LIMIT = 5;
+
+function normalizePolishCtaLabel(value, fallback = "Odwiedź stronę") {
+  const raw = String(value || "").trim();
+  if (!raw) return fallback;
+
+  const key = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (key === "odwiedz strone") return "Odwiedź stronę";
+  if (key === "odwiedz profil") return "Odwiedź profil";
+  if (key === "zobacz wiecej") return "Zobacz więcej";
+  if (key === "czytaj wiecej") return "Czytaj więcej";
+  return raw;
+}
 
 function normalizePublicSponsor(sponsor = {}) {
   const category = sponsor.category || "sponsor";
@@ -316,27 +368,133 @@ function normalizePublicSponsor(sponsor = {}) {
     instagramUrl: sponsor.instagramUrl || sponsor.instagram_url || "",
     contactEmail: sponsor.contactEmail || sponsor.contact_email || "",
     phone: sponsor.phone || "",
-    ctaLabel: sponsor.ctaLabel || sponsor.cta_label || "Odwiedź stronę",
+    ctaLabel: normalizePolishCtaLabel(sponsor.ctaLabel || sponsor.cta_label),
     isActive: sponsor.isActive ?? sponsor.is_active ?? true,
     displayOrder: Number(sponsor.displayOrder ?? sponsor.display_order ?? 0),
   };
 }
 
 function getRenderableSponsors(sponsors = []) {
-  const normalized = (Array.isArray(sponsors) ? sponsors : [])
+  return (Array.isArray(sponsors) ? sponsors : [])
     .map(normalizePublicSponsor)
     .filter((sponsor) => sponsor.name && sponsor.isActive !== false)
     .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name, "pl"));
+}
 
-  if (!normalized.length) return FALLBACK_PUBLIC_SPONSORS;
+function normalizedSponsorText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
-  const hasTitleSponsor = normalized.some((sponsor) => sponsor.category === "sponsor_tytularny");
-  const hasIsola = normalized.some((sponsor) => sponsor.name?.toLowerCase().includes("isola"));
-  if (!hasTitleSponsor && !hasIsola) {
-    return [FALLBACK_PUBLIC_SPONSORS[0], ...normalized];
+function sponsorLogoScale(sponsor = {}) {
+  const text = normalizedSponsorText(
+    `${sponsor.name || ""} ${sponsor.profileSlug || sponsor.profile_slug || ""} ${sponsor.id || ""}`
+  );
+
+  if (text.includes("isola")) return 1.2;
+  if (text.includes("pobudka")) return 1.18;
+  if (text.includes("jadlostacja")) return 1.08;
+  if (text.includes("lemaj")) return 0.94;
+
+  return 1;
+}
+
+function sponsorLogoStyle(sponsor) {
+  return { "--mlpn-sponsor-logo-scale": sponsorLogoScale(sponsor) };
+}
+
+function toLoadingSponsorSnapshot(sponsor) {
+  return {
+    id: sponsor?.id || sponsorRouteId(sponsor) || sponsor?.name || "loading-sponsor",
+    name: sponsor?.name || "Partner MLPN",
+    logoUrl: sponsor?.logoUrl || sponsor?.logo_url || "",
+    profileSlug: sponsor?.profileSlug || sponsor?.profile_slug || "",
+  };
+}
+
+function isCacheableLoadingSponsor(sponsor) {
+  const logoUrl = String(sponsor?.logoUrl || "");
+  if (!sponsor?.name || !logoUrl) return false;
+  if (logoUrl.startsWith("data:image/")) return logoUrl.length <= 450000;
+  return logoUrl.length < 4000;
+}
+
+function compactLoadingSponsorPool(sponsors = []) {
+  const seen = new Set();
+  const pool = [];
+  let totalChars = 2;
+
+  for (const rawSponsor of Array.isArray(sponsors) ? sponsors : []) {
+    const sponsor = toLoadingSponsorSnapshot(rawSponsor);
+    if (!isCacheableLoadingSponsor(sponsor)) continue;
+
+    const key = String(sponsor.id || sponsor.name || sponsor.logoUrl);
+    if (seen.has(key)) continue;
+
+    const entryChars = JSON.stringify(sponsor).length + 1;
+    if (totalChars + entryChars > LOADING_SPONSORS_CACHE_MAX_CHARS) continue;
+
+    seen.add(key);
+    pool.push(sponsor);
+    totalChars += entryChars;
   }
 
-  return normalized;
+  return pool;
+}
+
+function readCachedLoadingSponsors() {
+  try {
+    const raw = window.localStorage?.getItem(LOADING_SPONSORS_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return compactLoadingSponsorPool(parsed);
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedLoadingSponsors(sponsors = []) {
+  const pool = compactLoadingSponsorPool(sponsors);
+
+  if (pool.length === 0) return;
+
+  try {
+    window.localStorage?.setItem(LOADING_SPONSORS_CACHE_KEY, JSON.stringify(pool));
+  } catch {
+    // Cache is only a UX improvement; if it is unavailable, fallback sponsors still render instantly.
+  }
+}
+
+function initialLoadingSponsorPool() {
+  const cached = readCachedLoadingSponsors();
+  return compactLoadingSponsorPool([...cached, ...FALLBACK_LOADING_SPONSORS]);
+}
+
+function pickLoadingSponsor(sponsors = [], { remember = true } = {}) {
+  const pool = compactLoadingSponsorPool(sponsors);
+
+  if (pool.length === 0) return toLoadingSponsorSnapshot(FALLBACK_LOADING_SPONSORS[0]);
+
+  let lastId = "";
+  try {
+    lastId = window.localStorage?.getItem(LAST_LOADING_SPONSOR_KEY) || "";
+  } catch {
+    lastId = "";
+  }
+
+  const candidates = pool.length > 1 ? pool.filter((sponsor) => sponsor.id !== lastId) : pool;
+  const picked = candidates[Math.floor(Math.random() * candidates.length)] || pool[0];
+
+  if (remember) {
+    try {
+      window.localStorage?.setItem(LAST_LOADING_SPONSOR_KEY, picked.id);
+    } catch {
+      // localStorage can be unavailable in private modes; the visual fallback still works.
+    }
+  }
+
+  return picked;
 }
 
 function sponsorRouteId(sponsor) {
@@ -387,6 +545,7 @@ const LEAGUE_SLUG_TO_CONTEXT = Object.fromEntries(
 const HOME_SECTION_TO_SLUG = {
   home: "",
   news: "aktualnosci",
+  typer: "typer",
   polls: "ankiety",
   free: "wolni-zawodnicy",
   "teams-db": "baza-druzyn",
@@ -420,6 +579,7 @@ const INFO_SECTION_TO_SLUG = {
   sponsors: "sponsorzy",
   rodo: "rodo",
   privacy: "polityka-prywatnosci",
+  dataDeletion: "usuwanie-danych",
   contact: "kontakt",
 };
 
@@ -437,9 +597,14 @@ const APP_CONTEXTS = new Set([
   "admin",
   ...Object.keys(LEAGUE_CONTEXT_TO_SLUG),
 ]);
+const STATS_TABS = new Set(["scorers", "assists", "yellow", "red", "teams"]);
 
 function normalizeContext(context) {
   return APP_CONTEXTS.has(context) ? context : "home";
+}
+
+function normalizeStatsTab(tab) {
+  return STATS_TABS.has(tab) ? tab : "scorers";
 }
 
 function normalizeSectionForContext(context, section) {
@@ -477,10 +642,44 @@ function parseRoundParam(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function parseHashRoute(hash) {
-  const rawHash = String(hash || "").replace(/^#/, "");
-  const normalizedHash = rawHash.replace(/^\/+/, "");
-  const [pathPart, queryPart = ""] = normalizedHash.split("?");
+function getAppBasePath() {
+  const publicUrl = process.env.PUBLIC_URL || "";
+  if (!publicUrl || publicUrl === ".") return "";
+
+  try {
+    const origin =
+      typeof window !== "undefined" && window.location?.origin
+        ? window.location.origin
+        : "https://example.com";
+    const pathname = new URL(publicUrl, origin).pathname.replace(/\/+$/, "");
+    return pathname === "/" ? "" : pathname;
+  } catch {
+    const pathname = String(publicUrl)
+      .replace(/^https?:\/\/[^/]+/i, "")
+      .replace(/\/+$/, "");
+    return pathname === "/" ? "" : pathname;
+  }
+}
+
+function stripAppBasePath(pathname) {
+  const basePath = getAppBasePath();
+  const path = pathname || "/";
+  if (!basePath) return path;
+  if (path === basePath) return "/";
+  if (path.startsWith(`${basePath}/`)) return path.slice(basePath.length) || "/";
+  return path;
+}
+
+function withAppBasePath(path) {
+  const basePath = getAppBasePath();
+  const normalizedPath = path?.startsWith("/") ? path : `/${path || ""}`;
+  if (!basePath) return normalizedPath || "/";
+  return normalizedPath === "/" ? basePath : `${basePath}${normalizedPath}`;
+}
+
+function parseRouteString(route) {
+  const normalizedRoute = String(route || "").replace(/^#/, "").replace(/^\/+/, "");
+  const [pathPart, queryPart = ""] = normalizedRoute.split("?");
   const segments = pathPart
     .split("/")
     .filter(Boolean)
@@ -631,7 +830,28 @@ function parseHashRoute(hash) {
   };
 }
 
-function buildHashRoute({
+function parseHashRoute(hash) {
+  return parseRouteString(hash);
+}
+
+function parseBrowserRoute() {
+  const hashRoute = String(window.location.hash || "");
+  if (hashRoute.replace(/^#/, "").replace(/^\/+/, "").length > 0) {
+    return parseHashRoute(hashRoute);
+  }
+
+  return parseRouteString(
+    `${stripAppBasePath(window.location.pathname)}${window.location.search || ""}`
+  );
+}
+
+function isAuthCallbackRoute() {
+  const path = stripAppBasePath(window.location.pathname).replace(/^\/+|\/+$/g, "");
+  const params = new URLSearchParams(window.location.search || "");
+  return path === "auth/callback" || params.has("code") || params.has("error");
+}
+
+function buildRouteUrl({
   activeContext,
   activeSection,
   selectedTeam,
@@ -654,7 +874,12 @@ function buildHashRoute({
 
   const detailContext = baseContext;
   const detailSection = baseSection;
-  if (detailContext !== "home" || detailSection !== "home") {
+  const isDetailRoute =
+    selectedSponsorId ||
+    selectedPlayerId ||
+    selectedTeam ||
+    (selectedMatchId && matchViewMode === "page");
+  if (isDetailRoute && (detailContext !== "home" || detailSection !== "home")) {
     params.set("ctx", detailContext);
     params.set("sekcja", detailSection);
   }
@@ -691,7 +916,7 @@ function buildHashRoute({
   }
 
   const queryString = params.toString();
-  return `#${path}${queryString ? `?${queryString}` : ""}`;
+  return `${withAppBasePath(path)}${queryString ? `?${queryString}` : ""}`;
 }
 
 const COMPLETED_FIXTURE_STATUSES = new Set([
@@ -1228,8 +1453,8 @@ function simulateMatch(fix, playersByTeam) {
 
   // MVP meczu - preferuj strzelców, asystentów, lub losowy zawodnik z lepszej drużyny
   let mvp = null;
-  const goalScorers = events.filter(e => e.type === "GOAL");
-  const assisters = events.filter(e => e.type === "GOAL" && e.assistId);
+  const goalScorers = events.filter(e => e.type === "GOAL" && !e.ownGoal);
+  const assisters = events.filter(e => e.type === "GOAL" && !e.ownGoal && e.assistId);
   
   if (goalScorers.length > 0) {
     // Wybierz losowego strzelca
@@ -1285,7 +1510,7 @@ function simulateMatch(fix, playersByTeam) {
   
   // Dodaj asystentów
   events.forEach(e => {
-    if (e.type === "GOAL" && e.assistId) {
+    if (e.type === "GOAL" && !e.ownGoal && e.assistId) {
       if (e.team === fix.home && !homeLineup.find(p => p.id === e.assistId)) {
         const player = homePlayers.find(p => p.id === e.assistId);
         if (player) homeLineup.push(player);
@@ -1430,7 +1655,7 @@ function computeAllStats(LEAGUES, matches, players, season = 2025) {
       const ps = playerStats[ev.playerId];
       if (!ps) continue;
 
-      if (ev.type === "GOAL") {
+      if (ev.type === "GOAL" && !ev.ownGoal) {
         ps.goals += 1;
         if (ev.assistId && playerStats[ev.assistId]) {
           playerStats[ev.assistId].assists += 1;
@@ -2183,6 +2408,60 @@ function LeagueLink({ leagueId, leagueName, onClick, className = "" }) {
   );
 }
 
+function RomanLeagueIcon({ value = "I", size = 18, className = "" }) {
+  const fontSize =
+    value.length <= 1 ? size * 1.1 : value.length === 2 ? size * 0.92 : size * 0.76;
+  const letterSpacing =
+    value.length <= 1 ? "0" : value.length === 2 ? "0.08em" : "0.05em";
+  return (
+    <span
+      className={classNames(
+        "e3d-ico inline-flex items-center justify-center overflow-visible font-black italic leading-none text-center",
+        className
+      )}
+      style={{
+        width: size,
+        height: size,
+        fontSize: Math.round(fontSize),
+        fontFamily: '"Barlow Condensed", Montserrat, sans-serif',
+        fontWeight: 900,
+        letterSpacing,
+        paddingLeft: value.length > 1 ? "0.04em" : 0,
+        transform: "skewX(-6deg)",
+      }}
+      aria-hidden="true"
+    >
+      {value}
+    </span>
+  );
+}
+
+function TableIcon({ size = 18, className = "" }) {
+  const stroke = "currentColor";
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={stroke}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={classNames("e3d-ico", className)}
+      aria-hidden="true"
+    >
+      <rect x="4" y="5" width="16" height="14" rx="2" />
+      <path d="M4 10h16" />
+      <path d="M9 5v14" />
+      <path d="M14 5v14" />
+      <path d="M7 14h1" />
+      <path d="M12 14h1" />
+      <path d="M17 14h1" />
+    </svg>
+  );
+}
+
 function FormDot({ v, title, small = false }) {
   // kolorystyczna ikonka formy — BEZ LITEREK
   // W = wygrana (zielona), R = remis (żółta), P = przegrana (czerwona), ? = nadchodzący mecz (szara)
@@ -2219,7 +2498,10 @@ function MobileLeagueScrollableTable({
   showForm = true,
   getRowBg,
 }) {
-  const leftColumnWidth = showForm ? 136 : 126;
+  const hasLiveRows = (rows || []).some((row) => row?.isLivePlaying);
+  const leftColumnWidth = showForm
+    ? (hasLiveRows ? 164 : 136)
+    : (hasLiveRows ? 154 : 126);
   const headerHeight = "h-8";
   const rowHeight = "h-[46px]";
   const statColumns = [
@@ -2297,7 +2579,7 @@ function MobileLeagueScrollableTable({
 
           {rows.map((row) => {
             const position = row.displayPos ?? row.pos;
-            const rowBg = row.withdrawn ? "" : getRowBg?.(position) || "";
+            const rowBg = row.withdrawn ? "" : getRowBg?.(row, position) || "";
             return (
               <div
                 key={`mobile-fixed-${row.team}-${position}`}
@@ -2306,6 +2588,7 @@ function MobileLeagueScrollableTable({
                   "grid grid-cols-[12px_16px_minmax(0,1fr)] gap-1 items-center px-2 border-b overflow-hidden",
                   darkMode ? "border-white/10 text-gray-100" : "border-gray-100 text-gray-700",
                   rowBg,
+                  row.isLivePlaying && (darkMode ? "bg-red-500/10" : "bg-red-50"),
                   getStandingsWithdrawnRowClass(row.withdrawn, darkMode)
                 )}
               >
@@ -2318,12 +2601,22 @@ function MobileLeagueScrollableTable({
                     onClick={() => openTeam(row.team)}
                   />
                 </div>
-                <button
-                  onClick={() => openTeam(row.team)}
-                  className="font-bold hover:underline truncate text-[9px] leading-tight text-left min-w-0 block w-full"
-                >
-                  {getStandingsTeamLabel(row.team, row.withdrawn)}
-                </button>
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <button
+                    onClick={() => openTeam(row.team)}
+                    className="min-w-0 flex-1 truncate text-left text-[9px] font-bold leading-tight hover:underline"
+                    title={getStandingsTeamLabel(row.team, row.withdrawn)}
+                  >
+                    {getStandingsTeamLabel(row.team, row.withdrawn)}
+                  </button>
+                  {row.isLivePlaying && (
+                    <PlayingBadge
+                      compact
+                      className="mlpn-mobile-table-live-badge"
+                      title={row.liveOpponent ? `LIVE vs ${displayTeamName(row.liveOpponent)} ${row.liveScore || ""}` : "Mecz trwa"}
+                    />
+                  )}
+                </div>
               </div>
             );
           })}
@@ -2344,6 +2637,7 @@ function MobileLeagueScrollableTable({
                     className={classNames(
                       "shrink-0 text-center",
                       column.width,
+                      column.key === "pts" ? "font-black" : "",
                       column.key === "form" ? "text-left pl-1" : ""
                     )}
                 >
@@ -2354,7 +2648,7 @@ function MobileLeagueScrollableTable({
 
             {rows.map((row) => {
               const position = row.displayPos ?? row.pos;
-              const rowBg = row.withdrawn ? "" : getRowBg?.(position) || "";
+              const rowBg = row.withdrawn ? "" : getRowBg?.(row, position) || "";
               return (
                 <div
                   key={`mobile-scroll-${row.team}-${position}`}
@@ -2363,6 +2657,7 @@ function MobileLeagueScrollableTable({
                     "flex items-center gap-0 px-1 border-b",
                     darkMode ? "border-white/10 text-gray-100" : "border-gray-100 text-gray-700",
                     rowBg,
+                    row.isLivePlaying && (darkMode ? "bg-red-500/10" : "bg-red-50"),
                     getStandingsWithdrawnRowClass(row.withdrawn, darkMode)
                   )}
                 >
@@ -2391,6 +2686,7 @@ function MobileLeagueScrollableTable({
 
 function ScorePill({ homeGoals, awayGoals, darkMode, onClick, date, time, status }) {
   const statusKey = String(status || "").toLowerCase();
+  const isLive = statusKey === "live";
   const isWalkover = status?.startsWith('walkover');
   const statusOnlyLabel =
     statusKey === "unplayed"
@@ -2401,12 +2697,16 @@ function ScorePill({ homeGoals, awayGoals, darkMode, onClick, date, time, status
           ? "Odwołany"
           : statusKey === "scheduled"
             ? "Zaplanowany"
+            : statusKey === "live"
+              ? "LIVE"
             : null;
-  const showStatusOnly = !!statusOnlyLabel;
+  const showStatusOnly = !!statusOnlyLabel && !isLive;
   const cls = isWalkover
     ? darkMode
       ? "bg-orange-500/10 border-orange-500/30"
       : "bg-orange-50 border-orange-300"
+    : isLive
+      ? "mlpn-live-score border-red-400/70 bg-red-500/12 text-white"
     : darkMode
       ? "bg-white/5 border-white/10"
       : "bg-black/5 border-black/10";
@@ -2422,9 +2722,11 @@ function ScorePill({ homeGoals, awayGoals, darkMode, onClick, date, time, status
           showStatusOnly ? "text-xs sm:text-sm" : "text-lg"
         )}
       >
-        {showStatusOnly ? statusOnlyLabel : `${homeGoals} : ${awayGoals}`}
+        {showStatusOnly ? statusOnlyLabel : formatTeamScore(homeGoals, awayGoals)}
       </div>
-      {isWalkover ? (
+      {isLive ? (
+        <LiveBadge compact className="mt-1" />
+      ) : isWalkover ? (
         <div className={classNames(
           "text-[10px] font-bold mt-0.5",
           darkMode ? "text-orange-400" : "text-orange-600"
@@ -2450,6 +2752,7 @@ function fixtureCenterLabel(f) {
   if (statusKey === "unplayed") return "Nierozegrany";
   if (statusKey === "postponed") return "Przełożony";
   if (statusKey === "cancelled") return "Odwołany";
+  if (statusKey === "live") return "LIVE";
   if (f?.scheduleHidden) return "Termin wkrótce";
   if (f?.date && f?.time) return `${f.date} • ${f.time}`;
   if (f?.date) return f.date;
@@ -2462,9 +2765,45 @@ function fixtureCenterTimeLabel(f) {
   if (statusKey === "unplayed") return "Nierozegrany";
   if (statusKey === "postponed") return "Przełożony";
   if (statusKey === "cancelled") return "Odwołany";
+  if (statusKey === "live") return "LIVE";
   if (f?.scheduleHidden) return "Termin wkrótce";
   if (f?.time) return f.time;
   return "Godzina TBD";
+}
+
+function isLiveFixture(fixture) {
+  return String(fixture?.status || "").toLowerCase() === "live";
+}
+
+function LiveBadge({ className = "", compact = false }) {
+  return (
+    <span
+      className={classNames(
+        "mlpn-live-badge inline-flex items-center justify-center gap-1.5 rounded-full border border-red-300/60 bg-red-500 px-2 py-1 font-black uppercase tracking-[0.12em] text-white shadow-[0_0_18px_rgba(239,68,68,0.45)]",
+        compact ? "text-[9px]" : "text-[10px]",
+        className
+      )}
+    >
+      <span className="mlpn-live-dot" aria-hidden="true" />
+      LIVE
+    </span>
+  );
+}
+
+function PlayingBadge({ className = "", compact = false, title = "Mecz trwa" }) {
+  return (
+    <span
+      className={classNames(
+        "inline-flex shrink-0 items-center justify-center gap-1 rounded-full border border-red-300/70 bg-red-500/12 font-black uppercase tracking-[0.1em] text-red-500 shadow-[0_0_14px_rgba(239,68,68,0.22)]",
+        compact ? "px-1.5 py-0.5 text-[7px]" : "px-2 py-1 text-[9px]",
+        className
+      )}
+      title={title}
+    >
+      <span className="mlpn-live-dot" aria-hidden="true" />
+      GRAJĄ
+    </span>
+  );
 }
 
 function isPositiveStatLeader(row, statKey) {
@@ -2489,6 +2828,100 @@ function hasLeagueTableResults(rows) {
   );
 }
 
+function getActiveStandingsRows(rows = []) {
+  return (rows || []).filter((row) => row && !row.withdrawn);
+}
+
+function teamSetFromRows(rows = []) {
+  return new Set((rows || []).map((row) => row?.team).filter(Boolean));
+}
+
+function getPromotionRowsForLeague(rows = [], leagueId = "") {
+  if (leagueId !== "2nd" && leagueId !== "3rd") return [];
+  return getActiveStandingsRows(rows).slice(0, 2);
+}
+
+function getRelegationRowsForLeague(rows = [], leagueId = "") {
+  if (leagueId !== "1st" && leagueId !== "2nd") return [];
+  return getActiveStandingsRows(rows).slice(-2);
+}
+
+function liveGoalValue(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+function applyLiveResultToRow(row, goalsFor, goalsAgainst, opponent) {
+  row.played = Number(row.played || 0) + 1;
+  row.gf = Number(row.gf || 0) + goalsFor;
+  row.ga = Number(row.ga || 0) + goalsAgainst;
+
+  if (goalsFor > goalsAgainst) {
+    row.win = Number(row.win || 0) + 1;
+    row.pts = Number(row.pts || 0) + 3;
+    row.liveResult = "W";
+  } else if (goalsFor === goalsAgainst) {
+    row.draw = Number(row.draw || 0) + 1;
+    row.pts = Number(row.pts || 0) + 1;
+    row.liveResult = "R";
+  } else {
+    row.loss = Number(row.loss || 0) + 1;
+    row.liveResult = "P";
+  }
+
+  row.isLivePlaying = true;
+  row.liveOpponent = opponent;
+  row.liveScore = formatTeamScore(goalsFor, goalsAgainst);
+}
+
+function sortLiveStandingsRows(a, b) {
+  if (a.withdrawn !== b.withdrawn) return a.withdrawn ? 1 : -1;
+
+  const goalDiffA = Number(a.gf || 0) - Number(a.ga || 0);
+  const goalDiffB = Number(b.gf || 0) - Number(b.ga || 0);
+  const originalPosA = Number(a.originalPos || a.pos || Number.MAX_SAFE_INTEGER);
+  const originalPosB = Number(b.originalPos || b.pos || Number.MAX_SAFE_INTEGER);
+
+  return (
+    Number(b.pts || 0) - Number(a.pts || 0) ||
+    goalDiffB - goalDiffA ||
+    Number(b.gf || 0) - Number(a.gf || 0) ||
+    originalPosA - originalPosB ||
+    String(a.team || "").localeCompare(String(b.team || ""), "pl")
+  );
+}
+
+function applyLiveFixturesToTable(rows = [], fixtures = [], leagueId = "") {
+  const liveFixtures = (fixtures || []).filter((fixture) =>
+    isLiveFixture(fixture) &&
+    (!leagueId || fixture.league === leagueId)
+  );
+
+  if (liveFixtures.length === 0) return rows;
+
+  const byTeam = new Map((rows || []).map((row) => [row.team, { ...row }]));
+
+  for (const fixture of liveFixtures) {
+    const homeRow = byTeam.get(fixture.home);
+    const awayRow = byTeam.get(fixture.away);
+    if (!homeRow || !awayRow) continue;
+
+    const homeGoals = liveGoalValue(fixture.homeGoals);
+    const awayGoals = liveGoalValue(fixture.awayGoals);
+
+    applyLiveResultToRow(homeRow, homeGoals, awayGoals, fixture.away);
+    applyLiveResultToRow(awayRow, awayGoals, homeGoals, fixture.home);
+  }
+
+  return Array.from(byTeam.values())
+    .sort(sortLiveStandingsRows)
+    .map((row, index) => ({
+      ...row,
+      pos: index + 1,
+      liveAdjusted: !!row.isLivePlaying,
+    }));
+}
+
 function normalizeFormItem(item) {
   const result = typeof item === "string" ? item : item?.result;
   if (!["W", "R", "P"].includes(result)) return null;
@@ -2500,6 +2933,14 @@ function normalizeFormItem(item) {
 
 function fixtureDashboardMetaLine(fixture, roundLabel, leagueLabel = "") {
   if (!fixture) return "";
+  if (isLiveFixture(fixture)) {
+    return [
+      "LIVE",
+      formatTeamScore(fixture.homeGoals, fixture.awayGoals),
+      roundLabel,
+      leagueLabel,
+    ].filter(Boolean).join(" • ");
+  }
   if (fixture.scheduleHidden) {
     return [roundLabel, "termin zostanie podany"].filter(Boolean).join(" • ");
   }
@@ -2518,6 +2959,73 @@ function fixtureDateSortValue(item, fallback = "9999-12-31") {
 
 function fixtureTimeSortValue(item, fallback = "23:59") {
   return item?.time || item?.scheduleTime || fallback;
+}
+
+function fixtureSortSignature(item, dateFallback = "9999-12-31", timeFallback = "23:59") {
+  return {
+    date: fixtureDateSortValue(item, dateFallback),
+    time: fixtureTimeSortValue(item, timeFallback),
+    round: Number(item?.round || 0),
+    league: String(item?.league || ""),
+    home: String(item?.home || ""),
+    away: String(item?.away || ""),
+    id: String(item?.id || ""),
+  };
+}
+
+function compareFixturesChronologically(a, b) {
+  const left = fixtureSortSignature(a);
+  const right = fixtureSortSignature(b);
+  return (
+    left.date.localeCompare(right.date) ||
+    left.time.localeCompare(right.time) ||
+    left.round - right.round ||
+    left.league.localeCompare(right.league) ||
+    left.home.localeCompare(right.home, "pl") ||
+    left.away.localeCompare(right.away, "pl") ||
+    left.id.localeCompare(right.id)
+  );
+}
+
+function compareMatchesNewestFirst(a, b) {
+  const left = fixtureSortSignature(a, "0000-00-00", "00:00");
+  const right = fixtureSortSignature(b, "0000-00-00", "00:00");
+  return (
+    right.date.localeCompare(left.date) ||
+    right.time.localeCompare(left.time) ||
+    right.round - left.round ||
+    right.league.localeCompare(left.league) ||
+    right.home.localeCompare(left.home, "pl") ||
+    right.away.localeCompare(left.away, "pl") ||
+    right.id.localeCompare(left.id)
+  );
+}
+
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function timeToMinutes(time, fallback = 24 * 60) {
+  const match = String(time || "").match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return fallback;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return fallback;
+  return hours * 60 + minutes;
+}
+
+function isFixtureUpcomingFromNow(fixture, now = new Date()) {
+  const date = fixture?.date || fixture?.scheduleDate;
+  if (!date) return true;
+
+  const today = localDateKey(now);
+  if (date > today) return true;
+  if (date < today) return false;
+
+  const time = fixture?.time || fixture?.scheduleTime;
+  if (!time) return true;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return timeToMinutes(time, nowMinutes) >= nowMinutes;
 }
 
 function formatNumericDate(dateStr) {
@@ -2940,6 +3448,7 @@ function InfoPage({ darkMode, activeTab = "about", setActiveTab, sponsors = [], 
         )}
         {activeTab === "rodo" && <RodoPage darkMode={darkMode} />}
         {activeTab === "privacy" && <PrivacyPage darkMode={darkMode} />}
+        {activeTab === "dataDeletion" && <DataDeletionPage darkMode={darkMode} />}
         {activeTab === "contact" && <ContactPage darkMode={darkMode} />}
       </div>
     </Card>
@@ -3287,9 +3796,14 @@ function SponsorsPage({ darkMode, sponsors = [], openSponsor }) {
       items: visibleSponsors.filter((sponsor) => sponsor.category === "sponsor_techniczny"),
     },
     {
+      key: "partner_sportowy",
+      title: "Partnerzy sportowi",
+      items: visibleSponsors.filter((sponsor) => sponsor.category === "partner_sportowy"),
+    },
+    {
       key: "sponsor",
       title: "Sponsorzy",
-      items: visibleSponsors.filter((sponsor) => !["sponsor_tytularny", "sponsor_techniczny"].includes(sponsor.category)),
+      items: visibleSponsors.filter((sponsor) => !["sponsor_tytularny", "sponsor_techniczny", "partner_sportowy"].includes(sponsor.category)),
     },
   ].filter((group) => group.items.length > 0);
 
@@ -3335,11 +3849,18 @@ function SponsorsPage({ darkMode, sponsors = [], openSponsor }) {
             <div className={classNames("text-[10px] font-black uppercase tracking-[0.18em]", darkMode ? "text-amber-100" : "text-amber-700")}>
               Sponsor tytularny
             </div>
-            <div className="mt-4 flex h-28 items-center justify-center rounded-2xl bg-white p-4 shadow-sm">
+            <div className="mlpn-sponsor-logo-frame mt-4 flex h-28 items-center justify-center rounded-2xl p-4">
               {titleSponsor.logoUrl ? (
-                <img src={titleSponsor.logoUrl} alt={titleSponsor.name} className="h-full w-full object-contain" />
+                <img
+                  src={titleSponsor.logoUrl}
+                  alt={titleSponsor.name}
+                  style={sponsorLogoStyle(titleSponsor)}
+                  className="mlpn-sponsor-logo-img h-full w-full object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
-                <Trophy size={42} className="text-amber-500" />
+                <Trophy size={42} className="text-white/80" />
               )}
             </div>
             <div className="mt-4 text-xl font-black">{titleSponsor.name}</div>
@@ -3376,14 +3897,20 @@ function SponsorsPage({ darkMode, sponsors = [], openSponsor }) {
                       type="button"
                       onClick={() => open(sponsor)}
                       className={classNames(
-                        "flex h-20 w-24 shrink-0 items-center justify-center rounded-2xl border bg-white p-2 transition-transform hover:scale-[1.02]",
-                        darkMode ? "border-white/10" : "border-gray-200"
+                        "mlpn-sponsor-logo-frame flex h-20 w-24 shrink-0 items-center justify-center rounded-2xl p-2 transition-transform hover:scale-[1.02]"
                       )}
                     >
                       {sponsor.logoUrl ? (
-                        <img src={sponsor.logoUrl} alt={sponsor.name} className="h-full w-full object-contain" />
+                        <img
+                          src={sponsor.logoUrl}
+                          alt={sponsor.name}
+                          style={sponsorLogoStyle(sponsor)}
+                          className="mlpn-sponsor-logo-img h-full w-full object-contain"
+                          loading="lazy"
+                          decoding="async"
+                        />
                       ) : (
-                        <Trophy size={26} className="text-gray-400" />
+                        <Trophy size={26} className="text-white/70" />
                       )}
                     </button>
 
@@ -3470,7 +3997,7 @@ function SponsorProfilePage({ darkMode, sponsor, onBack }) {
   }
 
   const links = [
-    sponsor.websiteUrl ? { label: sponsor.ctaLabel || "Odwiedź stronę", href: sponsor.websiteUrl } : null,
+    sponsor.websiteUrl ? { label: normalizePolishCtaLabel(sponsor.ctaLabel), href: sponsor.websiteUrl } : null,
     sponsor.facebookUrl ? { label: "Facebook", href: sponsor.facebookUrl } : null,
     sponsor.instagramUrl ? { label: "Instagram", href: sponsor.instagramUrl } : null,
     sponsor.contactEmail ? { label: sponsor.contactEmail, href: `mailto:${sponsor.contactEmail}`, icon: "mail" } : null,
@@ -3491,11 +4018,18 @@ function SponsorProfilePage({ darkMode, sponsor, onBack }) {
           )}
         >
           <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)] md:items-center">
-            <div className="flex h-44 items-center justify-center rounded-3xl bg-white p-5 shadow-lg md:h-52">
+            <div className="mlpn-sponsor-logo-frame flex h-44 items-center justify-center rounded-3xl p-5 md:h-52">
               {sponsor.logoUrl ? (
-                <img src={sponsor.logoUrl} alt={sponsor.name} className="h-full w-full object-contain" />
+                <img
+                  src={sponsor.logoUrl}
+                  alt={sponsor.name}
+                  style={sponsorLogoStyle(sponsor)}
+                  className="mlpn-sponsor-logo-img h-full w-full object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
-                <Trophy size={64} className="text-gray-400" />
+                <Trophy size={64} className="text-white/75" />
               )}
             </div>
 
@@ -3770,7 +4304,33 @@ function PrivacyPage({ darkMode }) {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold mb-3">2. Pliki cookies</h2>
+          <h2 className="text-xl font-bold mb-3">2. Logowanie i Typer MLPN</h2>
+          <p
+            className={classNames(
+              "leading-relaxed mb-2",
+              darkMode ? "text-gray-300" : "text-gray-700"
+            )}
+          >
+            Użytkownicy mogą logować się do strony MLPN za pomocą adresu e-mail,
+            konta Google lub konta Facebook. Dane otrzymane od dostawców
+            logowania wykorzystujemy wyłącznie do identyfikacji konta,
+            utrzymania sesji oraz obsługi funkcji dostępnych dla zalogowanych
+            użytkowników.
+          </p>
+          <p
+            className={classNames(
+              "leading-relaxed",
+              darkMode ? "text-gray-300" : "text-gray-700"
+            )}
+          >
+            W Typerze MLPN przetwarzamy dodatkowo nick wybrany przez użytkownika,
+            avatar, wskazania meczowe, wybór mistrza turnieju, punkty oraz
+            informacje porządkowe związane z moderacją profilu typera.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold mb-3">3. Pliki cookies</h2>
           <p
             className={classNames(
               "leading-relaxed mb-2",
@@ -3802,7 +4362,7 @@ function PrivacyPage({ darkMode }) {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold mb-3">3. Zewnętrzne usługi</h2>
+          <h2 className="text-xl font-bold mb-3">4. Zewnętrzne usługi</h2>
           <p
             className={classNames(
               "leading-relaxed mb-2",
@@ -3824,6 +4384,12 @@ function PrivacyPage({ darkMode }) {
               <strong>Facebook</strong> - wtyczki społecznościowe
             </li>
             <li>
+              <strong>Google i Facebook Login</strong> - logowanie użytkowników
+            </li>
+            <li>
+              <strong>Supabase</strong> - obsługa kont, sesji i danych aplikacji
+            </li>
+            <li>
               <strong>Instagram</strong> - galerie zdjęć
             </li>
           </ul>
@@ -3840,7 +4406,7 @@ function PrivacyPage({ darkMode }) {
 
         <section>
           <h2 className="text-xl font-bold mb-3">
-            4. Nagrania wideo i zdjęcia
+            5. Nagrania wideo i zdjęcia
           </h2>
           <p
             className={classNames(
@@ -3864,7 +4430,7 @@ function PrivacyPage({ darkMode }) {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold mb-3">5. Bezpieczeństwo danych</h2>
+          <h2 className="text-xl font-bold mb-3">6. Bezpieczeństwo danych</h2>
           <p
             className={classNames(
               "leading-relaxed",
@@ -3880,7 +4446,7 @@ function PrivacyPage({ darkMode }) {
 
         <section>
           <h2 className="text-xl font-bold mb-3">
-            6. Kontakt w sprawie prywatności
+            7. Kontakt w sprawie prywatności
           </h2>
           <p
             className={classNames(
@@ -3909,7 +4475,7 @@ function PrivacyPage({ darkMode }) {
 
         <section>
           <h2 className="text-xl font-bold mb-3">
-            7. Zmiany Polityki Prywatności
+            8. Zmiany Polityki Prywatności
           </h2>
           <p
             className={classNames(
@@ -3932,9 +4498,100 @@ function PrivacyPage({ darkMode }) {
           <p
             className={classNames(darkMode ? "text-gray-400" : "text-gray-600")}
           >
-            Ostatnia aktualizacja: Luty 2025
+            Ostatnia aktualizacja: Czerwiec 2026
           </p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* Data Deletion Page */
+function DataDeletionPage({ darkMode }) {
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <div>
+        <h1 className="text-3xl font-extrabold mb-4">
+          Usuwanie danych użytkownika
+        </h1>
+        <div
+          className={classNames(
+            "text-sm mb-4",
+            darkMode ? "text-gray-400" : "text-gray-600"
+          )}
+        >
+          Instrukcja usunięcia danych konta i profilu Typera MLPN
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <section>
+          <h2 className="text-xl font-bold mb-3">1. Jakie dane można usunąć?</h2>
+          <p
+            className={classNames(
+              "leading-relaxed",
+              darkMode ? "text-gray-300" : "text-gray-700"
+            )}
+          >
+            Na prośbę użytkownika usuwamy dane konta powiązane ze stroną MLPN,
+            dane logowania zapisane w Supabase oraz dane Typera MLPN, w tym nick,
+            avatar, typy meczowe, wybór mistrza i historię udziału w rankingu.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold mb-3">2. Jak zgłosić usunięcie?</h2>
+          <p
+            className={classNames(
+              "leading-relaxed mb-2",
+              darkMode ? "text-gray-300" : "text-gray-700"
+            )}
+          >
+            Wyślij wiadomość na adres{" "}
+            <a href="mailto:kontakt@mlpn.pl" className="underline">
+              kontakt@mlpn.pl
+            </a>{" "}
+            z adresu e-mail użytego do logowania na stronie MLPN.
+          </p>
+          <p
+            className={classNames(
+              "leading-relaxed",
+              darkMode ? "text-gray-300" : "text-gray-700"
+            )}
+          >
+            W tytule wiadomości wpisz: „Usunięcie danych MLPN”, a w treści
+            podaj, czy chcesz usunąć tylko profil Typera, czy całe konto na
+            stronie.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold mb-3">3. Termin realizacji</h2>
+          <p
+            className={classNames(
+              "leading-relaxed",
+              darkMode ? "text-gray-300" : "text-gray-700"
+            )}
+          >
+            Zgłoszenia obsługujemy możliwie szybko, standardowo w ciągu 30 dni.
+            Po zakończeniu procesu wysyłamy potwierdzenie na adres e-mail
+            powiązany z kontem.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold mb-3">4. Dane techniczne</h2>
+          <p
+            className={classNames(
+              "leading-relaxed",
+              darkMode ? "text-gray-300" : "text-gray-700"
+            )}
+          >
+            Nie usuwamy anonimowych logów technicznych, jeżeli są niezbędne do
+            bezpieczeństwa strony lub wymagane przez przepisy prawa. Dane te nie
+            są wykorzystywane do publicznego profilu użytkownika.
+          </p>
+        </section>
       </div>
     </div>
   );
@@ -4229,11 +4886,70 @@ function ContactPage({ darkMode }) {
   );
 }
 
+function AppLoadingScreen({ darkMode, sponsor }) {
+  const sponsorName = sponsor?.name || "Partner MLPN";
+  const sponsorLogo = sponsor?.logoUrl || sponsor?.logo_url || "";
+  const hasSponsor = !!(sponsor?.name && sponsorLogo);
+
+  return (
+    <div
+      lang="pl-PL"
+      translate="no"
+      className={classNames(
+        "min-h-screen flex items-center justify-center px-6 py-10 notranslate",
+        darkMode
+          ? "bg-[#070c15] text-white"
+          : "bg-gradient-to-br from-[#10203e] via-[#1b315c] to-[#1f3f7a] text-white"
+      )}
+    >
+      <div className="w-full max-w-sm text-center">
+        <div className="flex justify-center">
+          <img
+            src={darkMode ? `${PU}/logo2big.webp` : `${PU}/logo1big.webp`}
+            alt="MLPN"
+            className="h-24 w-auto object-contain drop-shadow-[0_12px_28px_rgba(0,0,0,0.35)]"
+          />
+        </div>
+
+        <div className="mt-8 rounded-[28px] border border-white/15 bg-white/10 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)] backdrop-blur">
+          <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/65">
+            {hasSponsor ? "Partner ligi" : "Partnerzy ligi"}
+          </div>
+          <div className="mx-auto mt-4 mlpn-sponsor-logo-frame mlpn-loading-sponsor-logo-frame flex h-28 w-44 items-center justify-center rounded-3xl p-4">
+            {sponsorLogo ? (
+              <img
+              src={sponsorLogo}
+              alt={sponsorName}
+              key={`${sponsorName}-${sponsorLogo}`}
+              style={sponsorLogoStyle(sponsor)}
+              className="mlpn-sponsor-logo-img mlpn-loading-sponsor-logo-img max-h-full max-w-full object-contain"
+            />
+            ) : (
+              <Trophy size={42} className="text-slate-500" />
+            )}
+          </div>
+          <div className="mt-4 min-h-[58px] text-2xl font-black leading-tight flex items-center justify-center">
+            {hasSponsor ? sponsorName : "Sponsorzy MLPN"}
+          </div>
+        </div>
+
+        <div className="mx-auto mt-7 mlpn-loading-pitch" aria-hidden="true">
+          <div className="mlpn-loading-ball" />
+          <div className="mlpn-loading-shadow" />
+        </div>
+        <div className="mt-4 text-[10px] font-black uppercase tracking-[0.22em] text-white/55">
+          Ładowanie danych ligi
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* =========================================
    APP
    ========================================= */
 export default function App() {
-  const { user, hasAdminAccess, signOut } = useAuth();
+  const { user, profile, hasAdminAccess, signOut } = useAuth();
   const isApplyingRouteRef = useRef(false);
   const routeReadyRef = useRef(false);
   const historyIndexRef = useRef(0);
@@ -4243,6 +4959,7 @@ export default function App() {
   });
   const [activeContext, setActiveContext] = useState("home"); // home | 1st | 2nd | 3rd | tournaments | info | admin
   const [activeSection, setActiveSection] = useState("home"); // home/news/typer/polls/free | table/calendar/teams/players
+  const [statsInitialTab, setStatsInitialTab] = useState("scorers");
   const prevContextRef = useRef(activeContext);
   const calendarRoundAutoRef = useRef(false);
 
@@ -4292,6 +5009,29 @@ export default function App() {
 
   const [round, setRound] = useState(1);
   const [routeSeasonRequest, setRouteSeasonRequest] = useState(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let cancelled = false;
+
+    syncStoredTyperData({ user, profile })
+      .then((result) => {
+        if (cancelled) return;
+        if (result.restoredProfile || result.restoredPicks > 0) {
+          console.info("Typer local data synced:", result);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.warn("Typer local data sync:", error.message);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile, user]);
 
   useEffect(() => {
     const requestedSeason = routeSeasonRequest;
@@ -4356,6 +5096,8 @@ export default function App() {
   // Mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuExpandedContext, setMobileMenuExpandedContext] = useState("home");
+  const [newsBarExpanded, setNewsBarExpanded] = useState(false);
+  const mobileMenuPanelRef = useRef(null);
   const [galleryOverlay, setGalleryOverlay] = useState({
     open: false,
     loading: false,
@@ -4383,6 +5125,9 @@ export default function App() {
       setSelectedSponsorId(route.selectedSponsorId || null);
       setMatchViewMode(route.matchViewMode === "page" ? "page" : "inline");
       setMobileMenuOpen(false);
+      if (nextSection === "players") {
+        setStatsInitialTab("scorers");
+      }
 
       if (
         route.selectedTeam ||
@@ -4428,7 +5173,8 @@ export default function App() {
       });
     };
 
-    applyRouteState(parseHashRoute(window.location.hash));
+    const initialRoute = parseBrowserRoute();
+    applyRouteState(initialRoute);
 
     const initialState = window.history.state;
     const initialIndex =
@@ -4436,15 +5182,20 @@ export default function App() {
         ? initialState.idx
         : 0;
     historyIndexRef.current = initialIndex;
-    window.history.replaceState(
-      {
-        ...(initialState && typeof initialState === "object" ? initialState : {}),
-        __mlpn: true,
-        idx: initialIndex,
-      },
-      "",
-      `${window.location.pathname}${window.location.search}${window.location.hash}`
-    );
+    if (!isAuthCallbackRoute()) {
+      window.history.replaceState(
+        {
+          ...(initialState && typeof initialState === "object" ? initialState : {}),
+          __mlpn: true,
+          idx: initialIndex,
+        },
+        "",
+        buildRouteUrl({
+          ...initialRoute,
+          currentSeason: initialRoute.season,
+        })
+      );
+    }
 
     routeReadyRef.current = true;
 
@@ -4454,7 +5205,7 @@ export default function App() {
           ? window.history.state.idx
           : historyIndexRef.current;
       historyIndexRef.current = nextIndex;
-      applyRouteState(parseHashRoute(window.location.hash));
+      applyRouteState(parseBrowserRoute());
     };
 
     window.addEventListener("hashchange", handleRouteChange);
@@ -4526,6 +5277,26 @@ export default function App() {
   );
 
   const publicSponsors = useMemo(() => getRenderableSponsors(sponsors), [sponsors]);
+  const loadingSponsorInitialPoolRef = useRef(null);
+  if (!loadingSponsorInitialPoolRef.current) {
+    loadingSponsorInitialPoolRef.current = initialLoadingSponsorPool();
+  }
+  const [loadingSponsor] = useState(() => ({
+    ...pickLoadingSponsor(loadingSponsorInitialPoolRef.current),
+    source: "initial",
+  }));
+  const [initialSplashDone, setInitialSplashDone] = useState(false);
+  const loadingScreenActive = !dataError && (!initialSplashDone || (dataLoading && !currentSeason));
+
+  useEffect(() => {
+    const livePool = publicSponsors.filter((sponsor) => sponsor?.name && (sponsor.logoUrl || sponsor.logo_url));
+    if (livePool.length > 0) writeCachedLoadingSponsors(livePool);
+  }, [publicSponsors]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setInitialSplashDone(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const teamAbbrMap = useMemo(() => makeUniqueAbbrMap(currentLeagues), [currentLeagues]);
 
@@ -4666,6 +5437,11 @@ export default function App() {
       icon: <FileText size={18} className="e3d-ico" />,
     },
     {
+      id: "typer",
+      label: "Typer MŚ 2026",
+      icon: <Trophy size={18} className="e3d-ico" />,
+    },
+    {
       id: "polls",
       label: "Ankiety",
       icon: <Vote size={18} className="e3d-ico" />,
@@ -4696,7 +5472,7 @@ export default function App() {
     {
       id: "table",
       label: "Tabela",
-      icon: <Trophy size={18} className="e3d-ico" />,
+      icon: <TableIcon size={18} />,
     },
     {
       id: "calendar",
@@ -4744,6 +5520,11 @@ export default function App() {
     {
       id: "privacy",
       label: "Polityka Prywatności",
+      icon: <FileText size={18} className="e3d-ico" />,
+    },
+    {
+      id: "dataDeletion",
+      label: "Usuwanie danych",
       icon: <FileText size={18} className="e3d-ico" />,
     },
     {
@@ -4800,17 +5581,17 @@ export default function App() {
     {
       label: "I Liga",
       ctx: "1st",
-      icon: <Trophy size={18} className="e3d-ico" />,
+      icon: <RomanLeagueIcon value="I" size={18} />,
     },
     {
       label: "II Liga",
       ctx: "2nd",
-      icon: <Trophy size={18} className="e3d-ico" />,
+      icon: <RomanLeagueIcon value="II" size={18} />,
     },
     {
       label: "III Liga",
       ctx: "3rd",
-      icon: <Trophy size={18} className="e3d-ico" />,
+      icon: <RomanLeagueIcon value="III" size={18} />,
     },
     {
       label: "Info",
@@ -4818,6 +5599,13 @@ export default function App() {
       icon: <FileText size={18} className="e3d-ico" />,
     },
   ];
+
+  const mobileTopLevelNavItems = mobileMenuExpandedContext
+    ? [
+        ...topLevelNavItems.filter((item) => item.ctx === mobileMenuExpandedContext),
+        ...topLevelNavItems.filter((item) => item.ctx !== mobileMenuExpandedContext),
+      ]
+    : topLevelNavItems;
 
   const has3rdLeague = currentLeagues.some((l) => l.id === "3rd");
 
@@ -4849,6 +5637,9 @@ export default function App() {
     setMatchViewMode("inline");
     setActiveContext(nextContext);
     setActiveSection(nextSection);
+    if (nextSection === "players") {
+      setStatsInitialTab("scorers");
+    }
 
     if (closeMobileMenu) {
       setMobileMenuOpen(false);
@@ -4880,15 +5671,53 @@ export default function App() {
     setMatchViewMode("inline");
     setActiveContext(nextContext);
     setActiveSection(nextSection);
+    if (nextSection === "players") {
+      setStatsInitialTab("scorers");
+    }
 
     if (closeMobileMenu) {
       setMobileMenuOpen(false);
     }
   };
 
+  const scrollMobileMenuContextIntoView = React.useCallback((context, behavior = "smooth") => {
+    if (!context) return;
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const panel = mobileMenuPanelRef.current;
+        if (!panel) return;
+
+        const target = panel.querySelector(`[data-mobile-menu-context="${context}"]`);
+        if (!target) return;
+
+        const prefersReducedMotion =
+          window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+        const targetTop = Math.max(0, target.offsetTop - 10);
+
+        panel.scrollTo({
+          top: targetTop,
+          behavior: prefersReducedMotion ? "auto" : behavior,
+        });
+      });
+    });
+  }, []);
+
   const toggleMobileMenuContext = (context) => {
-    setMobileMenuExpandedContext((prev) => (prev === context ? null : context));
+    const nextContext = mobileMenuExpandedContext === context ? null : context;
+    setMobileMenuExpandedContext(nextContext);
+    if (nextContext) {
+      scrollMobileMenuContextIntoView(nextContext);
+    }
   };
+
+  useEffect(() => {
+    if (!mobileMenuOpen || !mobileMenuExpandedContext) return undefined;
+    const timer = window.setTimeout(() => {
+      scrollMobileMenuContextIntoView(mobileMenuExpandedContext, "auto");
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [mobileMenuOpen, mobileMenuExpandedContext, scrollMobileMenuContextIntoView]);
 
   // Funkcja zapisująca aktualny stan do historii przed zmianą
   const saveToHistory = () => {
@@ -4969,6 +5798,12 @@ export default function App() {
     if (defaultSeason && currentSeason !== defaultSeason) {
       setCurrentSeason(defaultSeason);
     }
+  };
+
+  const handleTopbarLogoClick = () => {
+    goHome();
+    setMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleUserSignOut = async () => {
@@ -5058,6 +5893,23 @@ export default function App() {
     setSelectedSponsorId(null);
   };
 
+  const openLeagueStats = (leagueId, tab = "scorers") => {
+    const nextLeagueId = LEAGUE_CONTEXT_TO_SLUG[leagueId]
+      ? leagueId
+      : currentLeagues[0]?.id || "1st";
+
+    saveToHistory();
+    calendarRoundAutoRef.current = false;
+    setStatsInitialTab(normalizeStatsTab(tab));
+    setActiveContext(nextLeagueId);
+    setActiveSection("players");
+    setSelectedTeam(null);
+    setSelectedMatchId(null);
+    setSelectedPlayerId(null);
+    setSelectedSponsorId(null);
+    setMatchViewMode("inline");
+  };
+
   const closeDetail = () => {
     setMatchViewMode("inline");
     setSelectedTeam(null);
@@ -5086,7 +5938,7 @@ export default function App() {
   useEffect(() => {
     if (!routeReadyRef.current || isApplyingRouteRef.current) return;
 
-    const nextHash = buildHashRoute({
+    const nextUrl = buildRouteUrl({
       activeContext,
       activeSection,
       selectedTeam,
@@ -5098,7 +5950,8 @@ export default function App() {
       currentSeason,
     });
 
-    if (window.location.hash === nextHash) return;
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (!window.location.hash && currentUrl === nextUrl) return;
 
     historyIndexRef.current += 1;
     window.history.pushState(
@@ -5107,7 +5960,7 @@ export default function App() {
         idx: historyIndexRef.current,
       },
       "",
-      `${window.location.pathname}${window.location.search}${nextHash}`
+      nextUrl
     );
   }, [
     activeContext,
@@ -5215,6 +6068,24 @@ export default function App() {
         );
       }
 
+      if (isLiveFixture(fixture)) {
+        return (
+          <div className="space-y-3">
+            <BackHeader
+              darkMode={darkMode}
+              title="Mecz LIVE"
+              onBack={goBack}
+            />
+            <LiveMatchDetails
+              darkMode={darkMode}
+              fixture={fixture}
+              openTeam={openTeam}
+              openPlayer={openPlayer}
+            />
+          </div>
+        );
+      }
+
       return (
         <UpcomingMatchDetails
           darkMode={darkMode}
@@ -5243,6 +6114,9 @@ export default function App() {
           onBack={goBack}
           openTeam={openTeam}
           openPlayer={openPlayer}
+          openGallery={openMatchGallery}
+          stats={stats}
+          playersByTeam={playersByTeam}
           currentSeason={currentSeason}
         />
       );
@@ -5293,6 +6167,8 @@ export default function App() {
           );
         case "polls":
           return <PollsPage darkMode={darkMode} polls={polls} />;
+        case "typer":
+          return <WorldCupTyperPage darkMode={darkMode} />;
         case "free":
           return (
             <FreePlayersPage darkMode={darkMode} freeAgents={freeAgents} />
@@ -5346,6 +6222,7 @@ export default function App() {
                   openSponsor={openSponsor}
                   currentLeagues={currentLeagues}
                   goToLeague={goToLeague}
+                  openLeagueStats={openLeagueStats}
                   setHomeSection={setActiveSection}
                   currentRound={currentRound}
                   playedRounds={_playedRounds}
@@ -5396,6 +6273,7 @@ export default function App() {
             darkMode={darkMode}
             leagueName={leagueName(activeContext)}
             table={activeTable}
+            fixtures={fixtures}
             openTeam={openTeam}
             currentSeason={currentSeason}
             availableSeasons={availableSeasons}
@@ -5465,6 +6343,7 @@ export default function App() {
             openTeam={openTeam}
             openPlayer={openPlayer}
             goToLeague={goToLeague}
+            initialTab={statsInitialTab}
             currentSeason={currentSeason}
             availableSeasons={availableSeasons}
             onSeasonChange={setCurrentSeason}
@@ -5503,14 +6382,12 @@ export default function App() {
   };
 
   // === Ekran ładowania / błędu ===
-  if (dataLoading && !currentSeason) {
+  if (loadingScreenActive) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-gray-400 text-sm">Ładowanie danych MLPN...</div>
-        </div>
-      </div>
+      <AppLoadingScreen
+        darkMode={darkMode}
+        sponsor={loadingSponsor}
+      />
     );
   }
 
@@ -5532,10 +6409,24 @@ export default function App() {
     );
   }
 
+  const mobileViewMotionKey = [
+    activeContext,
+    activeSection,
+    currentSeason || "no-season",
+    selectedTeam || "no-team",
+    selectedPlayerId || "no-player",
+    selectedSponsorId || "no-sponsor",
+    matchViewMode,
+    matchViewMode === "page" ? selectedMatchId || "no-match" : "inline-match",
+    activeSection === "calendar" ? round || "no-round" : "no-round",
+  ].join(":");
+
   return (
     <div
+      lang="pl-PL"
+      translate="no"
       className={classNames(
-        "min-h-screen flex flex-col mlpn-shell",
+        "min-h-screen flex flex-col mlpn-shell notranslate",
         darkMode
           ? "mlpn-dark bg-[#0a0e1a] text-white"
           : "mlpn-light bg-gray-50 text-gray-900"
@@ -5546,7 +6437,7 @@ export default function App() {
       {/* TOP NAV */}
       <nav
         className={classNames(
-          "fixed inset-x-0 top-0 z-[9999] flex items-center justify-between px-4 md:px-6 py-3 border-b mlpn-topnav",
+          "fixed inset-x-0 top-0 z-[9999] flex items-center justify-between px-4 md:px-6 py-3 border-b mlpn-topnav mlpn-navy-surface",
           darkMode
             ? "bg-[#0f1420] border-gray-800"
             : "bg-gradient-to-r from-[#10203e]/95 via-[#1b315c]/95 to-[#1f3f7a]/95 border-white/10"
@@ -5558,7 +6449,9 @@ export default function App() {
           onClick={() => setMobileMenuOpen((v) => !v)}
           className={classNames(
             "md:hidden w-11 h-11 shrink-0 inline-flex items-center justify-center leading-none rounded-2xl e3d-btn",
-            darkMode ? "bg-gray-800" : "bg-gray-200"
+            darkMode
+              ? "bg-gray-800 text-white"
+              : "bg-white/10 border border-white/10 text-white hover:bg-white/15"
           )}
           aria-label="Toggle menu"
           aria-expanded={mobileMenuOpen}
@@ -5572,8 +6465,9 @@ export default function App() {
 
         {/* Logo MLPN */}
         <button
-          onClick={goHome}
+          onClick={handleTopbarLogoClick}
           className="flex items-center gap-2 md:gap-3 group"
+          aria-label="MLPN - przejdź do strony głównej"
         >
           <img
             src={darkMode ? `${PU}/logo2.png` : `${PU}/logo1.png`}
@@ -5670,7 +6564,7 @@ export default function App() {
                     ? "text-gray-500 hover:text-yellow-400"
                     : "text-white/70 hover:text-yellow-300 hover:bg-white/5"
                 )}
-                title="Zaloguj sie"
+                title="Zaloguj się"
               >
                 <LogIn size={16} />
               </button>
@@ -5696,6 +6590,22 @@ export default function App() {
         </div>
       </nav>
 
+      <GlobalNewsBar
+        darkMode={darkMode}
+        news={news}
+        expanded={newsBarExpanded}
+        onToggle={() => setNewsBarExpanded((v) => !v)}
+        onOpenNews={() => {
+          setNewsBarExpanded(false);
+          navigateToSection("home", "news", true);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        onOpenMatch={(matchId) => {
+          setNewsBarExpanded(false);
+          openMatchPage(matchId);
+        }}
+      />
+
       {/* Mobile Menu Drawer */}
       <div
         className={classNames(
@@ -5713,8 +6623,9 @@ export default function App() {
           )}
         />
         <div
+          ref={mobileMenuPanelRef}
           className={classNames(
-            "mlpn-mobile-menu-panel absolute left-3 right-3 top-[78px] bottom-3 overflow-y-auto rounded-[28px] border shadow-[0_24px_80px_rgba(0,0,0,0.45)] transition-all duration-200",
+            "mlpn-mobile-menu-panel mlpn-navy-surface absolute left-3 right-3 top-[78px] bottom-3 overflow-y-auto rounded-[28px] border shadow-[0_24px_80px_rgba(0,0,0,0.45)] transition-all duration-200",
             mobileMenuOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0",
             darkMode
               ? "bg-[#0d1117] border-white/10"
@@ -5758,7 +6669,7 @@ export default function App() {
             >
               <div className={classNames("font-bold mb-3", darkMode ? "text-white" : "text-white")}>Menu Główne</div>
               <div className="space-y-2">
-                {topLevelNavItems.map((b) => {
+                {mobileTopLevelNavItems.map((b) => {
                   const isDisabled = b.ctx === "3rd" && !has3rdLeague;
                   const submenu = mobileContextMenus[b.ctx] || [];
                   const isExpanded = mobileMenuExpandedContext === b.ctx;
@@ -5770,8 +6681,10 @@ export default function App() {
                   return (
                     <div
                       key={b.ctx}
+                      data-mobile-menu-context={b.ctx}
                       className={classNames(
-                        "rounded-[22px] border p-2 transition-colors",
+                        "mlpn-mobile-menu-card rounded-[22px] border p-2 transition-colors",
+                        isExpanded ? "mlpn-mobile-menu-card--expanded shadow-[0_14px_34px_rgba(0,0,0,0.18)]" : "",
                         isDisabled
                           ? "border-white/5 bg-black/10 opacity-60"
                           : isActiveContext
@@ -5830,14 +6743,14 @@ export default function App() {
                         <ChevronDown
                           size={18}
                           className={classNames(
-                            "shrink-0 text-white/70 transition-transform duration-200",
-                            isExpanded ? "rotate-180" : ""
+                            "shrink-0 transition-all duration-200",
+                            isExpanded ? "rotate-180 text-emerald-200" : "text-white/70"
                           )}
                         />
                       </button>
 
                       {isExpanded && !isDisabled && (
-                        <div className="grid gap-2 px-3 pb-3 pt-2">
+                        <div className="mlpn-mobile-menu-submenu grid origin-top gap-2 px-3 pb-3 pt-2">
                           {submenu.map((item) => (
                             (() => {
                               const isActiveSubsection =
@@ -5950,7 +6863,7 @@ export default function App() {
                   )}
                 >
                   <LogIn size={14} />
-                  Zaloguj sie
+                  Zaloguj się
                 </button>
               )}
             </div>
@@ -5959,11 +6872,11 @@ export default function App() {
       </div>
 
       {/* LAYOUT */}
-      <div className="flex flex-1 items-start pt-[64px] md:pt-[72px]">
+      <div className="flex flex-1 items-start pt-0 md:pt-[72px]">
         {/* SIDEBAR - ukryty w trybie admin */}
         {activeContext !== "admin" && <aside
           className={classNames(
-            "hidden md:flex md:flex-col md:fixed md:left-0 md:top-[72px] md:bottom-0 md:w-56 md:z-30 border-r",
+            "hidden md:flex md:flex-col md:fixed md:left-0 md:top-[72px] md:bottom-0 md:w-56 md:z-30 border-r mlpn-navy-surface",
             darkMode
               ? "bg-[#0d1117] border-gray-800"
               : "bg-gradient-to-b from-[#10203e]/95 via-[#1b315c]/95 to-[#1f3f7a]/95 border-white/10"
@@ -5976,7 +6889,7 @@ export default function App() {
                 key={item.id}
                 onClick={() => navigateToSection(activeContext, item.id)}
                 className={classNames(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded mb-1 e3d-item",
+                  "w-full flex items-center gap-3 px-3 py-2 rounded mb-1 text-left e3d-item",
                   activeSection === item.id
                     ? "bg-green-500/10 text-green-400"
                     : darkMode
@@ -5984,8 +6897,8 @@ export default function App() {
                     : "text-white/85 hover:bg-white/5"
                 )}
               >
-                <span className="shrink-0">{item.icon}</span>
-                {item.label}
+                <span className="inline-flex w-5 shrink-0 items-center justify-center">{item.icon}</span>
+                <span className="min-w-0 flex-1 text-left leading-tight">{item.label}</span>
               </button>
             ))}
           </div>
@@ -6077,7 +6990,12 @@ export default function App() {
             darkMode={darkMode}
             resetKey={`${activeContext}:${activeSection}:${currentSeason || "no-season"}:${selectedTeam || "no-team"}:${selectedMatchId || "no-match"}:${selectedPlayerId || "no-player"}:${selectedSponsorId || "no-sponsor"}`}
           >
-            <PageRenderer renderPage={renderPage} />
+            <MobileMotionFrame
+              motionKey={mobileViewMotionKey}
+              deferUntilVisible={mobileMenuOpen}
+            >
+              <PageRenderer renderPage={renderPage} />
+            </MobileMotionFrame>
           </PageRenderErrorBoundary>
         </main>
       </div>
@@ -6218,6 +7136,19 @@ function Footer({ darkMode, setActiveContext, setActiveSection }) {
                   )}
                 >
                   Polityka Prywatności
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleInfoClick("dataDeletion")}
+                  className={classNames(
+                    "hover:underline",
+                    darkMode
+                      ? "text-gray-400 hover:text-white"
+                      : "text-gray-600 hover:text-gray-900"
+                  )}
+                >
+                  Usuwanie danych
                 </button>
               </li>
             </ul>
@@ -6394,14 +7325,6 @@ function BackHeader({ darkMode, title, onBack }) {
       </button>
       <div>
         <div className="text-2xl font-extrabold">{title}</div>
-        <div
-          className={classNames(
-            "text-sm",
-            darkMode ? "text-gray-400" : "text-gray-600"
-          )}
-        >
-          Wszystko klikalne – to jest testowa baza
-        </div>
       </div>
     </div>
   );
@@ -6435,7 +7358,7 @@ function LeagueHomePage({
 }) {
   const isArchived = seasonStatus === 'completed';
   const isExcludedFromUpcoming = (status) =>
-    status === "cancelled" || status === "unplayed" || status === "postponed";
+    status === "cancelled" || status === "unplayed" || status === "postponed" || status === "live";
   const leagueTotalRounds = totalRoundsByLeague?.[leagueId] || totalRounds;
   const leaguePlayedRounds = playedRoundsByLeague?.[leagueId] || playedRounds;
 
@@ -6457,11 +7380,20 @@ function LeagueHomePage({
     return upcoming[0] || null;
   }, [fixtures, leagueId, isArchived, matchById, leaguePlayedRounds, leagueTotalRounds]);
 
+  const liveMatch = useMemo(() => {
+    if (isArchived) return null;
+    return [...(fixtures || [])]
+      .filter((f) => f.league === leagueId && isLiveFixture(f))
+      .sort(compareFixturesChronologically)[0] || null;
+  }, [fixtures, leagueId, isArchived]);
+
   const upcomingPlayedMatch = upcomingMatch
     ? matchById[upcomingMatch.id]
     : null;
   const isUpcomingExpanded =
     upcomingMatch && expandedMatchId === upcomingMatch.id;
+  const isLiveExpanded =
+    liveMatch && expandedMatchId === liveMatch.id;
 
   // Ostatnie rozegrane mecze w tej lidze
   const recentMatches = useMemo(() => {
@@ -6471,9 +7403,22 @@ function LeagueHomePage({
       .slice(0, 6);
   }, [matches, leagueId]);
 
-  // Tabela - wszystkie drużyny (bez limitu)
-  const simpleTable = table;
-  const leagueHasResults = hasLeagueTableResults(table);
+  // Tabela - wszystkie drużyny (bez limitu), z doliczeniem aktualnie trwających meczów.
+  const simpleTable = useMemo(
+    () => applyLiveFixturesToTable(table, fixtures, leagueId),
+    [table, fixtures, leagueId]
+  );
+  const leagueHasResults = hasLeagueTableResults(simpleTable);
+  const promotedRows = useMemo(
+    () => getPromotionRowsForLeague(simpleTable, leagueId),
+    [simpleTable, leagueId]
+  );
+  const relegatedRows = useMemo(
+    () => getRelegationRowsForLeague(simpleTable, leagueId),
+    [simpleTable, leagueId]
+  );
+  const promotedTeams = useMemo(() => teamSetFromRows(promotedRows), [promotedRows]);
+  const relegatedTeams = useMemo(() => teamSetFromRows(relegatedRows), [relegatedRows]);
 
   // Podsumowanie sezonu dla sezonów archiwalnych
   const leagueSummary = seasonSummary?.[leagueId];
@@ -6526,26 +7471,10 @@ function LeagueHomePage({
   }, [isArchived, stats, table, playersByTeam]);
 
   // Funkcja określająca kolor tła dla pozycji
-  const getPositionBg = (pos) => {
-    const tableLength = table.length;
-    const lastPos = tableLength; // ostatnie miejsce
-    const secondLastPos = tableLength - 1; // przedostatnie miejsce
-
-    // I Liga: spadek z ostatnich 2 miejsc (czerwone)
-    if (leagueId === "1st") {
-      if (pos >= secondLastPos)
-        return darkMode ? "bg-red-500/20" : "bg-red-100";
-    }
-    // II Liga: awans miejsca 1-2 (zielone), spadek ostatnie 2 miejsca (czerwone)
-    if (leagueId === "2nd") {
-      if (pos <= 2) return darkMode ? "bg-green-500/20" : "bg-green-100";
-      if (pos >= secondLastPos)
-        return darkMode ? "bg-red-500/20" : "bg-red-100";
-    }
-    // III Liga: awans miejsca 1-2 (zielone)
-    if (leagueId === "3rd") {
-      if (pos <= 2) return darkMode ? "bg-green-500/20" : "bg-green-100";
-    }
+  const getPositionBg = (row) => {
+    if (!row?.team || row.withdrawn) return "";
+    if (promotedTeams.has(row.team)) return darkMode ? "bg-green-500/20" : "bg-green-100";
+    if (relegatedTeams.has(row.team)) return darkMode ? "bg-red-500/20" : "bg-red-100";
     return "";
   };
 
@@ -6606,7 +7535,7 @@ function LeagueHomePage({
                 <div className="text-center">P</div>
                 <div className="text-center">B+</div>
                 <div className="text-center">B-</div>
-                <div className="text-center">PKT</div>
+                <div className="text-center font-black">PKT</div>
               </div>
             </div>
 
@@ -6616,7 +7545,7 @@ function LeagueHomePage({
                   key={r.team}
                   className={classNames(
                     "hidden md:block p-1.5 rounded-lg border",
-                    !r.withdrawn && getPositionBg(r.pos),
+                    getPositionBg(r),
                     darkMode
                       ? "border-white/10 bg-black/10 hover:bg-white/5"
                       : "border-gray-200 bg-gray-50 hover:bg-white",
@@ -6647,7 +7576,7 @@ function LeagueHomePage({
                     <div className="text-center">{r.loss}</div>
                     <div className="text-center font-semibold">{r.gf}</div>
                     <div className="text-center">{r.ga}</div>
-                    <div className="text-center font-black">{r.pts}</div>
+                    <div className="text-center font-black" style={TABULAR_NUMBER_STYLE}>{r.pts}</div>
                   </div>
                 </div>
               ))}
@@ -6732,7 +7661,7 @@ function LeagueHomePage({
               )}
 
               {/* PRZEDOSTATNIE MIEJSCE (spadek) */}
-              {table.length >= 2 && table[table.length - 2] && leagueId !== "3rd" && (
+              {relegatedRows[0] && leagueId !== "3rd" && (
                 <Card 
                   darkMode={darkMode}
                   className={classNames(
@@ -6749,24 +7678,24 @@ function LeagueHomePage({
                   </div>
                   <div className="relative">
                     <TeamLogo
-                      team={table[table.length - 2].team}
+                      team={relegatedRows[0].team}
                       darkMode={darkMode}
                       size={80}
-                      onClick={() => openTeam(table[table.length - 2].team)}
+                      onClick={() => openTeam(relegatedRows[0].team)}
                       className="mx-auto mb-3 drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)] hover:scale-110 transition-transform cursor-pointer"
                     />
                   </div>
                   <button
-                    onClick={() => openTeam(table[table.length - 2].team)}
+                    onClick={() => openTeam(relegatedRows[0].team)}
                     className="font-bold text-sm hover:underline"
                   >
-                    {displayTeamName(table[table.length - 2].team)}
+                    {displayTeamName(relegatedRows[0].team)}
                   </button>
                 </Card>
               )}
 
               {/* OSTATNIE MIEJSCE (spadek) */}
-              {table.length >= 1 && table[table.length - 1] && leagueId !== "3rd" && (
+              {relegatedRows[1] && leagueId !== "3rd" && (
                 <Card 
                   darkMode={darkMode}
                   className={classNames(
@@ -6783,18 +7712,18 @@ function LeagueHomePage({
                   </div>
                   <div className="relative">
                     <TeamLogo
-                      team={table[table.length - 1].team}
+                      team={relegatedRows[1].team}
                       darkMode={darkMode}
                       size={80}
-                      onClick={() => openTeam(table[table.length - 1].team)}
+                      onClick={() => openTeam(relegatedRows[1].team)}
                       className="mx-auto mb-3 drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)] hover:scale-110 transition-transform cursor-pointer"
                     />
                   </div>
                   <button
-                    onClick={() => openTeam(table[table.length - 1].team)}
+                    onClick={() => openTeam(relegatedRows[1].team)}
                     className="font-bold text-sm hover:underline"
                   >
-                    {displayTeamName(table[table.length - 1].team)}
+                    {displayTeamName(relegatedRows[1].team)}
                   </button>
                 </Card>
               )}
@@ -6936,8 +7865,124 @@ function LeagueHomePage({
         </div>
       )}
 
+      {/* Mecz LIVE */}
+      {!isArchived && liveMatch && (
+        <>
+          <Card
+            darkMode={darkMode}
+            className="mlpn-live-frame p-3 sm:p-4"
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <LiveBadge />
+              <div className={classNames("text-xs font-black uppercase tracking-[0.16em]", darkMode ? "text-red-100" : "text-red-700")}>
+                {leagueName}
+              </div>
+            </div>
+
+            <div className="hidden sm:grid grid-cols-[60px_minmax(0,1fr)_auto_minmax(0,1fr)_60px] gap-3 items-center">
+              <TeamLogo
+                team={liveMatch.home}
+                darkMode={darkMode}
+                size={60}
+                onClick={() => openTeam(liveMatch.home)}
+              />
+
+              <div className="font-extrabold text-xl truncate">
+                <TeamLink
+                  team={displayTeamName(liveMatch.home)}
+                  onClick={() => openTeam(liveMatch.home)}
+                  className="e3d-link"
+                />
+              </div>
+
+              <button
+                onClick={() => openMatch(liveMatch.id)}
+                className="mlpn-live-score min-w-[150px] rounded-2xl border px-6 py-3 text-center font-black text-white e3d-pill"
+                title="Kliknij aby rozwinąć szczegóły"
+              >
+                <div className="text-3xl leading-none">{formatTeamScore(liveMatch.homeGoals, liveMatch.awayGoals)}</div>
+                <div className="mt-1 text-[10px] uppercase tracking-[0.16em] text-red-100">Aktualny wynik</div>
+              </button>
+
+              <div className="font-extrabold text-xl text-right truncate">
+                <TeamLink
+                  team={displayTeamName(liveMatch.away)}
+                  onClick={() => openTeam(liveMatch.away)}
+                  className="e3d-link"
+                />
+              </div>
+
+              <TeamLogo
+                team={liveMatch.away}
+                darkMode={darkMode}
+                size={60}
+                onClick={() => openTeam(liveMatch.away)}
+              />
+            </div>
+
+            <div className="sm:hidden space-y-3">
+              <button
+                type="button"
+                onClick={() => openMatch(liveMatch.id)}
+                className="mlpn-live-score mx-auto block min-w-[132px] rounded-2xl border px-5 py-3 text-center font-black text-white"
+              >
+                <div className="text-3xl leading-none">{formatTeamScore(liveMatch.homeGoals, liveMatch.awayGoals)}</div>
+                <div className="mt-1 text-[10px] uppercase tracking-[0.16em] text-red-100">Aktualny wynik</div>
+              </button>
+
+              <div className="grid grid-cols-[28px_minmax(0,1fr)] gap-2 items-center">
+                <TeamLogo
+                  team={liveMatch.home}
+                  darkMode={darkMode}
+                  size={28}
+                  onClick={() => openTeam(liveMatch.home)}
+                />
+                <button
+                  onClick={() => openTeam(liveMatch.home)}
+                  className="font-extrabold text-sm truncate text-left hover:underline min-w-0"
+                >
+                  {displayTeamName(liveMatch.home)}
+                </button>
+                <TeamLogo
+                  team={liveMatch.away}
+                  darkMode={darkMode}
+                  size={28}
+                  onClick={() => openTeam(liveMatch.away)}
+                />
+                <button
+                  onClick={() => openTeam(liveMatch.away)}
+                  className="font-extrabold text-sm truncate text-left hover:underline min-w-0"
+                >
+                  {displayTeamName(liveMatch.away)}
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={classNames(
+                "mt-3 text-[11px] text-center",
+                darkMode ? "text-red-100/80" : "text-red-700"
+              )}
+            >
+              {fixtureDashboardMetaLine(liveMatch, liveMatch.round ? `kolejka ${liveMatch.round}` : "kolejka", leagueName)}
+            </div>
+          </Card>
+
+          {isLiveExpanded && (
+            <div id={`details-${liveMatch.id}`}>
+              <LiveMatchDetails
+                darkMode={darkMode}
+                fixture={liveMatch}
+                openTeam={openTeam}
+                openPlayer={openPlayer}
+              />
+            </div>
+          )}
+        </>
+      )}
+
       {/* Karta mistrza gdy wszystkie mecze rozegrane i brak nadchodzącego */}
-      {!isArchived && !upcomingMatch && leagueHasResults && leagueTotalRounds > 0 && leaguePlayedRounds >= leagueTotalRounds && table[0] && (
+      {!isArchived && !liveMatch && !upcomingMatch && leagueHasResults && leagueTotalRounds > 0 && leaguePlayedRounds >= leagueTotalRounds && table[0] && (
         <div
           className={classNames(
             "relative overflow-hidden rounded-2xl border-2 p-8 text-center e3d-card",
@@ -6989,7 +8034,7 @@ function LeagueHomePage({
       )}
 
       {/* Kafel najbliższego spotkania */}
-      {upcomingMatch && (
+      {upcomingMatch && !liveMatch && (
         <>
           <Card
             darkMode={darkMode}
@@ -7192,7 +8237,7 @@ function LeagueHomePage({
               <div className="text-center">#</div>
               <div></div>
               <div>Drużyna</div>
-              <div className="text-right">Pkt</div>
+              <div className="text-right font-black">Pkt</div>
               <div className="text-center">Forma</div>
             </div>
           </div>
@@ -7203,10 +8248,13 @@ function LeagueHomePage({
                 key={r.team}
                 className={classNames(
                   "hidden md:block p-2 rounded-xl border",
-                  !r.withdrawn && getPositionBg(r.pos),
+                  getPositionBg(r),
                   darkMode
                     ? "border-white/10 bg-black/10 hover:bg-white/5"
                     : "border-gray-200 bg-gray-50 hover:bg-white",
+                  r.isLivePlaying && (darkMode
+                    ? "border-red-400/40 bg-red-500/10"
+                    : "border-red-200 bg-red-50"),
                   getStandingsWithdrawnRowClass(r.withdrawn, darkMode)
                 )}
               >
@@ -7222,14 +8270,19 @@ function LeagueHomePage({
                       onClick={() => openTeam(r.team)}
                     />
                   </div>
-                  <button
-                    onClick={() => openTeam(r.team)}
-                    className="font-bold hover:underline truncate text-sm text-left min-w-0 block w-full"
-                  >
-                    {getStandingsTeamLabel(r.team, r.withdrawn)}
-                  </button>
-                  <div className="font-black text-lg text-right">{r.pts}</div>
-                  <div className="flex gap-1 justify-center">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <button
+                      onClick={() => openTeam(r.team)}
+                      className="min-w-0 truncate text-left text-sm font-bold hover:underline"
+                    >
+                      {getStandingsTeamLabel(r.team, r.withdrawn)}
+                    </button>
+                    {r.isLivePlaying && (
+                      <PlayingBadge compact title={r.liveOpponent ? `LIVE vs ${displayTeamName(r.liveOpponent)} ${r.liveScore || ""}` : "LIVE"} />
+                    )}
+                  </div>
+                  <div className="font-black text-lg text-right" style={TABULAR_NUMBER_STYLE}>{r.pts}</div>
+                  <div className="flex gap-1 justify-start">
                     {(r.form5 || []).map((f, i) => (
                       <FormDot
                         key={i}
@@ -7289,15 +8342,31 @@ function LeagueHomePage({
                         >
                           {displayTeamName(m.home)}
                         </button>
-                        <div className="row-span-2 min-w-[98px] flex items-center justify-center">
-                          <ScorePill
-                            homeGoals={m.homeGoals}
-                            awayGoals={m.awayGoals}
-                            darkMode={darkMode}
-                            onClick={() => openMatch(m.id)}
-                            status={m.status}
-                          />
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => openMatch(m.id)}
+                          className={classNames(
+                            "row-span-2 grid min-h-[74px] min-w-[58px] grid-rows-2 items-stretch rounded-xl border px-2 py-1.5 text-center shadow-sm",
+                            darkMode
+                              ? "border-white/10 bg-white/[0.06] text-white"
+                              : m.status?.startsWith("walkover")
+                              ? "border-orange-200 bg-orange-50 text-gray-900"
+                              : "border-gray-200 bg-gray-50 text-gray-900"
+                          )}
+                          title="Kliknij: szczegóły meczu"
+                        >
+                          <span className="flex items-center justify-center text-lg font-black leading-none">
+                            {m.homeGoals}
+                          </span>
+                          <span
+                            className={classNames(
+                              "flex items-center justify-center border-t text-lg font-black leading-none",
+                              darkMode ? "border-white/10" : "border-gray-200"
+                            )}
+                          >
+                            {m.awayGoals}
+                          </span>
+                        </button>
 
                         <TeamLogo
                           team={m.away}
@@ -7313,23 +8382,35 @@ function LeagueHomePage({
                         </button>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="grid grid-cols-[minmax(0,1fr)_58px] items-center gap-2">
                         <div
                           className={classNames(
                             "text-[11px]",
                             darkMode ? "text-gray-400" : "text-gray-600"
                           )}
                         >
-                          Kolejka {m.round}
+                          {[
+                            `Kolejka ${m.round}`,
+                            compactDateLabel(m.date),
+                            m.time,
+                          ].filter(Boolean).join(" • ")}
                         </div>
-                        <MediaIcons
-                          darkMode={darkMode}
-                          videoUrl={m.videoUrl}
-                          galleryUrl={m.galleryUrl}
-                          onOpenGallery={m.hasGallery ? () => openGallery?.(m) : undefined}
-                          galleryCount={m.galleryCount}
-                          size={14}
-                        />
+                        <div className="flex justify-center">
+                          {m.status?.startsWith("walkover") ? (
+                            <span className="text-[9px] font-black uppercase tracking-[0.12em] text-orange-500">
+                              Walkower
+                            </span>
+                          ) : (
+                            <MediaIcons
+                              darkMode={darkMode}
+                              videoUrl={m.videoUrl}
+                              galleryUrl={m.galleryUrl}
+                              onOpenGallery={m.hasGallery ? () => openGallery?.(m) : undefined}
+                              galleryCount={m.galleryCount}
+                              size={14}
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -7416,6 +8497,7 @@ function LeagueTablePage({
   darkMode,
   leagueName,
   table,
+  fixtures = [],
   openTeam,
   currentSeason,
   availableSeasons,
@@ -7424,9 +8506,13 @@ function LeagueTablePage({
 }) {
   const [sortBy, setSortBy] = useState("pts"); // pts, played, win, draw, loss, gf, ga, team
   const [sortOrder, setSortOrder] = useState("desc"); // asc/desc
+  const liveTable = useMemo(
+    () => applyLiveFixturesToTable(table, fixtures, leagueId),
+    [table, fixtures, leagueId]
+  );
 
   const sortedTable = useMemo(() => {
-    const copy = [...table];
+    const copy = [...liveTable];
     copy.sort((a, b) => {
       let valA, valB;
 
@@ -7443,6 +8529,21 @@ function LeagueTablePage({
       valA = a[sortBy] || 0;
       valB = b[sortBy] || 0;
 
+      if (sortBy === "pts") {
+        const goalDiffA = Number(a.gf || 0) - Number(a.ga || 0);
+        const goalDiffB = Number(b.gf || 0) - Number(b.ga || 0);
+        const originalPosA = Number(a.originalPos || a.pos || Number.MAX_SAFE_INTEGER);
+        const originalPosB = Number(b.originalPos || b.pos || Number.MAX_SAFE_INTEGER);
+        const byPoints = sortOrder === "desc" ? valB - valA : valA - valB;
+        return (
+          byPoints ||
+          goalDiffB - goalDiffA ||
+          Number(b.gf || 0) - Number(a.gf || 0) ||
+          originalPosA - originalPosB ||
+          a.team.localeCompare(b.team)
+        );
+      }
+
       if (sortOrder === "desc") {
         return valB - valA || b.pts - a.pts || a.team.localeCompare(b.team);
       } else {
@@ -7450,7 +8551,17 @@ function LeagueTablePage({
       }
     });
     return copy.map((r, idx) => ({ ...r, displayPos: idx + 1 }));
-  }, [table, sortBy, sortOrder]);
+  }, [liveTable, sortBy, sortOrder]);
+  const promotedRows = useMemo(
+    () => getPromotionRowsForLeague(liveTable, leagueId),
+    [liveTable, leagueId]
+  );
+  const relegatedRows = useMemo(
+    () => getRelegationRowsForLeague(liveTable, leagueId),
+    [liveTable, leagueId]
+  );
+  const promotedTeams = useMemo(() => teamSetFromRows(promotedRows), [promotedRows]);
+  const relegatedTeams = useMemo(() => teamSetFromRows(relegatedRows), [relegatedRows]);
 
   const handleSort = (column) => {
     if (sortBy === column) {
@@ -7464,7 +8575,10 @@ function LeagueTablePage({
   const SortButton = ({ column, label }) => (
     <button
       onClick={() => handleSort(column)}
-      className="hover:underline flex items-center gap-1"
+      className={classNames(
+        "hover:underline flex items-center gap-1",
+        column === "pts" ? "font-black" : ""
+      )}
     >
       {label}
       {sortBy === column && (
@@ -7474,26 +8588,10 @@ function LeagueTablePage({
   );
 
   // Funkcja określająca kolor tła dla pozycji
-  const getPositionBg = (pos) => {
-    const tableLength = sortedTable.length;
-    const lastPos = tableLength; // ostatnie miejsce
-    const secondLastPos = tableLength - 1; // przedostatnie miejsce
-
-    // I Liga: spadek z ostatnich 2 miejsc (czerwone)
-    if (leagueId === "1st") {
-      if (pos >= secondLastPos)
-        return darkMode ? "bg-red-500/20" : "bg-red-100";
-    }
-    // II Liga: awans miejsca 1-2 (zielone), spadek ostatnie 2 miejsca (czerwone)
-    if (leagueId === "2nd") {
-      if (pos <= 2) return darkMode ? "bg-green-500/20" : "bg-green-100";
-      if (pos >= secondLastPos)
-        return darkMode ? "bg-red-500/20" : "bg-red-100";
-    }
-    // III Liga: awans miejsca 1-2 (zielone)
-    if (leagueId === "3rd") {
-      if (pos <= 2) return darkMode ? "bg-green-500/20" : "bg-green-100";
-    }
+  const getPositionBg = (row) => {
+    if (!row?.team || row.withdrawn) return "";
+    if (promotedTeams.has(row.team)) return darkMode ? "bg-green-500/20" : "bg-green-100";
+    if (relegatedTeams.has(row.team)) return darkMode ? "bg-red-500/20" : "bg-red-100";
     return "";
   };
 
@@ -7539,7 +8637,7 @@ function LeagueTablePage({
             <div>BZ</div>
             <div>BS</div>
             <div>+/-</div>
-            <div>PKT</div>
+            <div className="font-black">PKT</div>
             <div>FORMA</div>
           </div>
         </div>
@@ -7549,10 +8647,13 @@ function LeagueTablePage({
             key={r.team}
             className={classNames(
               "hidden md:block px-4 py-3 border-t",
-              !r.withdrawn && getPositionBg(r.displayPos),
+              getPositionBg(r),
               darkMode
                 ? "border-white/10 hover:bg-white/5"
                 : "border-gray-100 hover:bg-gray-50",
+              r.isLivePlaying && (darkMode
+                ? "border-red-400/40 bg-red-500/10"
+                : "border-red-200 bg-red-50"),
               getStandingsWithdrawnRowClass(r.withdrawn, darkMode)
             )}
           >
@@ -7568,12 +8669,17 @@ function LeagueTablePage({
                     onClick={() => openTeam(r.team)}
                   />
                 </div>
-                <div className="font-extrabold">
-                  <TeamLink
-                    team={getStandingsTeamLabel(r.team, r.withdrawn)}
-                    onClick={() => openTeam(r.team)}
-                    className="e3d-link"
-                  />
+                <div className="flex min-w-0 items-center gap-2 font-extrabold">
+                  <div className="min-w-0 truncate">
+                    <TeamLink
+                      team={getStandingsTeamLabel(r.team, r.withdrawn)}
+                      onClick={() => openTeam(r.team)}
+                      className="e3d-link"
+                    />
+                  </div>
+                  {r.isLivePlaying && (
+                    <PlayingBadge title={r.liveOpponent ? `LIVE vs ${displayTeamName(r.liveOpponent)} ${r.liveScore || ""}` : "LIVE"} />
+                  )}
                 </div>
               </div>
 
@@ -7584,7 +8690,7 @@ function LeagueTablePage({
               <div className="font-bold">{r.gf}</div>
               <div className="font-bold">{r.ga}</div>
               <div className={r.gf - r.ga > 0 ? "text-emerald-400" : r.gf - r.ga < 0 ? "text-rose-400" : ""}>{r.gf - r.ga > 0 ? '+' : ''}{r.gf - r.ga}</div>
-              <div className="font-extrabold">{r.pts}</div>
+              <div className="font-black text-lg" style={TABULAR_NUMBER_STYLE}>{r.pts}</div>
 
               <div className="flex gap-2">
                 {(r.form5 || []).map((f, i) => (
@@ -7930,7 +9036,18 @@ function CalendarPage({
                       </div>
                     )}
 
-                    {isExpanded && !m && (
+                    {isExpanded && !m && isLiveFixture(f) && (
+                      <div id={`details-${f.id}`}>
+                        <LiveMatchDetails
+                          darkMode={darkMode}
+                          fixture={f}
+                          openTeam={openTeam}
+                          openPlayer={openPlayer}
+                        />
+                      </div>
+                    )}
+
+                    {isExpanded && !m && !isLiveFixture(f) && (
                       <div id={`details-${f.id}`}>
                         <UpcomingMatchDetailsInline
                           darkMode={darkMode}
@@ -8067,6 +9184,8 @@ function LeagueGalleryPage({
                     src={photo.url}
                     alt={photo.caption || `${selectedGallery.title || "Galeria"} #${index + 1}`}
                     className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
                 <div className="px-3 py-2">
@@ -8138,6 +9257,8 @@ function LeagueGalleryPage({
                         src={gallery.coverUrl}
                         alt={gallery.title || ""}
                         className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div className={classNames(
@@ -8288,6 +9409,7 @@ function MatchGalleryOverlay({ darkMode, overlay, onClose, onIndexChange }) {
                     src={currentPhoto.url}
                     alt={currentPhoto.caption || `${album?.title || "Galeria"} ${currentIndex + 1}`}
                     className="max-w-full max-h-full object-contain"
+                    decoding="async"
                   />
                 </div>
 
@@ -8340,6 +9462,8 @@ function MatchGalleryOverlay({ darkMode, overlay, onClose, onIndexChange }) {
                         src={photo.url}
                         alt={photo.caption || `Miniatura ${index + 1}`}
                         className="w-20 h-14 sm:w-24 sm:h-16 object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     </button>
                   ))}
@@ -8384,7 +9508,7 @@ function HomeTeamsDatabasePage({ darkMode, openTeam }) {
       } catch (err) {
         if (!cancelled) {
           console.error("Błąd ładowania bazy drużyn:", err);
-          setError("Nie udalo sie zaladowac bazy druzyn.");
+          setError("Nie udało się załadować bazy drużyn.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -8418,7 +9542,7 @@ function HomeTeamsDatabasePage({ darkMode, openTeam }) {
               darkMode ? "text-gray-400" : "text-gray-600"
             )}
           >
-            Wyszukaj druzyne i kliknij, aby otworzyc profil.
+            Wyszukaj drużynę i kliknij, aby otworzyć profil.
           </div>
         </div>
         <div
@@ -8566,7 +9690,7 @@ function HomePlayersDatabasePage({ darkMode, openPlayer }) {
               darkMode ? "text-gray-400" : "text-gray-600"
             )}
           >
-            Kliknij zawodnika, aby otworzyc jego karte.
+            Kliknij zawodnika, aby otworzyć jego kartę.
           </div>
         </div>
         <div
@@ -8892,6 +10016,7 @@ function TeamStatsTable({ darkMode, teamRows, openTeam }) {
         onClick={() => handleSort(column)}
         className={classNames(
           "w-full min-w-0 hover:underline flex items-center gap-1",
+          column === "pts" ? "font-black" : "",
           align,
           justifyClass
         )}
@@ -9128,7 +10253,7 @@ function TeamStatsTable({ darkMode, teamRows, openTeam }) {
                 {t.streakWinless}
               </div>
               <div
-                className="text-right font-extrabold"
+                className="text-right font-black"
                 style={TABULAR_NUMBER_STYLE}
               >
                 {t.pts}
@@ -9155,11 +10280,17 @@ function StatsPage({
   openTeam,
   openPlayer,
   goToLeague,
+  initialTab = "scorers",
   currentSeason,
   availableSeasons,
   onSeasonChange,
 }) {
-  const [tab, setTab] = useState("scorers"); // scorers/assists/yellow/red/teams
+  const normalizedInitialTab = normalizeStatsTab(initialTab);
+  const [tab, setTab] = useState(normalizedInitialTab); // scorers/assists/yellow/red/teams
+
+  useEffect(() => {
+    setTab(normalizedInitialTab);
+  }, [leagueId, normalizedInitialTab]);
 
   const rowsForLeague = (list) =>
     list.filter((x) => (x.league ? x.league === leagueId : stats.teamStats[x.team]?.league === leagueId));
@@ -9446,220 +10577,220 @@ function StatsPage({
 function LiveMatchDetails({
   darkMode,
   fixture,
-  playersByTeam,
   openTeam,
   openPlayer,
 }) {
-  // Symulujemy mecz w trakcie z zdarzeniami (2:1)
-  const homeTeamPlayers = playersByTeam?.[fixture.home] || [];
-  const awayTeamPlayers = playersByTeam?.[fixture.away] || [];
+  const [details, setDetails] = useState({ events: [] });
+  const [detailsLoading, setDetailsLoading] = useState(true);
+  const [detailsError, setDetailsError] = useState("");
 
-  // Tworzenie realistycznych zdarzeń (60' gry)
-  const liveEvents = useMemo(() => {
-    const rng = mulberry32(hashString(`live|${fixture.id}`));
-    const events = [];
+  useEffect(() => {
+    let cancelled = false;
+    setDetailsLoading(true);
+    setDetailsError("");
 
-    // 2 bramki gospodarzy
-    if (homeTeamPlayers.length >= 2) {
-      events.push({
-        type: "GOAL",
-        team: fixture.home,
-        playerName:
-          homeTeamPlayers[Math.floor(rng() * homeTeamPlayers.length)]?.name ||
-          "Zawodnik 1",
-        playerId:
-          homeTeamPlayers[Math.floor(rng() * homeTeamPlayers.length)]?.id ||
-          "p1",
-        minute: 12,
+    fetchMatchDetails(fixture.id)
+      .then((nextDetails) => {
+        if (cancelled) return;
+        setDetails({ events: nextDetails.events || [] });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDetailsError("Nie udało się pobrać zdarzeń meczu.");
+      })
+      .finally(() => {
+        if (!cancelled) setDetailsLoading(false);
       });
-      events.push({
-        type: "GOAL",
-        team: fixture.home,
-        playerName:
-          homeTeamPlayers[Math.floor(rng() * homeTeamPlayers.length)]?.name ||
-          "Zawodnik 2",
-        playerId:
-          homeTeamPlayers[Math.floor(rng() * homeTeamPlayers.length)]?.id ||
-          "p2",
-        minute: 48,
-      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fixture.id, fixture.homeGoals, fixture.awayGoals, fixture.status]);
+
+  const liveEvents = useMemo(
+    () =>
+      (details.events || [])
+        .filter((event) => ["GOAL", "YELLOW", "RED"].includes(event.type))
+        .sort((a, b) => (a.order || 0) - (b.order || 0)),
+    [details.events]
+  );
+
+  const isTeamEvent = (event, teamName, teamId) =>
+    event.team === teamName || (teamId && event.teamId === teamId);
+
+  const isGoalForTeam = (event, teamName, teamId, opponentTeamId) => {
+    if (event.type !== "GOAL") return false;
+    if (event.ownGoal) {
+      if (opponentTeamId && event.teamId === opponentTeamId) return true;
+      return event.team !== teamName && !isTeamEvent(event, teamName, teamId);
     }
-
-    // 1 bramka gości
-    if (awayTeamPlayers.length >= 1) {
-      events.push({
-        type: "GOAL",
-        team: fixture.away,
-        playerName:
-          awayTeamPlayers[Math.floor(rng() * awayTeamPlayers.length)]?.name ||
-          "Zawodnik 3",
-        playerId:
-          awayTeamPlayers[Math.floor(rng() * awayTeamPlayers.length)]?.id ||
-          "p3",
-        minute: 34,
-      });
-    }
-
-    // Kilka kartek
-    if (homeTeamPlayers.length >= 1) {
-      events.push({
-        type: "YELLOW",
-        team: fixture.home,
-        playerName:
-          homeTeamPlayers[Math.floor(rng() * homeTeamPlayers.length)]?.name ||
-          "Zawodnik 4",
-        playerId:
-          homeTeamPlayers[Math.floor(rng() * homeTeamPlayers.length)]?.id ||
-          "p4",
-        minute: 28,
-      });
-    }
-
-    if (awayTeamPlayers.length >= 2) {
-      events.push({
-        type: "YELLOW",
-        team: fixture.away,
-        playerName:
-          awayTeamPlayers[Math.floor(rng() * awayTeamPlayers.length)]?.name ||
-          "Zawodnik 5",
-        playerId:
-          awayTeamPlayers[Math.floor(rng() * awayTeamPlayers.length)]?.id ||
-          "p5",
-        minute: 41,
-      });
-    }
-
-    return events;
-  }, [fixture, homeTeamPlayers, awayTeamPlayers]);
-
-  // Grupowanie zdarzeń per zawodnik
-  const getEventsPerPlayer = (teamEvents) => {
-    const playerEvents = {};
-    teamEvents.forEach((e) => {
-      if (!playerEvents[e.playerName]) {
-        playerEvents[e.playerName] = {
-          playerName: e.playerName,
-          playerId: e.playerId,
-          goals: 0,
-          yellows: 0,
-          reds: 0,
-        };
-      }
-      if (e.type === "GOAL") playerEvents[e.playerName].goals++;
-      else if (e.type === "YELLOW") playerEvents[e.playerName].yellows++;
-      else if (e.type === "RED") playerEvents[e.playerName].reds++;
-    });
-    return Object.values(playerEvents);
+    return isTeamEvent(event, teamName, teamId);
   };
 
-  const homeEvents = liveEvents.filter((e) => e.team === fixture.home);
-  const awayEvents = liveEvents.filter((e) => e.team === fixture.away);
+  const PlayerButton = ({ playerId, children, className = "" }) => {
+    const content = children || "Zawodnik";
+    if (!playerId || !openPlayer) {
+      return <span className={className}>{content}</span>;
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => openPlayer(playerId)}
+        className={classNames("inline-block max-w-full truncate align-bottom hover:underline", className)}
+      >
+        {content}
+      </button>
+    );
+  };
 
-  const homePlayerEvents = getEventsPerPlayer(homeEvents);
-  const awayPlayerEvents = getEventsPerPlayer(awayEvents);
-
-  const EventIcons = ({ player }) => (
-    <div className="flex items-center gap-1">
-      {player.goals > 0 && (
-        <span className="text-sm">
-          ⚽{player.goals > 1 ? `×${player.goals}` : ""}
-        </span>
+  const GoalItem = ({ event }) => (
+    <div
+      className={classNames(
+        "rounded-xl border p-2",
+        darkMode ? "border-emerald-400/20 bg-emerald-500/10" : "border-emerald-200 bg-emerald-50"
       )}
-      {player.yellows > 0 && player.reds > 0 && (
-        <span className="text-sm">🟨🟥</span>
-      )}
-      {player.reds > 0 && player.yellows === 0 && (
-        <span className="text-sm">🟥</span>
-      )}
-      {player.yellows > 0 && player.reds === 0 && (
-        <span className="text-sm">
-          🟨{player.yellows > 1 ? `×${player.yellows}` : ""}
-        </span>
-      )}
+    >
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <PlayerButton playerId={event.playerId} className="min-w-0 truncate text-sm font-black">
+          {event.playerName || "Zawodnik"}
+        </PlayerButton>
+        <span className="shrink-0 text-sm" aria-hidden="true">⚽</span>
+      </div>
+      <div className={classNames("mt-1 min-w-0 truncate text-[11px]", darkMode ? "text-emerald-100/80" : "text-emerald-800")}>
+        {event.ownGoal ? (
+          "Gol samobójczy"
+        ) : event.penalty ? (
+          "Rzut karny"
+        ) : event.assistName ? (
+          <>
+            Asysta:{" "}
+            <PlayerButton playerId={event.assistId} className="font-bold">
+              {event.assistName}
+            </PlayerButton>
+          </>
+        ) : (
+          "Bez asysty"
+        )}
+      </div>
     </div>
   );
 
-  return (
-    <Card darkMode={darkMode} className="mt-3">
-      <div className="grid lg:grid-cols-2 gap-3">
-        {/* Gospodarze */}
-        <div className="space-y-3">
-          <div className="font-extrabold text-sm">
-            {displayTeamName(fixture.home)}
+  const CardItem = ({ event }) => {
+    const isRed = event.type === "RED";
+    return (
+      <div
+        className={classNames(
+          "rounded-xl border p-2",
+          isRed
+            ? darkMode
+              ? "border-red-400/25 bg-red-500/10"
+              : "border-red-200 bg-red-50"
+            : darkMode
+            ? "border-yellow-300/25 bg-yellow-400/10"
+            : "border-yellow-200 bg-yellow-50"
+        )}
+      >
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <PlayerButton playerId={event.playerId} className="min-w-0 truncate text-sm font-black">
+            {event.playerName || "Zawodnik"}
+          </PlayerButton>
+          <span className="shrink-0 text-sm" aria-hidden="true">{isRed ? "🟥" : "🟨"}</span>
+        </div>
+        <div className={classNames("mt-1 text-[11px]", darkMode ? "text-gray-300" : "text-gray-600")}>
+          {isRed ? "Czerwona kartka" : "Żółta kartka"}
+        </div>
+      </div>
+    );
+  };
+
+  const TeamEvents = ({ teamName, teamId, opponentTeamId }) => {
+    const teamGoals = liveEvents.filter((event) => isGoalForTeam(event, teamName, teamId, opponentTeamId));
+    const teamCards = liveEvents.filter((event) => event.type !== "GOAL" && isTeamEvent(event, teamName, teamId));
+
+    return (
+      <div className="min-w-0 space-y-3">
+        <button
+          type="button"
+          onClick={() => openTeam?.(teamName)}
+          className="max-w-full truncate text-left text-sm font-black hover:underline"
+          title={displayTeamName(teamName)}
+        >
+          {displayTeamName(teamName)}
+        </button>
+
+        <div>
+          <div className={classNames("mb-1 text-[10px] font-black uppercase tracking-[0.14em]", darkMode ? "text-gray-400" : "text-gray-500")}>
+            Bramki i asysty
           </div>
-          {homePlayerEvents.length === 0 ? (
-            <div
-              className={classNames(
-                "text-xs",
-                darkMode ? "text-gray-400" : "text-gray-600"
-              )}
-            >
-              Brak zdarzeń.
-            </div>
+          {teamGoals.length === 0 ? (
+            <div className={classNames("text-xs", darkMode ? "text-gray-500" : "text-gray-500")}>Brak bramek.</div>
           ) : (
             <div className="space-y-1.5">
-              {homePlayerEvents.map((player, idx) => (
-                <div
-                  key={idx}
-                  className={classNames(
-                    "p-2 rounded-lg border flex items-center justify-between gap-2",
-                    darkMode
-                      ? "border-white/10 bg-black/10"
-                      : "border-gray-200 bg-gray-50"
-                  )}
-                >
-                  <button
-                    onClick={() => openPlayer && openPlayer(player.playerId)}
-                    className="font-bold text-sm hover:underline"
-                  >
-                    {player.playerName}
-                  </button>
-                  <EventIcons player={player} />
-                </div>
+              {teamGoals.map((event, index) => (
+                <GoalItem key={event.id || `goal-${teamId}-${index}`} event={event} />
               ))}
             </div>
           )}
         </div>
 
-        {/* Goście */}
-        <div className="space-y-3">
-          <div className="font-extrabold text-sm">
-            {displayTeamName(fixture.away)}
+        <div>
+          <div className={classNames("mb-1 text-[10px] font-black uppercase tracking-[0.14em]", darkMode ? "text-gray-400" : "text-gray-500")}>
+            Kartki
           </div>
-          {awayPlayerEvents.length === 0 ? (
-            <div
-              className={classNames(
-                "text-xs",
-                darkMode ? "text-gray-400" : "text-gray-600"
-              )}
-            >
-              Brak zdarzeń.
-            </div>
+          {teamCards.length === 0 ? (
+            <div className={classNames("text-xs", darkMode ? "text-gray-500" : "text-gray-500")}>Brak kartek.</div>
           ) : (
             <div className="space-y-1.5">
-              {awayPlayerEvents.map((player, idx) => (
-                <div
-                  key={idx}
-                  className={classNames(
-                    "p-2 rounded-lg border flex items-center justify-between gap-2",
-                    darkMode
-                      ? "border-white/10 bg-black/10"
-                      : "border-gray-200 bg-gray-50"
-                  )}
-                >
-                  <button
-                    onClick={() => openPlayer && openPlayer(player.playerId)}
-                    className="font-bold text-sm hover:underline"
-                  >
-                    {player.playerName}
-                  </button>
-                  <EventIcons player={player} />
-                </div>
+              {teamCards.map((event, index) => (
+                <CardItem key={event.id || `card-${teamId}-${index}`} event={event} />
               ))}
             </div>
           )}
         </div>
       </div>
+    );
+  };
+
+  return (
+    <Card darkMode={darkMode} className="mt-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <LiveBadge compact />
+          <div className={classNames("text-xs font-black uppercase tracking-[0.14em]", darkMode ? "text-gray-300" : "text-gray-600")}>
+            Zdarzenia meczu
+          </div>
+        </div>
+        <div className={classNames("rounded-xl border px-3 py-1 text-sm font-black", darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50")}>
+          {formatTeamScore(fixture.homeGoals, fixture.awayGoals)}
+        </div>
+      </div>
+
+      {detailsError && (
+        <div className={classNames("mb-3 rounded-xl border px-3 py-2 text-sm", darkMode ? "border-red-400/25 bg-red-500/10 text-red-200" : "border-red-200 bg-red-50 text-red-700")}>
+          {detailsError}
+        </div>
+      )}
+
+      {detailsLoading && liveEvents.length === 0 ? (
+        <div className={classNames("py-4 text-center text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>
+          Ładowanie zdarzeń LIVE...
+        </div>
+      ) : liveEvents.length === 0 ? (
+        <div className={classNames("rounded-2xl border p-4 text-center text-sm", darkMode ? "border-white/10 bg-black/10 text-gray-400" : "border-gray-200 bg-gray-50 text-gray-600")}>
+          Brak zdarzeń. Bramki, asysty i kartki pojawią się tutaj po dodaniu ich w aktywnym meczu.
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TeamEvents teamName={fixture.home} teamId={fixture.homeTeamId} opponentTeamId={fixture.awayTeamId} />
+          <TeamEvents teamName={fixture.away} teamId={fixture.awayTeamId} opponentTeamId={fixture.homeTeamId} />
+        </div>
+      )}
+
+      {detailsLoading && liveEvents.length > 0 && (
+        <div className={classNames("mt-3 text-center text-[11px]", darkMode ? "text-gray-500" : "text-gray-500")}>
+          Odświeżanie zdarzeń...
+        </div>
+      )}
     </Card>
   );
 }
@@ -9729,11 +10860,11 @@ function buildMatchParticipants(match, lineups, events) {
     });
     if (!player) continue;
 
-    if (event.type === "GOAL") player.goals += 1;
+    if (event.type === "GOAL" && !event.ownGoal) player.goals += 1;
     if (event.type === "YELLOW") player.yellows += 1;
     if (event.type === "RED") player.reds += 1;
 
-    if (event.type === "GOAL" && event.assistId) {
+    if (event.type === "GOAL" && !event.ownGoal && event.assistId) {
       const assistPlayer = ensurePlayer(teamKey, {
         playerId: event.assistId,
         playerName: event.assistName,
@@ -9750,29 +10881,36 @@ function buildMatchParticipants(match, lineups, events) {
 
 function MatchPlayerEventIcons({ player }) {
   return (
-    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+    <div className="flex items-center gap-1 flex-wrap justify-end sm:gap-1.5">
       {player.goals > 0 && (
-        <span className="text-sm">
+        <span className="text-[11px] sm:text-sm">
           ⚽{player.goals > 1 ? `×${player.goals}` : ""}
         </span>
       )}
       {player.assists > 0 && (
-        <span className="text-sm">
+        <span className="text-[11px] sm:text-sm">
           👟{player.assists > 1 ? `×${player.assists}` : ""}
         </span>
       )}
       {player.yellows > 0 && (
-        <span className="text-sm">
+        <span className="text-[11px] sm:text-sm">
           🟨{player.yellows > 1 ? `×${player.yellows}` : ""}
         </span>
       )}
       {player.reds > 0 && (
-        <span className="text-sm">
+        <span className="text-[11px] sm:text-sm">
           🟥{player.reds > 1 ? `×${player.reds}` : ""}
         </span>
       )}
     </div>
   );
+}
+
+function abbreviatePlayerName(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return parts[0] || "";
+  const [firstName, ...surnameParts] = parts;
+  return `${firstName.charAt(0).toUpperCase()}. ${surnameParts.join(" ")}`;
 }
 
 function MatchDetailsInline({ darkMode, match, openTeam, openPlayer, openGallery }) {
@@ -9808,9 +10946,10 @@ function MatchDetailsInline({ darkMode, match, openTeam, openPlayer, openGallery
   const SectionTitle = ({ children }) => (
     <div
       className={classNames(
-        "font-extrabold mb-2 text-sm",
+        "mb-2 truncate text-sm font-extrabold",
         darkMode ? "text-white" : "text-gray-900"
       )}
+      title={typeof children === "string" ? children : undefined}
     >
       {children}
     </div>
@@ -9866,29 +11005,38 @@ function MatchDetailsInline({ darkMode, match, openTeam, openPlayer, openGallery
         />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4 lg:gap-3">
         {/* Lewa kolumna - drużyna gospodarzy */}
-        <div className="space-y-3">
+        <div className="min-w-0">
           <SectionTitle>{displayTeamName(match.home)}</SectionTitle>
           {participants.home.length === 0 ? (
             <Empty>Brak skladu meczu.</Empty>
           ) : (
-            <div className="space-y-1.5">
+            <div
+              className={classNames(
+                "divide-y",
+                darkMode ? "divide-white/10" : "divide-gray-200"
+              )}
+            >
               {participants.home.map((player) => (
                 <div
                   key={player.playerId}
                   className={classNames(
-                    "p-2 rounded-lg border flex items-center justify-between gap-2",
-                    darkMode
-                      ? "border-white/10 bg-black/10"
-                      : "border-gray-200 bg-gray-50"
+                    "flex min-w-0 items-center justify-between gap-1.5 py-2 sm:rounded-lg sm:border sm:p-2 sm:gap-2",
+                    darkMode ? "sm:border-white/10 sm:bg-black/10" : "sm:border-gray-200 sm:bg-gray-50"
                   )}
                 >
                   <button
                     onClick={() => openPlayer && openPlayer(player.playerId)}
-                    className="font-bold text-sm hover:underline"
+                    className="min-w-0 flex-1 truncate text-left text-[11px] font-bold hover:underline sm:text-sm"
+                    title={player.playerName}
                   >
-                    {player.number != null ? `${player.number}. ` : ""}{player.playerName}
+                    <span className="sm:hidden">
+                      {player.number != null ? `${player.number}. ` : ""}{abbreviatePlayerName(player.playerName)}
+                    </span>
+                    <span className="hidden sm:inline">
+                      {player.number != null ? `${player.number}. ` : ""}{player.playerName}
+                    </span>
                   </button>
                   <MatchPlayerEventIcons player={player} />
                 </div>
@@ -9898,27 +11046,36 @@ function MatchDetailsInline({ darkMode, match, openTeam, openPlayer, openGallery
         </div>
 
         {/* Prawa kolumna - drużyna gości */}
-        <div className="space-y-3">
+        <div className="min-w-0">
           <SectionTitle>{displayTeamName(match.away)}</SectionTitle>
           {participants.away.length === 0 ? (
             <Empty>Brak skladu meczu.</Empty>
           ) : (
-            <div className="space-y-1.5">
+            <div
+              className={classNames(
+                "divide-y",
+                darkMode ? "divide-white/10" : "divide-gray-200"
+              )}
+            >
               {participants.away.map((player) => (
                 <div
                   key={player.playerId}
                   className={classNames(
-                    "p-2 rounded-lg border flex items-center justify-between gap-2",
-                    darkMode
-                      ? "border-white/10 bg-black/10"
-                      : "border-gray-200 bg-gray-50"
+                    "flex min-w-0 items-center justify-between gap-1.5 py-2 sm:rounded-lg sm:border sm:p-2 sm:gap-2",
+                    darkMode ? "sm:border-white/10 sm:bg-black/10" : "sm:border-gray-200 sm:bg-gray-50"
                   )}
                 >
                   <button
                     onClick={() => openPlayer && openPlayer(player.playerId)}
-                    className="font-bold text-sm hover:underline"
+                    className="min-w-0 flex-1 truncate text-left text-[11px] font-bold hover:underline sm:text-sm"
+                    title={player.playerName}
                   >
-                    {player.number != null ? `${player.number}. ` : ""}{player.playerName}
+                    <span className="sm:hidden">
+                      {player.number != null ? `${player.number}. ` : ""}{abbreviatePlayerName(player.playerName)}
+                    </span>
+                    <span className="hidden sm:inline">
+                      {player.number != null ? `${player.number}. ` : ""}{player.playerName}
+                    </span>
                   </button>
                   <MatchPlayerEventIcons player={player} />
                 </div>
@@ -9996,8 +11153,16 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
     (e) => e.type === "YELLOW" || e.type === "RED"
   );
 
-  const goalsHome = goals.filter((g) => g.team === match.home);
-  const goalsAway = goals.filter((g) => g.team === match.away);
+  const isGoalForTeam = (event, teamName, teamId, opponentTeamId) => {
+    if (event.ownGoal) {
+      if (opponentTeamId && event.teamId === opponentTeamId) return true;
+      return event.team !== teamName && !(teamId && event.teamId === teamId);
+    }
+    return event.team === teamName || (teamId && event.teamId === teamId);
+  };
+
+  const goalsHome = goals.filter((g) => isGoalForTeam(g, match.home, match.homeTeamId, match.awayTeamId));
+  const goalsAway = goals.filter((g) => isGoalForTeam(g, match.away, match.awayTeamId, match.homeTeamId));
 
   const cardsHome = cards.filter((c) => c.team === match.home);
   const cardsAway = cards.filter((c) => c.team === match.away);
@@ -10029,7 +11194,7 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
               : "bg-black/5 border-black/10"
           )}
         >
-          {match.homeGoals} : {match.awayGoals}
+          {formatTeamScore(match.homeGoals, match.awayGoals)}
         </div>
 
         <div className="flex items-center gap-3">
@@ -10123,7 +11288,7 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
           darkMode ? "text-gray-400" : "text-gray-600"
         )}
       >
-        {g.penalty ? "Rzut karny" : (g.assistName ? `Asysta: ${g.assistName}` : "Brak asysty")}
+        {g.ownGoal ? "Gol samobójczy" : g.penalty ? "Rzut karny" : (g.assistName ? `Asysta: ${g.assistName}` : "Brak asysty")}
       </div>
     </div>
   );
@@ -10198,7 +11363,7 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
                 : "bg-black/5 border-black/10"
             )}
           >
-            {match.homeGoals} : {match.awayGoals}
+            {formatTeamScore(match.homeGoals, match.awayGoals)}
           </div>
 
           <div className="flex items-center gap-3">
@@ -10421,10 +11586,12 @@ function TeamProfile({
   recentMatches,
   fixtures,
   matches,
-  openMatch,
   onBack,
   openTeam,
   openPlayer,
+  openGallery,
+  stats,
+  playersByTeam,
   currentSeason,
 }) {
   const leagueName = ({ "1st": "I Liga", "2nd": "II Liga", "3rd": "III Liga" }[leagueId] || leagueId);
@@ -10434,6 +11601,7 @@ function TeamProfile({
   const [history, setHistory] = useState([]);
   const [rosterLoading, setRosterLoading] = useState(true);
   const [showFullSchedule, setShowFullSchedule] = useState(false);
+  const [expandedMatchId, setExpandedMatchId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -10450,6 +11618,10 @@ function TeamProfile({
       }
     }).catch(() => { if (!cancelled) setRosterLoading(false); });
     return () => { cancelled = true; };
+  }, [team, currentSeason]);
+
+  useEffect(() => {
+    setExpandedMatchId(null);
   }, [team, currentSeason]);
 
   const positionNames = { BR: "BR", OBR: "OBR", POM: "POM", NAP: "NAP" };
@@ -10478,13 +11650,136 @@ function TeamProfile({
       .sort((a, b) => a.round - b.round || teamScheduleSortKey(a).localeCompare(teamScheduleSortKey(b))),
     [teamSchedule]
   );
+  const nextMatchId = upcomingSchedule[0]?.id || null;
+
+  const getSchedulePhase = (item) => {
+    if (item.played) return "played";
+    if (item.status === "cancelled") return "cancelled";
+    if (item.id === nextMatchId) return "next";
+    return "future";
+  };
+
+  const schedulePhaseLabel = (item) => {
+    const phase = getSchedulePhase(item);
+    if (phase === "played") {
+      if (item.teamResult === "win") return "Wygrany";
+      if (item.teamResult === "draw") return "Remis";
+      if (item.teamResult === "loss") return "Przegrany";
+      return "Rozegrany";
+    }
+    if (phase === "cancelled") return "Odwołany";
+    if (phase === "next") return "Najbliższy";
+    return "Kolejny";
+  };
+
+  const scheduleResultTone = (item) => {
+    if (item.teamResult === "loss") {
+      return {
+        row: darkMode
+          ? "border-rose-400/30 bg-rose-500/12 text-rose-100"
+          : "border-rose-200 bg-rose-50 text-rose-950",
+        badge: darkMode
+          ? "border-rose-400/35 bg-rose-500/18 text-rose-100"
+          : "border-rose-200 bg-rose-100 text-rose-900",
+        accent: "bg-rose-400",
+        date: darkMode ? "text-rose-200/85" : "text-rose-700",
+      };
+    }
+    if (item.teamResult === "draw") {
+      return {
+        row: darkMode
+          ? "border-amber-300/35 bg-amber-300/14 text-amber-100"
+          : "border-amber-200 bg-amber-50 text-amber-950",
+        badge: darkMode
+          ? "border-amber-300/40 bg-amber-300/20 text-amber-100"
+          : "border-amber-300 bg-amber-100 text-amber-900",
+        accent: "bg-amber-400",
+        date: darkMode ? "text-amber-200/85" : "text-amber-700",
+      };
+    }
+    if (item.teamResult === "win") {
+      return {
+        row: darkMode
+          ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-100"
+          : "border-emerald-200 bg-emerald-50 text-emerald-900",
+        badge: darkMode
+          ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
+          : "border-emerald-200 bg-emerald-100 text-emerald-800",
+        accent: "bg-emerald-400",
+        date: darkMode ? "text-emerald-200/80" : "text-emerald-700",
+      };
+    }
+    return {
+      row: darkMode
+        ? "border-white/10 bg-white/5 text-gray-100"
+        : "border-gray-200 bg-gray-50 text-gray-900",
+      badge: darkMode
+        ? "border-white/10 bg-white/10 text-gray-200"
+        : "border-gray-200 bg-white text-gray-700",
+      accent: darkMode ? "bg-gray-400" : "bg-gray-300",
+      date: darkMode ? "text-gray-300" : "text-gray-600",
+    };
+  };
+
+  const schedulePhaseClasses = (item, compact = false) => {
+    const phase = getSchedulePhase(item);
+
+    if (phase === "played") {
+      return scheduleResultTone(item).row;
+    }
+    if (phase === "next") {
+      return darkMode
+        ? "border-violet-300/45 bg-violet-400/16 text-violet-50 shadow-[0_0_0_1px_rgba(196,181,253,0.22),0_12px_26px_rgba(109,40,217,0.18)]"
+        : "border-violet-300 bg-violet-50 text-violet-950 shadow-[0_0_0_1px_rgba(139,92,246,0.2),0_10px_22px_rgba(109,40,217,0.1)]";
+    }
+    if (phase === "cancelled") {
+      return darkMode
+        ? "border-rose-400/30 bg-rose-500/10 text-rose-100"
+        : "border-rose-200 bg-rose-50 text-rose-900";
+    }
+    return compact
+      ? (darkMode ? "border-sky-400/20 bg-sky-500/10 text-sky-100" : "border-sky-100 bg-sky-50 text-sky-900")
+      : (darkMode ? "border-white/10 bg-black/10 text-gray-100" : "border-gray-200 bg-gray-50 text-gray-900");
+  };
+
+  const scheduleBadgeClasses = (item) => {
+    const phase = getSchedulePhase(item);
+    if (phase === "played") return scheduleResultTone(item).badge;
+    if (phase === "next") return darkMode ? "border-violet-300/45 bg-violet-400/20 text-violet-100" : "border-violet-300 bg-violet-100 text-violet-900";
+    if (phase === "cancelled") return darkMode ? "border-rose-400/30 bg-rose-500/15 text-rose-200" : "border-rose-200 bg-rose-100 text-rose-800";
+    return darkMode ? "border-sky-400/25 bg-sky-500/10 text-sky-200" : "border-sky-200 bg-sky-50 text-sky-800";
+  };
+
+  const scheduleAccentClasses = (item) => {
+    const phase = getSchedulePhase(item);
+    if (phase === "played") return scheduleResultTone(item).accent;
+    if (phase === "next") return "bg-violet-400";
+    if (phase === "cancelled") return "bg-rose-400";
+    return "bg-sky-400";
+  };
 
   const scheduleStatusLabel = (item) => {
-    if (item.played) return `${item.homeGoals} : ${item.awayGoals}`;
+    if (item.played) return formatTeamScore(item.homeGoals, item.awayGoals);
     if (item.status === "postponed") return "Przełożony";
     if (item.status === "unplayed") return "Nierozegrany";
     if (item.status === "cancelled") return "Odwołany";
-    return item.time || "Termin";
+    if (item.scheduleHidden) return "Termin wkrótce";
+    return item.time ? `godz. ${item.time}` : "Termin";
+  };
+
+  const toggleTeamMatchDetails = (matchId) => {
+    setExpandedMatchId((prev) => {
+      const next = prev === matchId ? null : matchId;
+      if (next) {
+        window.setTimeout(() => {
+          const el = document.getElementById(`team-details-${next}`);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        }, 100);
+      }
+      return next;
+    });
   };
 
   return (
@@ -10755,15 +12050,15 @@ function TeamProfile({
                         <div
                           key={item.id}
                           className={classNames(
-                            "grid grid-cols-[56px_minmax(0,1fr)_auto] gap-2 items-center text-sm",
-                            darkMode ? "text-gray-200" : "text-gray-800"
+                            "grid grid-cols-[64px_minmax(0,1fr)_auto] gap-2 items-center rounded-lg border px-2 py-1.5 text-sm",
+                            schedulePhaseClasses(item, true)
                           )}
                         >
-                          <span className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                            {formatShortFixtureDate(item.date)}
+                          <span className={classNames("text-xs font-bold", scheduleResultTone(item).date)}>
+                            {formatTeamScheduleDate(item)}
                           </span>
                           <span className="font-bold truncate">{displayTeamName(item.opponent)}</span>
-                          <span className="font-black">{item.homeGoals} : {item.awayGoals}</span>
+                          <span className="font-black tabular-nums">{formatTeamScore(item.homeGoals, item.awayGoals)}</span>
                         </div>
                       ))}
                     </div>
@@ -10787,15 +12082,15 @@ function TeamProfile({
                         <div
                           key={item.id}
                           className={classNames(
-                            "grid grid-cols-[56px_minmax(0,1fr)_auto] gap-2 items-center text-sm",
-                            darkMode ? "text-gray-200" : "text-gray-800"
+                            "grid grid-cols-[74px_minmax(0,1fr)_auto] gap-2 items-center rounded-lg border px-2 py-1.5 text-sm",
+                            schedulePhaseClasses(item, true)
                           )}
                         >
-                          <span className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                            {formatShortFixtureDate(item.date)}
+                          <span className="text-xs font-bold">
+                            {formatTeamScheduleDate(item)}
                           </span>
                           <span className="font-bold truncate">{displayTeamName(item.opponent)}</span>
-                          <span className="font-black text-xs">{scheduleStatusLabel(item)}</span>
+                          <span className="font-black text-xs tabular-nums">{scheduleStatusLabel(item)}</span>
                         </div>
                       ))}
                     </div>
@@ -10835,71 +12130,148 @@ function TeamProfile({
             <div className="space-y-2">
               {fullSchedule.map((item) => {
                 const header = fixtureDateHeaderParts(item.date);
+                const isExpanded = expandedMatchId === item.id;
+                const playedMatch = item.match || null;
+                const hiddenFuture = item.scheduleHidden && !item.played;
+                const dateLabel = hiddenFuture
+                  ? "Termin wkrótce"
+                  : (header.date ? `${header.weekday} • ${header.date}` : header.weekday);
+                const timeLabel = hiddenFuture ? "" : (item.time ? `godz. ${item.time}` : "");
                 return (
-                  <div
-                    key={item.id}
-                    className={classNames(
-                      "rounded-xl border p-3",
-                      darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <div className={classNames("text-xs font-black uppercase tracking-[0.12em]", darkMode ? "text-cyan-200" : "text-blue-700")}>
-                        Kolejka {item.round}
+                  <React.Fragment key={item.id}>
+                    <div
+                      className={classNames(
+                        "relative overflow-hidden rounded-xl border p-3 transition-colors",
+                        schedulePhaseClasses(item)
+                      )}
+                    >
+                      <div
+                        className={classNames(
+                          "absolute inset-y-0 left-0 w-1.5",
+                          scheduleAccentClasses(item)
+                        )}
+                      />
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <div className="flex flex-wrap items-center gap-2 pl-1.5">
+                          <div className={classNames("text-xs font-black uppercase tracking-[0.12em]", darkMode ? "text-cyan-100" : "text-blue-800")}>
+                            Kolejka {item.round}
+                          </div>
+                          <span
+                            className={classNames(
+                              "rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.12em]",
+                              scheduleBadgeClasses(item)
+                            )}
+                          >
+                            {schedulePhaseLabel(item)}
+                          </span>
+                        </div>
+                        <div className={classNames("text-right text-xs font-semibold", darkMode ? "text-gray-300" : "text-gray-600")}>
+                          {dateLabel}
+                          {timeLabel ? ` • ${timeLabel}` : ""}
+                        </div>
                       </div>
-                      <div className={classNames("text-xs", darkMode ? "text-gray-400" : "text-gray-600")}>
-                        {header.date ? `${header.weekday} • ${header.date}` : header.weekday}
-                        {item.time ? ` • ${item.time}` : ""}
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-[minmax(0,1fr)_120px_minmax(0,1fr)] gap-3 items-center">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <TeamLogo
-                          team={item.home}
-                          darkMode={darkMode}
-                          size={40}
-                          onClick={() => openTeam(item.home)}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <TeamLink
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_168px_minmax(0,1fr)] sm:items-center">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <TeamLogo
                             team={item.home}
+                            darkMode={darkMode}
+                            size={40}
                             onClick={() => openTeam(item.home)}
-                            className="font-bold e3d-link block w-full truncate"
                           />
+                          <div className="min-w-0 flex-1">
+                            <TeamLink
+                              team={item.home}
+                              onClick={() => openTeam(item.home)}
+                              className="font-bold e3d-link block w-full truncate"
+                            />
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex justify-center">
-                        <button
-                          onClick={() => openMatch(item.id)}
-                          className={classNames(
-                            "w-[120px] px-2 py-1.5 rounded-xl border e3d-pill font-extrabold text-center",
-                            darkMode ? "bg-white/5 border-white/10" : "bg-black/5 border-black/10"
-                          )}
-                          title="Kliknij: szczegóły meczu"
-                        >
-                          {item.played ? `${item.homeGoals} : ${item.awayGoals}` : scheduleStatusLabel(item)}
-                        </button>
-                      </div>
+                        <div className="flex items-center justify-center gap-2">
+                          <VideoIcon
+                            darkMode={darkMode}
+                            videoUrl={item.videoUrl}
+                            played={item.played}
+                            galleryUrl={item.galleryUrl}
+                            hasGallery={!!item.hasGallery}
+                            galleryCount={item.galleryCount || 0}
+                            onOpenGallery={
+                              item.hasGallery && openGallery
+                                ? () => openGallery(playedMatch || item)
+                                : undefined
+                            }
+                            size={16}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => toggleTeamMatchDetails(item.id)}
+                            className={classNames(
+                              "min-w-[136px] max-w-[168px] px-3 py-1.5 rounded-xl border e3d-pill text-center tabular-nums",
+                              item.played ? "text-lg font-black tracking-wide" : "text-xs font-black",
+                              darkMode ? "bg-white/10 border-white/15" : "bg-white border-black/10"
+                            )}
+                            title="Kliknij: szczegóły meczu"
+                          >
+                            {item.played ? formatTeamScore(item.homeGoals, item.awayGoals) : scheduleStatusLabel(item)}
+                          </button>
+                        </div>
 
-                      <div className="flex items-center justify-end gap-2 min-w-0">
-                        <div className="min-w-0 flex-1">
-                          <TeamLink
+                        <div className="flex items-center justify-end gap-2 min-w-0">
+                          <div className="min-w-0 flex-1">
+                            <TeamLink
+                              team={item.away}
+                              onClick={() => openTeam(item.away)}
+                              className="font-bold text-right e3d-link block w-full truncate"
+                            />
+                          </div>
+                          <TeamLogo
                             team={item.away}
+                            darkMode={darkMode}
+                            size={40}
                             onClick={() => openTeam(item.away)}
-                            className="font-bold text-right e3d-link block w-full truncate"
                           />
                         </div>
-                        <TeamLogo
-                          team={item.away}
-                          darkMode={darkMode}
-                          size={40}
-                          onClick={() => openTeam(item.away)}
-                        />
                       </div>
                     </div>
-                  </div>
+
+                    {isExpanded && playedMatch && (
+                      <div id={`team-details-${item.id}`}>
+                        <MatchDetailsInline
+                          darkMode={darkMode}
+                          match={playedMatch}
+                          openTeam={openTeam}
+                          openPlayer={openPlayer}
+                          openGallery={openGallery}
+                        />
+                      </div>
+                    )}
+
+                    {isExpanded && !playedMatch && isLiveFixture(item) && (
+                      <div id={`team-details-${item.id}`}>
+                        <LiveMatchDetails
+                          darkMode={darkMode}
+                          fixture={item}
+                          openTeam={openTeam}
+                          openPlayer={openPlayer}
+                        />
+                      </div>
+                    )}
+
+                    {isExpanded && !playedMatch && !isLiveFixture(item) && (
+                      <div id={`team-details-${item.id}`}>
+                        <UpcomingMatchDetailsInline
+                          darkMode={darkMode}
+                          fixture={item}
+                          stats={stats}
+                          matches={matches}
+                          playersByTeam={playersByTeam}
+                          openTeam={openTeam}
+                          openPlayer={openPlayer}
+                        />
+                      </div>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </div>
@@ -11347,7 +12719,7 @@ function TournamentBracket({ darkMode, playoffs, champion }) {
             darkMode ? "text-white" : "text-black"
           )}
         >
-          {match.homeGoals} : {match.awayGoals}
+          {formatTeamScore(match.homeGoals, match.awayGoals)}
         </div>
         <div
           className={classNames(
@@ -11469,7 +12841,7 @@ function TournamentBracket({ darkMode, playoffs, champion }) {
                   darkMode ? "text-white" : "text-black"
                 )}
               >
-                {final.homeGoals} : {final.awayGoals}
+                {formatTeamScore(final.homeGoals, final.awayGoals)}
               </div>
               <div
                 className={classNames(
@@ -11917,9 +13289,138 @@ function PageRenderer({ renderPage }) {
   return renderPage();
 }
 
+function MobileMotionFrame({ motionKey, deferUntilVisible = false, children }) {
+  const [motionState, setMotionState] = useState("idle");
+  const mountedRef = useRef(false);
+  const pendingMotionRef = useRef(false);
+  const frameRef = useRef(null);
+  const timerRef = useRef(null);
+
+  const triggerMotion = React.useCallback((delay = 0) => {
+    if (frameRef.current) {
+      window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+    if (timerRef.current) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+
+    const start = () => {
+      setMotionState("reset");
+      frameRef.current = window.requestAnimationFrame(() => {
+        setMotionState("active");
+      });
+      timerRef.current = window.setTimeout(() => {
+        setMotionState("idle");
+      }, 360);
+    };
+
+    if (delay > 0) {
+      timerRef.current = window.setTimeout(start, delay);
+    } else {
+      start();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return undefined;
+    }
+
+    if (deferUntilVisible) {
+      pendingMotionRef.current = true;
+      return undefined;
+    }
+
+    triggerMotion();
+    return undefined;
+  }, [motionKey]);
+
+  useEffect(() => {
+    if (!deferUntilVisible && pendingMotionRef.current) {
+      pendingMotionRef.current = false;
+      triggerMotion(90);
+    }
+  }, [deferUntilVisible, triggerMotion]);
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  return (
+    <div
+      className={classNames(
+        "mlpn-mobile-motion-frame",
+        motionState === "active" ? "mlpn-mobile-motion-frame--active" : ""
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function HomeSponsorCarousel({ sponsors = [], openSponsorLink }) {
+  const safeSponsors = Array.isArray(sponsors) ? sponsors.filter((sponsor) => sponsor?.name) : [];
+  if (safeSponsors.length === 0) return null;
+
+  const shouldLoop = safeSponsors.length > 3;
+  const duration = Math.max(24, safeSponsors.length * 3.2);
+
+  const renderSponsor = (sponsor, index, duplicate = false) => (
+    <button
+      key={`hero-sponsor-${duplicate ? "dup" : "main"}-${sponsorRouteId(sponsor) || sponsor.name}-${index}`}
+      type="button"
+      onClick={() => openSponsorLink?.(sponsor)}
+      tabIndex={duplicate ? -1 : 0}
+      className="mlpn-sponsor-logo-frame mlpn-sponsor-carousel-item flex items-center justify-center rounded-2xl px-3 transition-transform hover:scale-[1.02]"
+      title={sponsor.name}
+      aria-label={`Sponsor: ${sponsor.name}`}
+    >
+      {sponsor.logoUrl ? (
+        <img
+          src={sponsor.logoUrl}
+          alt={duplicate ? "" : sponsor.name}
+          style={sponsorLogoStyle(sponsor)}
+          className="mlpn-sponsor-logo-img h-full w-full object-contain"
+        />
+      ) : (
+        <Trophy size={28} className="text-white/70" />
+      )}
+    </button>
+  );
+
+  return (
+    <div
+      className={classNames(
+        "mlpn-sponsor-carousel",
+        shouldLoop ? "mlpn-sponsor-carousel-loop" : "mlpn-sponsor-carousel-static"
+      )}
+      style={{ "--mlpn-sponsor-carousel-duration": `${duration}s` }}
+      aria-label="Sponsorzy MLPN"
+    >
+      <div className="mlpn-sponsor-carousel-track">
+        <div className="mlpn-sponsor-carousel-set">
+          {safeSponsors.map((sponsor, index) => renderSponsor(sponsor, index))}
+        </div>
+        {shouldLoop && (
+          <div className="mlpn-sponsor-carousel-set" aria-hidden="true">
+            {safeSponsors.map((sponsor, index) => renderSponsor(sponsor, index, true))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function HomeDashboardFeatureCard({
   darkMode,
   featuredMatchData,
+  featuredMatchLive,
   featuredMatchPlayed,
   featuredTone,
   seasonPulseLabel,
@@ -11935,21 +13436,48 @@ function HomeDashboardFeatureCard({
   topScorer,
   topAssister,
   bestFormTeam,
+  expandedMatchId,
+  matchById,
+  stats = {},
+  matches = [],
+  playersByTeam = {},
   goToLeague,
+  openLeagueStats,
   openMatch,
   openTeam,
   openPlayer,
   openGallery,
   openHomeTab,
+  sponsors = [],
+  openSponsor,
 }) {
   const primaryLeagueId = featuredMatchData?.league || spotlightLeagues[0]?.id || null;
-  const focusedLeagueTitle = featuredMatchData?.league ? leagueLabel(featuredMatchData.league) : "MLPN";
+  const focusedLeagueId = primaryLeagueId;
+  const focusedLeagueTitle = focusedLeagueId ? leagueLabel(focusedLeagueId) : "MLPN";
   const bestFormSummary = bestFormTeam?.form5?.length
     ? bestFormTeam.form5.map((item) => item.result).join(" ")
     : null;
+  const visibleSponsors = Array.isArray(sponsors) ? sponsors.filter((sponsor) => sponsor?.name) : [];
+  const featuredPlayedDetails = featuredMatchData?.id ? matchById?.[featuredMatchData.id] : null;
+  const featuredDetailsMatch = featuredPlayedDetails || featuredMatchData;
+  const featuredExpanded = !!featuredMatchData?.id && expandedMatchId === featuredMatchData.id;
+  const openSponsorLink = (sponsor) => {
+    if (!sponsor) return;
+    if (sponsorRouteId(sponsor)) {
+      openSponsor?.(sponsor);
+    } else if (sponsor.websiteUrl) {
+      window.open(sponsor.websiteUrl, "_blank", "noopener,noreferrer");
+    }
+  };
 
   return (
-    <Card darkMode={darkMode} className="mlpn-home-hero self-start p-0 overflow-hidden">
+    <Card
+      darkMode={darkMode}
+      className={classNames(
+        "mlpn-home-hero mlpn-navy-surface self-start p-0 overflow-hidden",
+        featuredMatchLive && "mlpn-live-frame"
+      )}
+    >
       <div className="relative overflow-hidden p-4 sm:p-5 lg:p-6">
         <div className="relative z-[1] space-y-4 lg:space-y-5">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
@@ -11959,7 +13487,14 @@ function HomeDashboardFeatureCard({
                   MLPN Match Center
                 </span>
                 <span className={classNames("mlpn-home-badge", featuredTone.badge)}>
-                  {featuredStatusLabel}
+                  {featuredMatchLive ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="mlpn-live-dot" aria-hidden="true" />
+                      LIVE
+                    </span>
+                  ) : (
+                    featuredStatusLabel
+                  )}
                 </span>
                 <span className="mlpn-home-badge border-white/15 bg-black/20 text-white/75">
                   {featuredRoundLabel}
@@ -12013,7 +13548,10 @@ function HomeDashboardFeatureCard({
             </div>
           </div>
 
-          <div className="rounded-[30px] border border-white/12 bg-black/20 p-3 sm:p-4 lg:p-5 backdrop-blur-sm">
+              <div className={classNames(
+                "rounded-[30px] border border-white/12 bg-black/20 p-3 sm:p-4 lg:p-5 backdrop-blur-sm",
+                featuredMatchLive && "mlpn-live-frame-inner"
+              )}>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px_minmax(0,1fr)] lg:items-center">
               <button
                 type="button"
@@ -12066,7 +13604,23 @@ function HomeDashboardFeatureCard({
                   {featuredMatchData ? featuredMetaLine : "MLPN"}
                 </div>
                 {featuredMatchData ? (
-                  featuredMatchPlayed ? (
+                  featuredMatchLive ? (
+                    <>
+                      <LiveBadge className="mx-auto mt-3" />
+                      <div className="mt-3 flex items-end justify-center gap-2 text-white">
+                        <span className="text-5xl sm:text-6xl font-black leading-none">
+                          {featuredMatchData.homeGoals ?? 0}
+                        </span>
+                        <span className="pb-1 text-2xl font-black text-red-200/75">-</span>
+                        <span className="text-5xl sm:text-6xl font-black leading-none">
+                          {featuredMatchData.awayGoals ?? 0}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-sm font-semibold text-red-100">
+                        Aktualny wynik
+                      </div>
+                    </>
+                  ) : featuredMatchPlayed ? (
                     <>
                       <div className="mt-3 flex items-end justify-center gap-2 text-white">
                         <span className="text-5xl sm:text-6xl font-black leading-none">
@@ -12182,11 +13736,45 @@ function HomeDashboardFeatureCard({
             </div>
           </div>
 
+          {featuredExpanded && featuredDetailsMatch && (
+            <div
+              id={`details-${featuredMatchData.id}`}
+              className="rounded-[24px] border border-white/10 bg-black/15 p-2 sm:p-3"
+            >
+              {featuredMatchLive ? (
+                <LiveMatchDetails
+                  darkMode={true}
+                  fixture={featuredMatchData}
+                  openTeam={openTeam}
+                  openPlayer={openPlayer}
+                />
+              ) : featuredMatchPlayed || featuredPlayedDetails ? (
+                <MatchDetailsInline
+                  darkMode={true}
+                  match={featuredDetailsMatch}
+                  openTeam={openTeam}
+                  openPlayer={openPlayer}
+                  openGallery={openGallery}
+                />
+              ) : (
+                <UpcomingMatchDetailsInline
+                  darkMode={true}
+                  fixture={featuredMatchData}
+                  stats={stats}
+                  matches={matches}
+                  playersByTeam={playersByTeam}
+                  openTeam={openTeam}
+                  openPlayer={openPlayer}
+                />
+              )}
+            </div>
+          )}
+
           <div className="grid gap-2 md:grid-cols-3">
             <button
               type="button"
-              disabled={!topScorer}
-              onClick={() => topScorer?.playerId && openPlayer?.(topScorer.playerId)}
+              disabled={!focusedLeagueId}
+              onClick={() => focusedLeagueId && openLeagueStats?.(focusedLeagueId, "scorers")}
               className="rounded-[22px] border border-white/10 bg-black/15 p-4 text-left transition-colors enabled:hover:bg-white/10 disabled:cursor-default"
             >
               <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
@@ -12204,8 +13792,8 @@ function HomeDashboardFeatureCard({
 
             <button
               type="button"
-              disabled={!bestFormTeam?.team}
-              onClick={() => bestFormTeam?.team && openTeam?.(bestFormTeam.team)}
+              disabled={!focusedLeagueId}
+              onClick={() => focusedLeagueId && openLeagueStats?.(focusedLeagueId, "teams")}
               className="rounded-[22px] border border-white/10 bg-black/15 p-4 text-left transition-colors enabled:hover:bg-white/10 disabled:cursor-default"
             >
               <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
@@ -12223,12 +13811,12 @@ function HomeDashboardFeatureCard({
 
             <button
               type="button"
-              disabled={!topAssister}
-              onClick={() => topAssister?.playerId && openPlayer?.(topAssister.playerId)}
+              disabled={!focusedLeagueId}
+              onClick={() => focusedLeagueId && openLeagueStats?.(focusedLeagueId, "assists")}
               className="rounded-[22px] border border-white/10 bg-black/15 p-4 text-left transition-colors enabled:hover:bg-white/10 disabled:cursor-default"
             >
               <div className="text-[10px] uppercase tracking-[0.18em] font-black text-white/55">
-                Asystent • {focusedLeagueTitle}
+                Asysty • {focusedLeagueTitle}
               </div>
               <div className="mt-2 text-lg font-black text-white">
                 {topAssister?.name || "Brak danych"}
@@ -12240,6 +13828,23 @@ function HomeDashboardFeatureCard({
               </div>
             </button>
           </div>
+
+          {visibleSponsors.length > 0 && (
+            <div className="flex flex-col gap-2 rounded-[22px] border border-white/10 bg-black/10 px-3 py-3 md:flex-row md:items-center md:justify-between">
+              <div className="shrink-0 md:w-[112px]">
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">
+                  Wspierają nas
+                </span>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <HomeSponsorCarousel
+                  sponsors={visibleSponsors}
+                  openSponsorLink={openSponsorLink}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Card>
@@ -12383,6 +13988,323 @@ function HomeDashboardSeasonPulseCard({
             </button>
           ))}
         </div>
+      </div>
+    </Card>
+  );
+}
+
+function newsCategoryMeta(category) {
+  const normalized = String(category || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (normalized === "pauza") {
+    return {
+      label: "pauza",
+      Icon: CirclePause,
+      pillClass: "bg-yellow-300 text-black border-yellow-400/40",
+      iconClass: "bg-yellow-300/18 text-yellow-300 border-yellow-300/30",
+    };
+  }
+
+  if (normalized === "wazne") {
+    return {
+      label: "ważne",
+      Icon: AlertTriangle,
+      pillClass: "bg-rose-400 text-black border-rose-500/40",
+      iconClass: "bg-rose-400/18 text-rose-300 border-rose-300/30",
+    };
+  }
+
+  return {
+    label: "komunikat",
+    Icon: Megaphone,
+    pillClass: "bg-sky-300 text-black border-sky-400/40",
+    iconClass: "bg-sky-300/18 text-sky-300 border-sky-300/30",
+  };
+}
+
+function NewsCategoryIcon({ meta, darkMode, size = 18 }) {
+  const Icon = meta?.Icon || Megaphone;
+  return (
+    <span
+      className={classNames(
+        "shrink-0 inline-flex items-center justify-center rounded-xl border",
+        meta?.iconClass || (darkMode ? "bg-white/10 text-gray-200 border-white/10" : "bg-gray-100 text-gray-700 border-gray-200")
+      )}
+      style={{ width: size + 18, height: size + 18 }}
+      aria-hidden="true"
+    >
+      <Icon size={size} strokeWidth={2.5} />
+    </span>
+  );
+}
+
+function GlobalNewsBar({
+  darkMode,
+  news = [],
+  expanded,
+  onToggle,
+  onOpenNews,
+  onOpenMatch,
+}) {
+  const previewNews = useMemo(
+    () =>
+      (Array.isArray(news) ? news : [])
+        .filter((item) => item && typeof item === "object")
+        .slice(0, 3)
+        .map((item) => ({
+          ...item,
+          title: typeof item.title === "string" ? item.title : "",
+          body: typeof item.body === "string" ? item.body : "",
+          category: typeof item.category === "string" ? item.category : "",
+          date: typeof item.date === "string" ? item.date : "",
+        })),
+    [news]
+  );
+  const leadNews = previewNews[0] || null;
+
+  return (
+    <section
+      className={classNames(
+        "mt-[68px] border-b backdrop-blur-xl md:hidden",
+        darkMode
+          ? "border-white/10 bg-[#0b1220]/95 text-white shadow-[0_12px_28px_rgba(0,0,0,0.28)]"
+          : "border-slate-200/70 bg-white/95 text-slate-900 shadow-[0_12px_24px_rgba(15,23,42,0.12)]"
+      )}
+      aria-label="Aktualności MLPN"
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className="mx-auto flex min-h-[48px] w-full max-w-[1600px] items-center gap-2 px-3 text-left"
+        aria-expanded={expanded}
+      >
+        <span
+          className={classNames(
+            "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
+            darkMode ? "bg-sky-400/15 text-sky-200" : "bg-sky-100 text-sky-800"
+          )}
+        >
+          Aktualności
+        </span>
+        <span className="min-w-0 flex-1">
+          <span
+            className={classNames(
+              "block truncate text-xs font-bold leading-tight",
+              darkMode ? "text-white/65" : "text-slate-500"
+            )}
+          >
+            {expanded
+              ? leadNews
+                ? "Najnowsze wpisy ligi"
+                : "Brak opublikowanych wpisów"
+              : "Rozwiń, żeby przeczytać"}
+          </span>
+        </span>
+        <span
+          className={classNames(
+            "inline-flex h-9 shrink-0 items-center gap-1 rounded-xl border px-3 text-xs font-black",
+            darkMode
+              ? "border-white/10 bg-white/5 text-white"
+              : "border-slate-200 bg-white text-slate-800"
+          )}
+        >
+          {expanded ? "Zwiń" : "Rozwiń"}
+          <ChevronDown
+            size={15}
+            className={classNames("transition-transform", expanded ? "rotate-180" : "")}
+          />
+        </span>
+      </button>
+
+      {expanded && (
+        <div className={classNames("border-t", darkMode ? "border-white/10" : "border-slate-200")}>
+          <div className="mx-auto max-h-[60vh] max-w-[1600px] overflow-y-auto px-3 py-3">
+            <div className="grid gap-3">
+              {previewNews.length === 0 && (
+                <div
+                  className={classNames(
+                    "rounded-xl border p-4 text-sm",
+                    darkMode
+                      ? "border-white/10 bg-white/[0.04] text-white/75"
+                      : "border-slate-200 bg-slate-50 text-slate-600"
+                  )}
+                >
+                  Brak opublikowanych aktualności.
+                </div>
+              )}
+              {previewNews.map((item) => {
+                const meta = newsCategoryMeta(item.category);
+                return (
+                  <article
+                    key={item.id}
+                    className={classNames(
+                      "rounded-xl border p-3",
+                      darkMode
+                        ? "border-white/10 bg-white/[0.04]"
+                        : "border-slate-200 bg-white"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <NewsCategoryIcon meta={meta} darkMode={darkMode} size={15} />
+                      <div className="min-w-0">
+                        <div className="text-sm font-black leading-snug">{item.title}</div>
+                        <div
+                          className={classNames(
+                            "mt-1 text-[11px] font-semibold",
+                            darkMode ? "text-white/55" : "text-slate-500"
+                          )}
+                        >
+                          {item.date || "bez daty"} · {meta.label}
+                        </div>
+                      </div>
+                    </div>
+                    {item.body && (
+                      <p
+                        className={classNames(
+                          "mt-3 whitespace-pre-line text-xs leading-relaxed",
+                          darkMode ? "text-white/78" : "text-slate-700"
+                        )}
+                      >
+                        {item.body}
+                      </p>
+                    )}
+                    {item.fixtureId && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenMatch?.(item.fixtureId)}
+                        className={classNames(
+                          "mt-3 inline-flex rounded-lg border px-3 py-1.5 text-[11px] font-black",
+                          darkMode
+                            ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                            : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100"
+                        )}
+                      >
+                        Otwórz mecz
+                      </button>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={onOpenNews}
+                className={classNames(
+                  "rounded-xl border px-4 py-2 text-xs font-black",
+                  darkMode
+                    ? "border-emerald-300/25 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/15"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                )}
+              >
+                Wszystkie aktualności
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function HomeDashboardNewsCard({ darkMode, latestNews = [], openHomeTab, openMatch }) {
+  const previewNews = latestNews.slice(0, HOME_NEWS_PREVIEW_LIMIT);
+
+  return (
+    <Card darkMode={darkMode}>
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div>
+          <div className="text-xl font-extrabold">Aktualności MLPN</div>
+          <div
+            className={classNames(
+              "text-xs",
+              darkMode ? "text-gray-400" : "text-gray-600"
+            )}
+          >
+            Najnowsze komunikaty i wpisy ligi
+          </div>
+        </div>
+        <button
+          onClick={() => openHomeTab("news")}
+          className={classNames(
+            "px-3 py-2 rounded-xl border text-xs font-bold e3d-btn",
+            darkMode
+              ? "bg-white/5 border-white/10 hover:bg-white/10"
+              : "bg-white border-gray-200 hover:bg-gray-50"
+          )}
+        >
+          Wszystkie newsy
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {previewNews.length === 0 && (
+          <div
+            className={classNames(
+              "text-sm text-center py-6",
+              darkMode ? "text-gray-400" : "text-gray-500"
+            )}
+          >
+            Brak aktualności
+          </div>
+        )}
+        {previewNews.map((n) => {
+          const meta = newsCategoryMeta(n.category);
+          return (
+            <div
+              key={n.id}
+              className={classNames(
+                "rounded-xl border p-3",
+                darkMode
+                  ? "border-white/10 bg-black/10"
+                  : "border-gray-200 bg-white"
+              )}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex items-start gap-3">
+                  <NewsCategoryIcon meta={meta} darkMode={darkMode} size={16} />
+                  <div className="min-w-0">
+                    <div className="font-bold truncate">{n.title}</div>
+                    <div
+                      className={classNames(
+                        "text-xs mt-1",
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      )}
+                    >
+                      {n.date} • {meta.label}
+                    </div>
+                  </div>
+                </div>
+                {n.fixtureId && (
+                  <button
+                    onClick={() => openMatch?.(n.fixtureId)}
+                    className={classNames(
+                      "px-2 py-1 rounded-lg border text-[11px] font-bold e3d-pill whitespace-nowrap",
+                      darkMode
+                        ? "bg-white/5 border-white/10"
+                        : "bg-black/5 border-black/10"
+                    )}
+                  >
+                    Mecz
+                  </button>
+                )}
+              </div>
+              {n.body && (
+                <div
+                  className={classNames(
+                    "text-xs mt-2 line-clamp-2 pl-[50px]",
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  )}
+                >
+                  {n.body}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </Card>
   );
@@ -12729,184 +14651,244 @@ function HomeDashboardMatchStrip({
   upcoming,
   lastMatches,
   matchById,
+  expandedMatchId,
+  stats,
+  matches,
+  playersByTeam,
   openTeam,
   openMatch,
+  openPlayer,
   openGallery,
   leagueLabel,
-  currentRound,
+  suppressDetailsForId,
 }) {
   const renderUpcoming = (f) => {
     const playedMatch = matchById?.[f.id];
+    const isExpanded = expandedMatchId === f.id && suppressDetailsForId !== f.id;
     return (
-      <div
-        key={`home-upcoming-${f.id}`}
-        role="button"
-        tabIndex={0}
-        onClick={() => openMatch?.(f.id)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            openMatch?.(f.id);
-          }
-        }}
-        className={classNames(
-          "cursor-pointer",
-          "w-full rounded-2xl border p-3 text-left transition-colors",
-          darkMode
-            ? "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-            : "border-gray-200 bg-white hover:bg-gray-50"
-        )}
-      >
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <TeamLogo
-              team={f.home}
-              darkMode={darkMode}
-              size={32}
-              onClick={(event) => {
-                event.stopPropagation();
-                openTeam?.(f.home);
-              }}
-            />
-            <span className="truncate text-sm font-black">{displayTeamName(f.home)}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span onClick={(event) => event.stopPropagation()}>
-              <VideoIcon
-                darkMode={darkMode}
-                videoUrl={playedMatch?.videoUrl || f.videoUrl}
-                played={!!playedMatch}
-                galleryUrl={playedMatch?.galleryUrl || f.galleryUrl}
-                hasGallery={!!(playedMatch?.hasGallery || f.hasGallery)}
-                galleryCount={playedMatch?.galleryCount || f.galleryCount || 0}
-                onOpenGallery={
-                  playedMatch?.hasGallery || f.hasGallery
-                    ? () => {
-                        openGallery?.(playedMatch || f);
-                      }
-                    : undefined
-                }
-                size={14}
-              />
-            </span>
-            <span
-              className={classNames(
-                "rounded-xl border px-3 py-1.5 text-xs font-black",
-                darkMode
-                  ? "border-white/10 bg-black/20 text-white"
-                  : "border-gray-200 bg-gray-50 text-gray-900"
-              )}
-            >
-              {fixtureCenterTimeLabel(f)}
-            </span>
-          </div>
-
-          <div className="flex min-w-0 items-center justify-end gap-2">
-            <span className="truncate text-right text-sm font-black">{displayTeamName(f.away)}</span>
-            <TeamLogo
-              team={f.away}
-              darkMode={darkMode}
-              size={32}
-              onClick={(event) => {
-                event.stopPropagation();
-                openTeam?.(f.away);
-              }}
-            />
-          </div>
-        </div>
+      <React.Fragment key={`home-upcoming-${f.id}`}>
         <div
+          role="button"
+          tabIndex={0}
+          onClick={() => openMatch?.(f.id)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openMatch?.(f.id);
+            }
+          }}
           className={classNames(
-            "mt-2 text-xs",
-            darkMode ? "text-gray-400" : "text-gray-600"
+            "cursor-pointer",
+            "w-full rounded-2xl border p-3 text-left transition-colors",
+            isExpanded
+              ? darkMode
+                ? "border-sky-300/40 bg-sky-400/10"
+                : "border-sky-300 bg-sky-50"
+              : darkMode
+              ? "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+              : "border-gray-200 bg-white hover:bg-gray-50"
           )}
         >
-          {fixtureDashboardMetaLine(f, f.round ? `kolejka ${f.round}` : "kolejka", leagueLabel?.(f.league))}
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <TeamLogo
+                team={f.home}
+                darkMode={darkMode}
+                size={32}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openTeam?.(f.home);
+                }}
+              />
+              <span className="truncate text-sm font-black">{displayTeamName(f.home)}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span onClick={(event) => event.stopPropagation()}>
+                <VideoIcon
+                  darkMode={darkMode}
+                  videoUrl={playedMatch?.videoUrl || f.videoUrl}
+                  played={!!playedMatch}
+                  galleryUrl={playedMatch?.galleryUrl || f.galleryUrl}
+                  hasGallery={!!(playedMatch?.hasGallery || f.hasGallery)}
+                  galleryCount={playedMatch?.galleryCount || f.galleryCount || 0}
+                  onOpenGallery={
+                    playedMatch?.hasGallery || f.hasGallery
+                      ? () => {
+                          openGallery?.(playedMatch || f);
+                        }
+                      : undefined
+                  }
+                  size={14}
+                />
+              </span>
+              <span
+                className={classNames(
+                  "rounded-xl border px-3 py-1.5 text-xs font-black",
+                  darkMode
+                    ? "border-white/10 bg-black/20 text-white"
+                    : "border-gray-200 bg-gray-50 text-gray-900"
+                )}
+              >
+                {fixtureCenterTimeLabel(f)}
+              </span>
+            </div>
+
+            <div className="flex min-w-0 items-center justify-end gap-2">
+              <span className="truncate text-right text-sm font-black">{displayTeamName(f.away)}</span>
+              <TeamLogo
+                team={f.away}
+                darkMode={darkMode}
+                size={32}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openTeam?.(f.away);
+                }}
+              />
+            </div>
+          </div>
+          <div
+            className={classNames(
+              "mt-2 text-xs",
+              darkMode ? "text-gray-400" : "text-gray-600"
+            )}
+          >
+            {fixtureDashboardMetaLine(f, f.round ? `kolejka ${f.round}` : "kolejka", leagueLabel?.(f.league))}
+          </div>
         </div>
-      </div>
+        {isExpanded && (
+          <div id={`details-${f.id}`}>
+            {playedMatch ? (
+              <MatchDetailsInline
+                darkMode={darkMode}
+                match={playedMatch}
+                openTeam={openTeam}
+                openPlayer={openPlayer}
+                openGallery={openGallery}
+              />
+            ) : isLiveFixture(f) ? (
+              <LiveMatchDetails
+                darkMode={darkMode}
+                fixture={f}
+                openTeam={openTeam}
+                openPlayer={openPlayer}
+              />
+            ) : (
+              <UpcomingMatchDetailsInline
+                darkMode={darkMode}
+                fixture={f}
+                stats={stats}
+                matches={matches}
+                playersByTeam={playersByTeam}
+                openTeam={openTeam}
+                openPlayer={openPlayer}
+              />
+            )}
+          </div>
+        )}
+      </React.Fragment>
     );
   };
 
-  const renderResult = (m) => (
-    <div
-      key={`home-result-${m.id}`}
-      role="button"
-      tabIndex={0}
-      onClick={() => openMatch?.(m.id)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          openMatch?.(m.id);
-        }
-      }}
-      className={classNames(
-        "cursor-pointer",
-        "w-full rounded-2xl border p-3 text-left transition-colors",
-        darkMode
-          ? "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-          : "border-gray-200 bg-white hover:bg-gray-50"
-      )}
-    >
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <TeamLogo
-            team={m.home}
-            darkMode={darkMode}
-            size={32}
-            onClick={(event) => {
-              event.stopPropagation();
-              openTeam?.(m.home);
-            }}
-          />
-          <span className="truncate text-sm font-black">{displayTeamName(m.home)}</span>
-        </div>
-        <ScorePill
-          homeGoals={m.homeGoals}
-          awayGoals={m.awayGoals}
-          darkMode={darkMode}
-          status={m.status}
-          date={compactDateLabel(m.date)}
-          time={m.time}
-        />
-        <div className="flex min-w-0 items-center justify-end gap-2">
-          <span className="truncate text-right text-sm font-black">{displayTeamName(m.away)}</span>
-          <TeamLogo
-            team={m.away}
-            darkMode={darkMode}
-            size={32}
-            onClick={(event) => {
-              event.stopPropagation();
-              openTeam?.(m.away);
-            }}
-          />
-        </div>
-      </div>
-      <div
-        className={classNames(
-          "mt-2 flex items-center justify-between gap-3 text-xs",
-          darkMode ? "text-gray-400" : "text-gray-600"
-        )}
-      >
-        <span>{leagueLabel?.(m.league)} • kolejka {m.round}</span>
-        <span onClick={(event) => event.stopPropagation()}>
-          <MediaIcons
-            darkMode={darkMode}
-            videoUrl={m.videoUrl}
-            galleryUrl={m.galleryUrl}
-            onOpenGallery={
-              m.hasGallery
-                ? () => {
-                    openGallery?.(m);
-                  }
-                : undefined
+  const renderResult = (m) => {
+    const isExpanded = expandedMatchId === m.id && suppressDetailsForId !== m.id;
+    return (
+      <React.Fragment key={`home-result-${m.id}`}>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => openMatch?.(m.id)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openMatch?.(m.id);
             }
-            galleryCount={m.galleryCount}
-            size={13}
-          />
-        </span>
-      </div>
-    </div>
-  );
+          }}
+          className={classNames(
+            "cursor-pointer",
+            "w-full rounded-2xl border p-3 text-left transition-colors",
+            isExpanded
+              ? darkMode
+                ? "border-sky-300/40 bg-sky-400/10"
+                : "border-sky-300 bg-sky-50"
+              : darkMode
+              ? "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+              : "border-gray-200 bg-white hover:bg-gray-50"
+          )}
+        >
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <TeamLogo
+                team={m.home}
+                darkMode={darkMode}
+                size={32}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openTeam?.(m.home);
+                }}
+              />
+              <span className="truncate text-sm font-black">{displayTeamName(m.home)}</span>
+            </div>
+            <ScorePill
+              homeGoals={m.homeGoals}
+              awayGoals={m.awayGoals}
+              darkMode={darkMode}
+              status={m.status}
+              date={compactDateLabel(m.date)}
+              time={m.time}
+            />
+            <div className="flex min-w-0 items-center justify-end gap-2">
+              <span className="truncate text-right text-sm font-black">{displayTeamName(m.away)}</span>
+              <TeamLogo
+                team={m.away}
+                darkMode={darkMode}
+                size={32}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openTeam?.(m.away);
+                }}
+              />
+            </div>
+          </div>
+          <div
+            className={classNames(
+              "mt-2 flex items-center justify-between gap-3 text-xs",
+              darkMode ? "text-gray-400" : "text-gray-600"
+            )}
+          >
+            <span>{leagueLabel?.(m.league)} • kolejka {m.round}</span>
+            <span onClick={(event) => event.stopPropagation()}>
+              <MediaIcons
+                darkMode={darkMode}
+                videoUrl={m.videoUrl}
+                galleryUrl={m.galleryUrl}
+                onOpenGallery={
+                  m.hasGallery
+                    ? () => {
+                        openGallery?.(m);
+                      }
+                    : undefined
+                }
+                galleryCount={m.galleryCount}
+                size={13}
+              />
+            </span>
+          </div>
+        </div>
+        {isExpanded && (
+          <div id={`details-${m.id}`}>
+            <MatchDetailsInline
+              darkMode={darkMode}
+              match={m}
+              openTeam={openTeam}
+              openPlayer={openPlayer}
+              openGallery={openGallery}
+            />
+          </div>
+        )}
+      </React.Fragment>
+    );
+  };
 
   return (
     <div className="grid gap-3 lg:grid-cols-2">
@@ -12914,7 +14896,7 @@ function HomeDashboardMatchStrip({
         <div className={classNames("px-4 pt-4 pb-2 border-b", darkMode ? "border-white/10" : "border-gray-200")}>
           <div className="text-lg font-extrabold">Najbliższe mecze</div>
           <div className={classNames("text-xs", darkMode ? "text-gray-400" : "text-gray-600")}>
-            Kolejka {currentRound} • kliknij mecz, żeby wejść w szczegóły
+            Chronologicznie • kliknij mecz, żeby wejść w szczegóły
           </div>
         </div>
         <div className="grid gap-2 p-3">
@@ -12922,7 +14904,7 @@ function HomeDashboardMatchStrip({
             upcoming.slice(0, 4).map(renderUpcoming)
           ) : (
             <div className={classNames("rounded-2xl border p-4 text-sm", darkMode ? "border-white/10 bg-white/[0.04] text-gray-300" : "border-gray-200 bg-gray-50 text-gray-600")}>
-              Brak zaplanowanych meczów w aktualnej kolejce.
+              Brak zaplanowanych nadchodzących meczów.
             </div>
           )}
         </div>
@@ -12949,104 +14931,6 @@ function HomeDashboardMatchStrip({
   );
 }
 
-function HomeDashboardSponsorBand({ darkMode, sponsors = [], openSponsor }) {
-  const visibleSponsors = getRenderableSponsors(sponsors).slice(0, 7);
-  const titleSponsor =
-    visibleSponsors.find((sponsor) => sponsor.category === "sponsor_tytularny") ||
-    visibleSponsors[0] ||
-    null;
-  const restSponsors = visibleSponsors.filter((sponsor) => sponsor !== titleSponsor).slice(0, 6);
-
-  if (!titleSponsor) return null;
-
-  const open = (sponsor) => {
-    if (sponsor?.id || sponsor?.profileSlug) {
-      openSponsor?.(sponsor);
-    } else if (sponsor?.websiteUrl) {
-      window.open(sponsor.websiteUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  return (
-    <Card darkMode={darkMode} className="p-0 overflow-hidden">
-      <div className={classNames("p-3 sm:p-4", darkMode ? "bg-white/[0.03]" : "bg-white")}>
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className={classNames("text-[10px] font-black uppercase tracking-[0.18em]", darkMode ? "text-gray-400" : "text-gray-500")}>
-              Partnerzy MLPN
-            </div>
-            <div className="text-lg font-black leading-tight">Grają z nami</div>
-          </div>
-          <button
-            type="button"
-            onClick={() => open(titleSponsor)}
-            className={classNames(
-              "hidden rounded-full border px-3 py-1.5 text-xs font-black transition-colors sm:inline-flex",
-              darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-gray-200 bg-gray-50 hover:bg-white"
-            )}
-          >
-            Profil sponsora
-          </button>
-        </div>
-
-        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
-          <button
-            type="button"
-            onClick={() => open(titleSponsor)}
-            className={classNames(
-              "group flex items-center gap-3 rounded-2xl border p-3 text-left transition-all hover:-translate-y-0.5",
-              darkMode ? "border-amber-300/25 bg-amber-300/10 hover:bg-amber-300/15" : "border-amber-200 bg-amber-50 hover:bg-amber-100/70"
-            )}
-          >
-            <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-2xl bg-white p-2 shadow-sm">
-              {titleSponsor.logoUrl ? (
-                <img src={titleSponsor.logoUrl} alt={titleSponsor.name} className="h-full w-full object-contain" />
-              ) : (
-                <Trophy size={28} className="text-amber-500" />
-              )}
-            </div>
-            <div className="min-w-0">
-              <div className={classNames("text-[10px] font-black uppercase tracking-[0.16em]", darkMode ? "text-amber-100" : "text-amber-700")}>
-                {sponsorCategoryLabel(titleSponsor.category)}
-              </div>
-              <div className="truncate text-base font-black">{titleSponsor.name}</div>
-              <div className={classNames("mt-1 line-clamp-2 text-xs", darkMode ? "text-gray-300" : "text-gray-600")}>
-                {titleSponsor.shortDescription || titleSponsor.description || "Partner wspierający rozgrywki MLPN."}
-              </div>
-            </div>
-          </button>
-
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-3">
-            {restSponsors.map((sponsor) => (
-              <button
-                key={sponsorRouteId(sponsor) || sponsor.name}
-                type="button"
-                onClick={() => open(sponsor)}
-                className={classNames(
-                  "group flex min-h-[74px] flex-col items-center justify-center rounded-2xl border p-2 transition-colors",
-                  darkMode ? "border-white/10 bg-white/[0.04] hover:bg-white/10" : "border-gray-200 bg-gray-50 hover:bg-white"
-                )}
-                title={sponsor.name}
-              >
-                <div className="flex h-9 w-full items-center justify-center">
-                  {sponsor.logoUrl ? (
-                    <img src={sponsor.logoUrl} alt={sponsor.name} className="max-h-9 max-w-full object-contain" />
-                  ) : (
-                    <Trophy size={20} className={darkMode ? "text-gray-500" : "text-gray-400"} />
-                  )}
-                </div>
-                <div className="mt-1 w-full truncate text-center text-[10px] font-black">
-                  {sponsor.name}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 function HomeDashboard({
   darkMode,
   fixtures = [],
@@ -13065,6 +14949,7 @@ function HomeDashboard({
   openSponsor,
   currentLeagues = [],
   goToLeague,
+  openLeagueStats,
   setHomeSection,
   currentRound,
   playedRounds,
@@ -13075,14 +14960,22 @@ function HomeDashboard({
   const isCompleted = seasonStatus === 'completed';
   const isActiveSeason = seasonStatus === 'active' || seasonStatus === 'in_progress';
   const leagueLabel = (id) => ({ "1st": "I Liga", "2nd": "II Liga", "3rd": "III Liga" }[id] || id);
-  const isExcludedFromProgress = (status) => status === "cancelled" || status === "unplayed";
-  const isExcludedFromUpcoming = (status) =>
-    status === "cancelled" ||
-    status === "unplayed" ||
-    status === "postponed" ||
-    status === "completed" ||
-    status === "walkover_home" ||
-    status === "walkover_away";
+  const isExcludedFromProgress = (status) => {
+    const key = String(status || "").toLowerCase();
+    return key === "cancelled" || key === "unplayed";
+  };
+  const isExcludedFromUpcoming = (status) => {
+    const key = String(status || "").toLowerCase();
+    return (
+      key === "cancelled" ||
+      key === "unplayed" ||
+      key === "postponed" ||
+      key === "live" ||
+      key === "completed" ||
+      key === "walkover_home" ||
+      key === "walkover_away"
+    );
+  };
   const safeStats = stats || {};
   const safeNews = Array.isArray(news)
     ? news.filter((item) => item && typeof item === "object")
@@ -13103,29 +14996,43 @@ function HomeDashboard({
   const topYellow = (Array.isArray(safeStats.topYellow) ? safeStats.topYellow : [])
     .filter((row) => isPositiveStatLeader(row, "yellow"));
 
-  // last results (global) and upcoming
-  const lastMatches = useMemo(() => {
-    const sorted = [...matches].sort((a, b) => b.round - a.round);
-    return sorted.slice(0, 6);
-  }, [matches]);
-
-  const upcoming = useMemo(() => {
-    if (isCompleted) return [];
-    return fixtures
-      .filter((f) => f.round === currentRound)
-      .filter((f) => !isExcludedFromUpcoming(f.status))
-      .slice(0, 6);
-  }, [fixtures, isCompleted, currentRound]);
-
   const matchById = useMemo(() => {
     const m = {};
     for (const x of matches) m[x.id] = x;
     return m;
   }, [matches]);
 
+  // last results (global) and upcoming
+  const lastMatches = useMemo(() => {
+    return [...matches]
+      .sort(compareMatchesNewestFirst)
+      .slice(0, 6);
+  }, [matches]);
+
+  const upcoming = useMemo(() => {
+    if (isCompleted) return [];
+
+    const playableFixtures = (fixtures || [])
+      .filter((f) => f && !matchById[f.id])
+      .filter((f) => !isExcludedFromUpcoming(f.status));
+    const futureFixtures = playableFixtures.filter((f) => isFixtureUpcomingFromNow(f));
+    const source = futureFixtures.length ? futureFixtures : playableFixtures;
+
+    return [...source]
+      .sort(compareFixturesChronologically)
+      .slice(0, 6);
+  }, [fixtures, isCompleted, matchById]);
+
+  const liveFixtures = useMemo(() => {
+    if (isCompleted) return [];
+    return (fixtures || [])
+      .filter((f) => f && isLiveFixture(f))
+      .sort(compareFixturesChronologically);
+  }, [fixtures, isCompleted]);
+
   const latestNews = useMemo(
     () =>
-      safeNews.slice(0, 4).map((item) => ({
+      safeNews.slice(0, HOME_NEWS_PREVIEW_LIMIT).map((item) => ({
         ...item,
         title: typeof item.title === "string" ? item.title : "",
         body: typeof item.body === "string" ? item.body : "",
@@ -13183,7 +15090,7 @@ function HomeDashboard({
       ? { key: "g", title: "Top strzelec", value: topScorers[0].goals, suffix: "goli", row: topScorers[0] }
       : null,
     topAssists[0]
-      ? { key: "a", title: "Top asystent", value: topAssists[0].assists, suffix: "asyst", row: topAssists[0] }
+      ? { key: "a", title: "Lider asyst", value: topAssists[0].assists, suffix: "asyst", row: topAssists[0] }
       : null,
     topYellow[0]
       ? { key: "y", title: "Najwięcej kartek", value: topYellow[0].yellow, suffix: "żółtych", row: topYellow[0] }
@@ -13245,6 +15152,24 @@ function HomeDashboard({
   const heroSlides = useMemo(() => {
     const slides = [];
 
+    if (liveFixtures[0]) {
+      const liveMatch = liveFixtures[0];
+      slides.push({
+        kind: "live",
+        key: `live-${liveMatch.id}`,
+        kicker: "LIVE",
+        title: formatTeamScore(liveMatch.homeGoals, liveMatch.awayGoals),
+        body: `${displayTeamName(liveMatch.home)} vs ${displayTeamName(liveMatch.away)}`,
+        meta: fixtureDashboardMetaLine(
+          liveMatch,
+          liveMatch.round ? `kolejka ${liveMatch.round}` : "kolejka",
+          leagueLabel(liveMatch.league)
+        ),
+        ctaLabel: "Śledź LIVE",
+        onClick: () => openMatch?.(liveMatch.id),
+      });
+    }
+
     if (heroRecent) {
       slides.push({
         kind: "recent",
@@ -13293,7 +15218,7 @@ function HomeDashboard({
         key: `upcoming-${heroUpcoming.id}`,
         kicker: "Najbliższy mecz",
         title: `${displayTeamName(heroUpcoming.home)} vs ${displayTeamName(heroUpcoming.away)}`,
-        body: "Nadchodzące spotkanie w bieżącej kolejce.",
+        body: "Nadchodzące spotkanie w terminarzu.",
         meta: fixtureDashboardMetaLine(
           heroUpcoming,
           heroUpcoming.round ? `kolejka ${heroUpcoming.round}` : "kolejka"
@@ -13304,16 +15229,17 @@ function HomeDashboard({
     }
 
     return slides.filter(Boolean);
-  }, [currentRound, heroRecent, latestNews, latestPoll, latestPollOptions, heroUpcoming]);
+  }, [currentRound, heroRecent, latestNews, latestPoll, latestPollOptions, heroUpcoming, liveFixtures]);
 
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   useEffect(() => {
     setHeroSlideIndex(0);
-  }, [heroSlides.length, heroUpcoming?.id, heroRecent?.id, latestNews?.[0]?.id, latestPoll?.id, currentRound]);
+  }, [heroSlides.length, heroUpcoming?.id, heroRecent?.id, liveFixtures[0]?.id, latestNews?.[0]?.id, latestPoll?.id, currentRound]);
 
   const activeHeroSlide = heroSlides[heroSlideIndex] || null;
   const activeHeroKey = activeHeroSlide?.key || "";
   const heroSlideButtonDefs = [
+    { kind: "live", label: "LIVE" },
     { kind: "news", label: "Aktualności" },
     { kind: "poll", label: "Ankiety" },
     { kind: "recent", label: "Ostatni mecz" },
@@ -13445,11 +15371,12 @@ function HomeDashboard({
   }, [heroSlides.length]);
 
   const featuredMatchData = useMemo(
-    () => heroUpcoming || heroRecent || upcoming[0] || lastMatches[0] || null,
-    [heroUpcoming, heroRecent, upcoming, lastMatches]
+    () => liveFixtures[0] || heroUpcoming || heroRecent || upcoming[0] || lastMatches[0] || null,
+    [liveFixtures, heroUpcoming, heroRecent, upcoming, lastMatches]
   );
+  const featuredMatchLive = isLiveFixture(featuredMatchData);
   const featuredMatchPlayed =
-    featuredMatchData?.homeGoals != null && featuredMatchData?.awayGoals != null;
+    !featuredMatchLive && featuredMatchData?.homeGoals != null && featuredMatchData?.awayGoals != null;
   const featuredLeagueTable = featuredMatchData?.league
     ? tableByLeague[featuredMatchData.league] || []
     : [];
@@ -13509,7 +15436,13 @@ function HomeDashboard({
     ? bestFormTeams.find((row) => row.league === featuredStatsLeagueId) || null
     : bestFormTeam;
   const featuredTone =
-    featuredMatchData?.league === "1st"
+    featuredMatchLive
+      ? {
+          badge: "border-red-300/60 bg-red-500/30 text-red-50",
+          pill: "text-red-50 bg-red-500/18 border-red-300/40",
+          line: "bg-red-300/90",
+        }
+      : featuredMatchData?.league === "1st"
       ? {
           badge: "border-rose-300/35 bg-rose-400/12 text-rose-100",
           pill: "text-rose-100 bg-rose-400/14 border-rose-300/30",
@@ -13541,7 +15474,9 @@ function HomeDashboard({
         featuredMatchPlayed ? leagueLabel(featuredMatchData.league) : ""
       )
     : seasonPulseLabel;
-  const featuredActionLabel = featuredMatchPlayed
+  const featuredActionLabel = featuredMatchLive
+    ? "Śledź LIVE"
+    : featuredMatchPlayed
     ? "Pełen raport meczu"
     : "Szczegóły spotkania";
   const featuredStoryButtons = heroSlideButtonDefs.filter((b) => hasHeroSlideKind(b.kind));
@@ -13553,11 +15488,77 @@ function HomeDashboard({
         resetKey={`hero:${currentSeason}:${currentRound}:${matches.length}:${fixtures.length}:${latestNews.length}:${latestPoll?.id || "no-poll"}:${heroTyperMatches.length}`}
         sectionTitle="Pulpit główny"
       >
+        <button
+          type="button"
+          onClick={() => openHomeTab("typer")}
+          className={classNames(
+            "group w-full rounded-2xl border p-3 text-left transition-colors e3d-card",
+            darkMode
+              ? "border-red-300/25 bg-gradient-to-r from-red-500/20 via-sky-500/14 to-emerald-400/12 hover:border-red-200/45"
+              : "border-red-200 bg-gradient-to-r from-red-50 via-sky-50 to-emerald-50 hover:border-red-300"
+          )}
+        >
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div
+                className={classNames(
+                  "grid h-12 w-12 shrink-0 place-items-center rounded-2xl border",
+                  darkMode
+                    ? "border-white/15 bg-white/10 text-white"
+                    : "border-white bg-white text-red-600"
+                )}
+              >
+                <Trophy size={24} strokeWidth={2.5} />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.18em] text-red-300">
+                    Nowość dla kibiców
+                  </span>
+                  <span
+                    className={classNames(
+                      "rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em]",
+                      darkMode
+                        ? "border-white/15 bg-black/15 text-white/75"
+                        : "border-red-100 bg-white/80 text-red-600"
+                    )}
+                  >
+                    MŚ 2026
+                  </span>
+                </div>
+                <div className="mt-1 text-lg font-black md:text-xl">
+                  Wprowadzamy Typera MLPN dla kibiców
+                </div>
+                <div
+                  className={classNames(
+                    "mt-1 text-sm leading-relaxed",
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  )}
+                >
+                  Typuj mecze mundialu, zbieraj punkty i rywalizuj w rankingu o nagrodę od ligi.
+                </div>
+              </div>
+            </div>
+            <div
+              className={classNames(
+                "inline-flex min-h-[42px] shrink-0 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-black transition-colors",
+                darkMode
+                  ? "border-white/15 bg-white text-gray-950 group-hover:bg-sky-100"
+                  : "border-red-200 bg-red-500 text-white group-hover:bg-red-600"
+              )}
+            >
+              Zobacz typera
+              <ChevronRight size={17} strokeWidth={2.8} />
+            </div>
+          </div>
+        </button>
+
         <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1.55fr)_360px]">
           <div className="grid gap-3">
             <HomeDashboardFeatureCard
               darkMode={darkMode}
               featuredMatchData={featuredMatchData}
+              featuredMatchLive={featuredMatchLive}
               featuredMatchPlayed={featuredMatchPlayed}
               featuredTone={featuredTone}
               seasonPulseLabel={seasonPulseLabel}
@@ -13573,12 +15574,20 @@ function HomeDashboard({
               topScorer={featuredTopScorer}
               topAssister={featuredTopAssister}
               bestFormTeam={featuredBestFormTeam}
+              expandedMatchId={expandedMatchId}
+              matchById={matchById}
+              stats={stats}
+              matches={matches}
+              playersByTeam={playersByTeam}
               goToLeague={goToLeague}
+              openLeagueStats={openLeagueStats}
               openMatch={openMatch}
               openTeam={openTeam}
               openPlayer={openPlayer}
               openGallery={openGallery}
               openHomeTab={openHomeTab}
+              sponsors={safeSponsors}
+              openSponsor={openSponsor}
             />
 
             {!isCompleted && (
@@ -13587,22 +15596,30 @@ function HomeDashboard({
                 upcoming={upcoming}
                 lastMatches={lastMatches}
                 matchById={matchById}
+                expandedMatchId={expandedMatchId}
+                stats={stats}
+                matches={matches}
+                playersByTeam={playersByTeam}
                 openTeam={openTeam}
                 openMatch={openMatch}
+                openPlayer={openPlayer}
                 openGallery={openGallery}
                 leagueLabel={leagueLabel}
-                currentRound={currentRound}
+                suppressDetailsForId={
+                  featuredMatchData?.id === expandedMatchId ? featuredMatchData.id : null
+                }
               />
             )}
 
-            <HomeDashboardSponsorBand
-              darkMode={darkMode}
-              sponsors={safeSponsors}
-              openSponsor={openSponsor}
-            />
           </div>
 
           <div className="grid gap-3">
+            <HomeDashboardNewsCard
+              darkMode={darkMode}
+              latestNews={latestNews}
+              openHomeTab={openHomeTab}
+              openMatch={openMatch}
+            />
             <HomeDashboardSeasonPulseCard
               darkMode={darkMode}
               quickStats={quickStats}
@@ -13610,33 +15627,12 @@ function HomeDashboard({
               leagueLabel={leagueLabel}
               goToLeague={goToLeague}
             />
-            <HomeDashboardStoryPulseCard
-              darkMode={darkMode}
-              featuredStoryButtons={featuredStoryButtons}
-              focusHeroSlide={focusHeroSlide}
-              isHeroKindActive={isHeroKindActive}
-              activeHeroSlide={activeHeroSlide}
-              activeHeroKind={activeHeroKind}
-              latestPoll={latestPoll}
-              latestPollOptions={latestPollOptions}
-              heroPollCounts={heroPollCounts}
-              heroPollTotalVotes={heroPollTotalVotes}
-              heroPollVoteIdx={heroPollVoteIdx}
-              heroPollShowResults={heroPollShowResults}
-              heroPollIsArchived={heroPollIsArchived}
-              voteInHeroPoll={voteInHeroPoll}
-              heroSlides={heroSlides}
-              heroSlideIndex={heroSlideIndex}
-              setHeroSlideIndex={setHeroSlideIndex}
-              prevHeroSlide={prevHeroSlide}
-              nextHeroSlide={nextHeroSlide}
-            />
           </div>
         </div>
 
         <div className="hidden">
       <div className="grid xl:grid-cols-[1.35fr_0.95fr] gap-3">
-        <Card darkMode={darkMode} className="mlpn-home-hero p-0 overflow-hidden">
+        <Card darkMode={darkMode} className="mlpn-home-hero mlpn-navy-surface p-0 overflow-hidden">
           <div ref={heroCardRef} className="relative p-4 lg:p-6 min-h-[340px] h-auto lg:min-h-[540px] lg:h-[600px]">
             {heroSlides.length > 1 && showHeroFloatingNav && (
               <div className="pointer-events-none fixed inset-y-0 left-0 right-0 z-[10005] lg:hidden">
@@ -14409,7 +16405,7 @@ function HomeDashboard({
                 </div>
               )}
 
-              {/* Najlepszy asystent */}
+              {/* Lider asyst */}
               {topAssists[0] && (
                 <div
                   className={classNames(
@@ -14430,7 +16426,7 @@ function HomeDashboard({
                       "text-[10px] font-black",
                       darkMode ? "text-blue-400" : "text-blue-600"
                     )}>
-                      NAJLEPSZY ASYSTENT
+                      LIDER ASYST
                     </div>
                     <div className="font-bold text-sm truncate">
                       {topAssists[0].name}
@@ -14640,7 +16636,18 @@ function HomeDashboard({
                       </div>
                     )}
 
-                    {isExpanded && !playedMatch && (
+                    {isExpanded && !playedMatch && isLiveFixture(f) && (
+                      <div id={`details-${f.id}`}>
+                        <LiveMatchDetails
+                          darkMode={darkMode}
+                          fixture={f}
+                          openTeam={openTeam}
+                          openPlayer={openPlayer}
+                        />
+                      </div>
+                    )}
+
+                    {isExpanded && !playedMatch && !isLiveFixture(f) && (
                       <div id={`details-${f.id}`}>
                         <UpcomingMatchDetailsInline
                           darkMode={darkMode}
@@ -14788,98 +16795,9 @@ function HomeDashboard({
 
       <HomeSectionErrorBoundary
         darkMode={darkMode}
-        resetKey={`bottom:${currentSeason}:${currentRound}:${latestNews.length}:${leagueOverview.length}:${matches.length}:${fixtures.length}`}
-        sectionTitle="Aktualności i dashboard lig"
+        resetKey={`bottom:${currentSeason}:${currentRound}:${leagueOverview.length}:${matches.length}:${fixtures.length}`}
+        sectionTitle="Dashboard lig"
       >
-      <div className="grid xl:grid-cols-[1.2fr_1.8fr] gap-3">
-        <Card darkMode={darkMode}>
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <div>
-              <div className="text-xl font-extrabold">Aktualności MLPN</div>
-              <div
-                className={classNames(
-                  "text-xs",
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                )}
-              >
-                Szybki podgląd najnowszych wpisów
-              </div>
-            </div>
-            <button
-              onClick={() => openHomeTab("news")}
-              className={classNames(
-                "px-3 py-2 rounded-xl border text-xs font-bold e3d-btn",
-                darkMode
-                  ? "bg-white/5 border-white/10 hover:bg-white/10"
-                  : "bg-white border-gray-200 hover:bg-gray-50"
-              )}
-            >
-              Wszystkie newsy
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {latestNews.length === 0 && (
-              <div
-                className={classNames(
-                  "text-sm text-center py-6",
-                  darkMode ? "text-gray-400" : "text-gray-500"
-                )}
-              >
-                Brak aktualności
-              </div>
-            )}
-            {latestNews.map((n) => (
-              <div
-                key={n.id}
-                className={classNames(
-                  "rounded-xl border p-3",
-                  darkMode
-                    ? "border-white/10 bg-black/10"
-                    : "border-gray-200 bg-white"
-                )}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="font-bold truncate">{n.title}</div>
-                    <div
-                      className={classNames(
-                        "text-xs mt-1",
-                        darkMode ? "text-gray-400" : "text-gray-600"
-                      )}
-                    >
-                      {n.date} • {n.category || "komunikat"}
-                    </div>
-                  </div>
-                  {n.fixtureId && (
-                    <button
-                      onClick={() => openMatch?.(n.fixtureId)}
-                      className={classNames(
-                        "px-2 py-1 rounded-lg border text-[11px] font-bold e3d-pill whitespace-nowrap",
-                        darkMode
-                          ? "bg-white/5 border-white/10"
-                          : "bg-black/5 border-black/10"
-                      )}
-                    >
-                      Mecz
-                    </button>
-                  )}
-                </div>
-                {n.body && (
-                  <div
-                    className={classNames(
-                      "text-xs mt-2 line-clamp-2",
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    )}
-                  >
-                    {n.body}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
-
         <div>
           <div className="mb-2">
             <div className="text-2xl font-extrabold">Ligi - dashboard</div>
@@ -14985,7 +16903,7 @@ function HomeDashboard({
                             className="font-bold e3d-link text-sm truncate"
                           />
                         </div>
-                        <div className="font-extrabold">{r.pts}</div>
+                        <div className="font-black" style={TABULAR_NUMBER_STYLE}>{r.pts}</div>
                       </div>
                     ))
                   ) : (
@@ -15020,7 +16938,7 @@ function HomeDashboard({
                       </div>
                       <div className="flex items-center justify-between gap-2 mt-1">
                         <button
-                          onClick={() => openPlayer?.(lg.topScorer.playerId)}
+                          onClick={() => openLeagueStats?.(lg.id, "scorers")}
                           className="font-bold hover:underline text-left truncate"
                         >
                           {lg.topScorer.name}
@@ -15030,7 +16948,7 @@ function HomeDashboard({
                         </span>
                       </div>
                       <button
-                        onClick={() => openTeam(lg.topScorer.team)}
+                        onClick={() => openLeagueStats?.(lg.id, "scorers")}
                         className={classNames(
                           "text-xs mt-1 hover:underline",
                           darkMode ? "text-gray-300" : "text-gray-700"
@@ -15081,7 +16999,6 @@ function HomeDashboard({
             ))}
           </div>
         </div>
-      </div>
       </HomeSectionErrorBoundary>
 
     </div>
@@ -15090,26 +17007,6 @@ function HomeDashboard({
 
 function NewsPage({ darkMode, news, openTeam, openMatch, openPlayer }) {
   const [openId, setOpenId] = useState(null);
-
-  const catMeta = (cat) => {
-    if (cat === "pauza")
-      return {
-        label: "pauza",
-        cls: "bg-yellow-300 text-black border-yellow-400/40",
-        icon: "⏸",
-      };
-    if (cat === "ważne" || cat === "wazne")
-      return {
-        label: "ważne",
-        cls: "bg-rose-400 text-black border-rose-500/40",
-        icon: "⚠",
-      };
-    return {
-      label: "komunikat",
-      cls: "bg-sky-300 text-black border-sky-400/40",
-      icon: "ℹ",
-    };
-  };
 
   return (
     <div className="space-y-4">
@@ -15133,7 +17030,8 @@ function NewsPage({ darkMode, news, openTeam, openMatch, openPlayer }) {
         </Card>
       ) : <div className="grid gap-3">
         {news.map((p) => {
-          const meta = catMeta(p.category);
+          const meta = newsCategoryMeta(p.category);
+          const CategoryIcon = meta.Icon || Megaphone;
           const isOpen = openId === p.id;
 
           return (
@@ -15151,10 +17049,13 @@ function NewsPage({ darkMode, news, openTeam, openMatch, openPlayer }) {
                 )}
               >
                 <div className="min-w-0">
-                  <div className="font-extrabold truncate">{p.title}</div>
+                  <div className="flex items-center gap-2">
+                    <NewsCategoryIcon meta={meta} darkMode={darkMode} size={16} />
+                    <div className="font-extrabold truncate">{p.title}</div>
+                  </div>
                   <div
                     className={classNames(
-                      "text-xs mt-1",
+                      "text-xs mt-1 pl-[44px]",
                       darkMode ? "text-gray-400" : "text-gray-600"
                     )}
                   >
@@ -15164,12 +17065,13 @@ function NewsPage({ darkMode, news, openTeam, openMatch, openPlayer }) {
 
                 <span
                   className={classNames(
-                    "shrink-0 px-3 py-1 rounded-full border text-xs font-black e3d-pill",
-                    meta.cls
+                    "shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-black e3d-pill",
+                    meta.pillClass
                   )}
                   title={meta.label}
                 >
-                  {meta.icon} {meta.label}
+                  <CategoryIcon size={13} strokeWidth={2.6} />
+                  {meta.label}
                 </span>
               </button>
 
@@ -16067,7 +17969,15 @@ function getTeamRecentMatches(team, matches) {
 function teamScheduleSortKey(item, mode = "asc") {
   const fallbackDate = mode === "asc" ? "9999-12-31" : "0000-01-01";
   const fallbackTime = mode === "asc" ? "23:59" : "00:00";
-  return `${item?.date || fallbackDate} ${item?.time || fallbackTime}`;
+  const date = item?.scheduleDate || item?.date || fallbackDate;
+  const time = item?.scheduleTime || item?.time || fallbackTime;
+  return `${date} ${time}`;
+}
+
+function formatTeamScore(homeGoals, awayGoals) {
+  const home = homeGoals ?? 0;
+  const away = awayGoals ?? 0;
+  return `${home} - ${away}`;
 }
 
 function getTeamScheduleEntries(team, fixtures, matches) {
@@ -16078,12 +17988,33 @@ function getTeamScheduleEntries(team, fixtures, matches) {
     .map((fixture) => {
       const playedMatch = playedById.get(fixture.id);
       const isHome = fixture.home === team;
+      const homeGoals = playedMatch?.homeGoals ?? null;
+      const awayGoals = playedMatch?.awayGoals ?? null;
+      const hasResult = homeGoals != null && awayGoals != null;
+      const teamGoals = hasResult ? (isHome ? homeGoals : awayGoals) : null;
+      const opponentGoals = hasResult ? (isHome ? awayGoals : homeGoals) : null;
+      const teamResult = !hasResult
+        ? null
+        : teamGoals > opponentGoals
+        ? "win"
+        : teamGoals < opponentGoals
+        ? "loss"
+        : "draw";
 
       return {
         ...fixture,
+        match: playedMatch || null,
         played: !!playedMatch,
-        homeGoals: playedMatch?.homeGoals ?? null,
-        awayGoals: playedMatch?.awayGoals ?? null,
+        homeGoals,
+        awayGoals,
+        status: playedMatch?.status || fixture.status,
+        videoUrl: playedMatch?.videoUrl || fixture.videoUrl || null,
+        galleryUrl: playedMatch?.galleryUrl || fixture.galleryUrl || null,
+        hasGallery: !!(playedMatch?.hasGallery || fixture.hasGallery),
+        galleryCount: playedMatch?.galleryCount || fixture.galleryCount || 0,
+        teamResult,
+        teamGoals,
+        opponentGoals,
         opponent: isHome ? fixture.away : fixture.home,
       };
     });
@@ -16094,6 +18025,11 @@ function formatShortFixtureDate(dateStr) {
   const [year, month, day] = String(dateStr).split("-");
   if (!year || !month || !day) return String(dateStr);
   return `${day}.${month}`;
+}
+
+function formatTeamScheduleDate(item) {
+  if (item?.scheduleHidden && !item?.played) return "Termin wkrótce";
+  return formatShortFixtureDate(item?.date);
 }
 
 /* =========================================
@@ -16285,7 +18221,7 @@ function UpcomingMatchDetailsInline({
               >
                 <span>{displayTeamName(m.home)}</span>
                 <span className="font-bold">
-                  {m.homeGoals}:{m.awayGoals}
+                  {formatTeamScore(m.homeGoals, m.awayGoals)}
                 </span>
                 <span>{displayTeamName(m.away)}</span>
               </div>
@@ -16661,7 +18597,7 @@ function UpcomingMatchDetails({
                       : "bg-black/5 border-black/10"
                   )}
                 >
-                  {m.homeGoals}:{m.awayGoals}
+                  {formatTeamScore(m.homeGoals, m.awayGoals)}
                 </div>
               </div>
             ))}

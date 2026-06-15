@@ -24,3 +24,8 @@ Thumbs.db
 /baza 2018-2025/
 /baza, wytyczne/
 /archiwum 2003-2017/
+
+# Lokalne pliki narzedzi i tymczasowe katalogi Supabase CLI
+.local/
+/supabase/.temp/
+/supabase/.temp.backup-*/

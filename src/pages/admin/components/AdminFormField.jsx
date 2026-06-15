@@ -3,7 +3,7 @@ import React from "react";
 export default function AdminFormField({
   label, name, type = "text", value, onChange,
   options, required, darkMode, placeholder, helpText,
-  disabled, min, max, step
+  disabled, min, max, step, includeEmptyOption = true
 }) {
   const inputClass = darkMode
     ? "bg-white/5 border-white/10 text-white placeholder-gray-500 focus:border-blue-500"
@@ -18,9 +18,9 @@ export default function AdminFormField({
       <div className="space-y-1">
         <label className={`block text-sm font-medium ${labelClass}`}>{label}{required && <span className="text-red-400 ml-1">*</span>}</label>
         <select name={name} value={value} onChange={onChange} required={required} disabled={disabled} className={base}>
-          <option value="" style={optionStyle}>Wybierz...</option>
+          {includeEmptyOption && <option value="" style={optionStyle}>Wybierz...</option>}
           {options?.map(o => (
-            <option key={o.value} value={o.value} style={optionStyle}>{o.label}</option>
+            <option key={o.value} value={o.value} style={optionStyle} disabled={!!o.disabled}>{o.label}</option>
           ))}
         </select>
       </div>

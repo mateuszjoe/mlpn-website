@@ -2,7 +2,10 @@ name: Sync World Cup Typer Matches
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    # Co 10 min. Live i tak pokazuje się w przeglądarce od razu (ESPN co ~45 s);
+    # robot utrwala oficjalny wynik i ranking. Robot jest odporny na błędy
+    # (exit 0, sticky finals), więc częste uruchomienia są bezpieczne.
+    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 permissions:

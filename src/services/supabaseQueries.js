@@ -315,6 +315,8 @@ export async function fetchAllMatches(seasonYear) {
       venue: row.venue || '',
       home: row.home_team_name,
       away: row.away_team_name,
+      homeGoals: row.status === 'live' ? (row.home_goals ?? 0) : null,
+      awayGoals: row.status === 'live' ? (row.away_goals ?? 0) : null,
       videoUrl: row.video_url || null,
       galleryUrl: row.gallery_url || null,
       homeLogoUrl: row.home_team_logo,
@@ -957,8 +959,10 @@ export async function fetchMatchDetails(matchId) {
   ]);
 
   const transformedEvents = (events || []).map(e => ({
+    id: e.id,
     type: e.event_type === 'YELLOW_CARD' ? 'YELLOW' :
           e.event_type === 'RED_CARD' ? 'RED' :
+          e.event_type === 'OWN_GOAL' ? 'GOAL' :
           e.event_type,
     teamId: e.team_id,
     team: e.teams?.name || '',
@@ -967,8 +971,10 @@ export async function fetchMatchDetails(matchId) {
     assistId: e.assist_player_id,
     assistName: e.assist?.display_name || null,
     penalty: e.is_penalty || false,
+    ownGoal: e.is_own_goal || e.event_type === 'OWN_GOAL',
     note: e.notes || '',
     minute: e.minute,
+    order: e.event_order || 0,
   }));
 
   const transformedLineups = (lineups || []).map(l => ({

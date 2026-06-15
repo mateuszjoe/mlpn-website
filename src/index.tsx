@@ -7,6 +7,8 @@ import "./styles.css";
 const rootElement = document.getElementById("root")!;
 const root = ReactDOM.createRoot(rootElement);
 
+document.documentElement.dataset.mlpnBuild = "pages-domain-recovery-2026-05-14";
+
 root.render(
   <React.StrictMode>
     <AuthProvider>

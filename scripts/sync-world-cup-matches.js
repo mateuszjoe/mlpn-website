@@ -1,9 +1,33 @@
 const fs = require("fs");
 const path = require("path");
 
+const TEAM_NAME_ALIASES = require("../src/data/teamNameAliases.json");
+
 const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
 const ESPN_DATES = process.env.WORLD_CUP_ESPN_DATES || "20260611-20260720";
 const DRY_RUN = process.argv.includes("--dry-run");
+
+// Maksymalna różnica gwizdka przy dopasowaniu meczu po nazwach (jak w typerze
+// referencyjnym: ±3 h). Chroni przed dopasowaniem do złej daty.
+const KICKOFF_MATCH_TOLERANCE_MS = 3 * 60 * 60 * 1000;
+
+// Znormalizowany klucz drużyny: PL->EN (mapa), małe litery, bez ogonków i znaków
+// nie-alfanumerycznych. Dzięki temu "Korea Płd." == "South Korea", "Turcja" ==
+// "Türkiye" itd. To jest sedno: mecze dopasowujemy PO NAZWACH, nie po kolejności.
+function normalizeName(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function teamKey(name) {
+  const raw = String(name || "").trim();
+  if (!raw) return "";
+  const aliased = TEAM_NAME_ALIASES[raw] || raw;
+  return normalizeName(aliased);
+}
 
 function readEnvFile() {
   const envPath = path.resolve(".env.local");
@@ -116,6 +140,9 @@ function normalizeEspnEvent(event) {
   const homeScore = useScores ? parseScore(home.score) : null;
   const awayScore = useScores ? parseScore(away.score) : null;
 
+  const homeTeam = normalizeEspnTeam(home);
+  const awayTeam = normalizeEspnTeam(away);
+
   return {
     espnEventId: String(event.id),
     espnCompetitionId: competition?.id ? String(competition.id) : String(event.id),
@@ -125,8 +152,10 @@ function normalizeEspnEvent(event) {
     winner: getWinner(status, home, away, homeScore, awayScore),
     homeScore,
     awayScore,
-    homeTeam: normalizeEspnTeam(home),
-    awayTeam: normalizeEspnTeam(away),
+    homeTeam,
+    awayTeam,
+    homeKey: teamKey(homeTeam.name),
+    awayKey: teamKey(awayTeam.name),
     raw: {
       id: event.id,
       uid: event.uid || null,
@@ -199,22 +228,6 @@ function compareByKickoff(a, b) {
   return String(aId).localeCompare(String(bId));
 }
 
-function toMinuteIso(value) {
-  if (!value) return "";
-  return new Date(value).toISOString().slice(0, 16);
-}
-
-function getSavedEspnId(row) {
-  const payload = row.source_payload || {};
-  return (
-    payload?.espn?.event_id ||
-    payload?.espn?.eventId ||
-    payload?.espn_event_id ||
-    payload?.espnEventId ||
-    null
-  );
-}
-
 function shouldUpdateTeamFields(row) {
   const emptyNames = new Set(["", "TBD", "DO USTALENIA", "NULL"]);
   return (
@@ -241,84 +254,114 @@ function mergeSourcePayload(row, event) {
   };
 }
 
+function kickoffDistanceMs(row, event) {
+  const dbMs = Date.parse(row.kickoff_at || "");
+  const espnMs = Date.parse(event.kickoffAt || "");
+  if (!Number.isFinite(dbMs) || !Number.isFinite(espnMs)) return Number.POSITIVE_INFINITY;
+  return Math.abs(dbMs - espnMs);
+}
+
+// Dopasowanie meczu ESPN <-> wiersz bazy PO NAZWACH drużyn (znormalizowanych,
+// PL->EN) PLUS zbliżony czas gwizdka (±3 h). To naprawia błędne dopasowania przy
+// meczach granych o tej samej godzinie (kolejka 3. fazy grupowej) i samoczynnie
+// koryguje wcześniej zapisane złe ESPN ID.
+//
+// Zwraca { row, event, swapped }, gdzie swapped=true oznacza, że ESPN ma drużyny
+// w odwrotnej kolejności niż baza (wtedy zamieniamy wynik/zwycięzcę miejscami).
 function buildUpdates(rows, events) {
-  const eventById = new Map(events.map((event) => [event.espnEventId, event]));
   const usedEventIds = new Set();
   const updates = [];
+  const unmatchedFinals = [];
 
   for (const row of rows) {
-    const savedEspnId = getSavedEspnId(row);
-    if (!savedEspnId) continue;
+    const homeKey = teamKey(row.home_team_name);
+    const awayKey = teamKey(row.away_team_name);
 
-    const event = eventById.get(String(savedEspnId));
-    if (!event) {
-      throw new Error(`Nie znalazlem w ESPN meczu ${row.match_id} z ESPN ID ${savedEspnId}.`);
+    // Faza pucharowa z zaślepkami ("Zwycięzca grupy A" itp.) nie ma realnych
+    // drużyn — nie da się dopasować po nazwie, więc czekamy (sticky).
+    if (!homeKey || !awayKey) continue;
+
+    let best = null;
+    for (const event of events) {
+      if (usedEventIds.has(event.espnEventId)) continue;
+
+      const sameOrder = event.homeKey === homeKey && event.awayKey === awayKey;
+      const swappedOrder = event.homeKey === awayKey && event.awayKey === homeKey;
+      if (!sameOrder && !swappedOrder) continue;
+
+      const distance = kickoffDistanceMs(row, event);
+      if (distance > KICKOFF_MATCH_TOLERANCE_MS) continue;
+
+      if (!best || distance < best.distance) {
+        best = { event, swapped: swappedOrder && !sameOrder, distance };
+      }
     }
 
-    updates.push({ row, event, source: "espn-id" });
-    usedEventIds.add(event.espnEventId);
+    if (!best) {
+      // Sticky finals: ESPN nie pokazuje już tego meczu (wypadł z okna), a my
+      // mamy zakończony wynik — zostawiamy go nietkniętego, nie zerujemy.
+      const isFinalInDb =
+        ["FINISHED", "AWARDED"].includes(String(row.status || "").toUpperCase()) &&
+        row.home_score !== null &&
+        row.away_score !== null;
+      if (isFinalInDb) unmatchedFinals.push(row.match_id);
+      continue;
+    }
+
+    updates.push({ row, event: best.event, swapped: best.swapped });
+    usedEventIds.add(best.event.espnEventId);
   }
 
-  const alreadyMappedRows = new Set(updates.map((update) => update.row.match_id));
-  const unmatchedRows = rows
-    .filter((row) => !alreadyMappedRows.has(row.match_id))
-    .sort(compareByKickoff);
-  const unmatchedEvents = events
-    .filter((event) => !usedEventIds.has(event.espnEventId))
-    .sort(compareByKickoff);
-
-  if (unmatchedRows.length !== unmatchedEvents.length) {
-    throw new Error(
-      `Nie moge bezpiecznie zmapowac meczow: baza=${unmatchedRows.length}, ESPN=${unmatchedEvents.length}.`
+  if (unmatchedFinals.length > 0) {
+    console.warn(
+      `[world-cup-sync] Sticky: ${unmatchedFinals.length} zakonczonych meczow nie ma juz w ESPN - zostawiam wynik bez zmian.`
     );
   }
 
-  const mismatches = [];
-  for (let index = 0; index < unmatchedRows.length; index += 1) {
-    const row = unmatchedRows[index];
-    const event = unmatchedEvents[index];
-    const dbMinute = toMinuteIso(row.kickoff_at);
-    const espnMinute = toMinuteIso(event.kickoffAt);
-
-    if (dbMinute !== espnMinute) {
-      mismatches.push(`${row.match_id}: DB ${dbMinute}, ESPN ${espnMinute}`);
-    }
-
-    updates.push({ row, event, source: "kickoff-order" });
-    usedEventIds.add(event.espnEventId);
-  }
-
-  if (mismatches.length > 0 && process.env.ALLOW_SORTED_TIME_MISMATCH !== "1") {
-    throw new Error(
-      [
-        "ESPN ma inne godziny niz baza, wiec nie ryzykuje zlego przypisania.",
-        "Pierwsze roznice:",
-        ...mismatches.slice(0, 6),
-        "Jesli to swiadoma zmiana terminarza, uruchom z ALLOW_SORTED_TIME_MISMATCH=1.",
-      ].join("\n")
+  const matchedRowIds = new Set(updates.map((update) => update.row.match_id));
+  const stillUnmatched = rows.filter(
+    (row) => !matchedRowIds.has(row.match_id) && teamKey(row.home_team_name) && teamKey(row.away_team_name)
+  );
+  if (stillUnmatched.length > 0) {
+    console.warn(
+      `[world-cup-sync] Nie dopasowano ${stillUnmatched.length} meczow z realnymi druzynami (np. inny termin) - pomijam, sprobuje przy nastepnym uruchomieniu.`
     );
   }
 
   return updates.sort((a, b) => compareByKickoff(a.row, b.row));
 }
 
-function getUpdateValues(row, event) {
+// Odwraca zwycięzcę, gdy ESPN ma drużyny w odwrotnej kolejności niż baza.
+function orientWinner(winner, swapped) {
+  if (!swapped) return winner;
+  if (winner === "HOME_TEAM") return "AWAY_TEAM";
+  if (winner === "AWAY_TEAM") return "HOME_TEAM";
+  return winner;
+}
+
+function getUpdateValues(row, event, swapped = false) {
   const updateTeams = shouldUpdateTeamFields(row);
+  // Wynik/zwycięzca zawsze względem orientacji bazy (home=home wiersza).
+  const homeScore = swapped ? event.awayScore : event.homeScore;
+  const awayScore = swapped ? event.homeScore : event.awayScore;
+  const winner = orientWinner(event.winner, swapped);
+  const espnHome = swapped ? event.awayTeam : event.homeTeam;
+  const espnAway = swapped ? event.homeTeam : event.awayTeam;
 
   return {
     matchId: row.match_id,
     kickoffAt: event.kickoffAt,
-    homeTeamId: updateTeams ? event.homeTeam.espnId : row.home_team_id,
-    homeTeamName: updateTeams ? event.homeTeam.name : row.home_team_name,
-    homeTeamCrest: updateTeams ? event.homeTeam.logo || row.home_team_crest : row.home_team_crest,
-    awayTeamId: updateTeams ? event.awayTeam.espnId : row.away_team_id,
-    awayTeamName: updateTeams ? event.awayTeam.name : row.away_team_name,
-    awayTeamCrest: updateTeams ? event.awayTeam.logo || row.away_team_crest : row.away_team_crest,
+    homeTeamId: updateTeams ? espnHome.espnId : row.home_team_id,
+    homeTeamName: updateTeams ? espnHome.name : row.home_team_name,
+    homeTeamCrest: updateTeams ? espnHome.logo || row.home_team_crest : row.home_team_crest,
+    awayTeamId: updateTeams ? espnAway.espnId : row.away_team_id,
+    awayTeamName: updateTeams ? espnAway.name : row.away_team_name,
+    awayTeamCrest: updateTeams ? espnAway.logo || row.away_team_crest : row.away_team_crest,
     status: event.status,
     duration: event.duration,
-    winner: event.winner,
-    homeScore: event.homeScore,
-    awayScore: event.awayScore,
+    winner,
+    homeScore,
+    awayScore,
     sourcePayload: mergeSourcePayload(row, event),
   };
 }
@@ -365,7 +408,7 @@ async function applyUpdates(rest, updates) {
   let changed = 0;
 
   for (const update of updates) {
-    const values = getUpdateValues(update.row, update.event);
+    const values = getUpdateValues(update.row, update.event, update.swapped);
     if (!hasMeaningfulChange(update.row, values)) continue;
 
     await rest.request(
@@ -404,20 +447,19 @@ function printSummary(events, updates) {
   const finished = events.filter((event) => event.status === "FINISHED").length;
   const live = events.filter((event) => event.status === "IN_PLAY").length;
   const scored = events.filter((event) => event.homeScore !== null && event.awayScore !== null).length;
-  const byEspnId = updates.filter((update) => update.source === "espn-id").length;
-  const byKickoffOrder = updates.filter((update) => update.source === "kickoff-order").length;
+  const swapped = updates.filter((update) => update.swapped).length;
 
   console.log(
     `[world-cup-sync] ESPN: events=${events.length}, finished=${finished}, live=${live}, scored=${scored}.`
   );
   console.log(
-    `[world-cup-sync] Mapowanie: espn-id=${byEspnId}, kickoff-order=${byKickoffOrder}.`
+    `[world-cup-sync] Dopasowano po nazwie+czasie: ${updates.length} meczow (w tym ${swapped} z odwrocona kolejnoscia gospodarz/gosc).`
   );
 
   for (const update of updates.filter((item) => item.event.status !== "TIMED").slice(0, 8)) {
-    const event = update.event;
+    const values = getUpdateValues(update.row, update.event, update.swapped);
     console.log(
-      `[world-cup-sync] ${update.row.match_id}: ${event.homeTeam.name} ${event.homeScore}-${event.awayScore} ${event.awayTeam.name} (${event.status})`
+      `[world-cup-sync] ${values.matchId}: ${values.homeTeamName} ${values.homeScore}-${values.awayScore} ${values.awayTeamName} (${values.status})`
     );
   }
 }
@@ -442,7 +484,7 @@ async function main() {
   printSummary(events, updates);
 
   if (DRY_RUN) {
-    const wouldChange = updates.filter((u) => hasMeaningfulChange(u.row, getUpdateValues(u.row, u.event))).length;
+    const wouldChange = updates.filter((u) => hasMeaningfulChange(u.row, getUpdateValues(u.row, u.event, u.swapped))).length;
     console.log(`[world-cup-sync] Dry run - baza nie zostala zmieniona. Do zmiany: ${wouldChange}.`);
     return;
   }
@@ -465,7 +507,20 @@ async function main() {
   console.log("[world-cup-sync] Gotowe.");
 }
 
+// §6.2: nie wywalamy joba. Każdy błąd (ESPN padło, brak sekretu, chwilowy błąd
+// sieci) -> log + exit 0. Dzięki temu w bazie zostaje ostatnia dobra wersja,
+// GitHub nie wysyła maili o błędach, a następne uruchomienie spróbuje ponownie.
+// Wyjątek: w trybie --dry-run zwracamy 1, żeby było widać problem lokalnie.
+process.on("unhandledRejection", (reason) => {
+  console.warn(`[world-cup-sync] unhandledRejection: ${reason?.message || reason}`);
+  process.exit(DRY_RUN ? 1 : 0);
+});
+process.on("uncaughtException", (error) => {
+  console.warn(`[world-cup-sync] uncaughtException: ${error?.message || error}`);
+  process.exit(DRY_RUN ? 1 : 0);
+});
+
 main().catch((error) => {
-  console.error(`[world-cup-sync] BLAD: ${error.message}`);
-  process.exit(1);
+  console.warn(`[world-cup-sync] Pomijam to uruchomienie: ${error.message}`);
+  process.exit(DRY_RUN ? 1 : 0);
 });

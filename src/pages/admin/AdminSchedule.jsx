@@ -1119,7 +1119,7 @@ export default function AdminSchedule({ darkMode }) {
 
   const statusLabels = {
     scheduled: "Zaplanowany",
-    live: "W trakcie",
+    live: "Rozpoczety",
     completed: "Zakonczony",
     walkover_home: "Walkower (gosp.)",
     walkover_away: "Walkower (gosc)",

@@ -117,6 +117,7 @@ export const ADMIN_SECTION_PERMISSIONS = {
   rosters: ["rosters.edit"],
   schedule: ["schedule.edit"],
   results: ["results.enter", "results.edit"],
+  "active-match": ["results.enter", "results.edit"],
   referees: ["referees.create", "referees.edit", "referees.delete"],
   news: ["news.create", "news.edit", "news.delete"],
   sponsors: ["sponsors.create", "sponsors.edit", "sponsors.delete"],

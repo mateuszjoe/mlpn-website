@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { MATCH_DATA_UPDATED_EVENT, MATCH_DATA_UPDATED_STORAGE_KEY } from '../lib/matchDataEvents';
 import {
   fetchSeasons,
   fetchSeasonConfig,
@@ -18,6 +19,9 @@ import {
   fetchSeasonSummary,
   fetchSeasonMatchGalleries,
 } from '../services/supabaseQueries';
+
+const LIVE_MATCH_REFRESH_INTERVAL_MS = 12000;
+const IDLE_MATCH_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 export function useMLPNData() {
   const [loading, setLoading] = useState(true);
@@ -314,6 +318,91 @@ export function useMLPNData() {
     setRefreshTrigger(t => t + 1);
     setContentRefreshTrigger(t => t + 1);
   }, [currentSeason]);
+
+  const refreshMatchData = useCallback(async () => {
+    if (!currentSeason) return;
+
+    try {
+      const hadLiveFixtures = fixtures.some(fixture => fixture?.status === 'live');
+      const matchData = await fetchAllMatches(currentSeason);
+      const hasLiveFixtures = matchData.fixtures.some(fixture => fixture?.status === 'live');
+      setFixtures(matchData.fixtures);
+      setMatches(matchData.matches);
+
+      if (hadLiveFixtures && !hasLiveFixtures) {
+        const [config, standingsData] = await Promise.all([
+          fetchSeasonConfig(currentSeason),
+          fetchStandings(currentSeason),
+        ]);
+
+        computeFormFromMatches(standingsData, matchData.matches);
+        enrichStandingsWithNextOpponent(standingsData, matchData.fixtures, matchData.matches);
+
+        setCurrentRound(config.currentRound);
+        setPlayedRounds(config.playedRounds);
+        setTotalRounds(config.totalRounds);
+        setTotalRoundsByLeague(config.totalRoundsByLeague || {});
+        setPlayedRoundsByLeague(config.playedRoundsByLeague || {});
+        setStandings(standingsData);
+        return;
+      }
+
+      setStandings(prev => {
+        const next = {
+          tableByLeague: Object.fromEntries(
+            Object.entries(prev.tableByLeague || {}).map(([league, rows]) => [
+              league,
+              Array.isArray(rows) ? rows.map(row => ({ ...row })) : rows,
+            ])
+          ),
+          teamStats: { ...(prev.teamStats || {}) },
+        };
+        computeFormFromMatches(next, matchData.matches);
+        enrichStandingsWithNextOpponent(next, matchData.fixtures, matchData.matches);
+        return next;
+      });
+    } catch (err) {
+      console.warn('Błąd odświeżania danych meczowych:', err);
+    }
+  }, [currentSeason, fixtures]);
+
+  useEffect(() => {
+    function refreshFromStorage(event) {
+      if (event.key === MATCH_DATA_UPDATED_STORAGE_KEY) {
+        refreshData();
+      }
+    }
+
+    window.addEventListener(MATCH_DATA_UPDATED_EVENT, refreshData);
+    window.addEventListener('storage', refreshFromStorage);
+
+    return () => {
+      window.removeEventListener(MATCH_DATA_UPDATED_EVENT, refreshData);
+      window.removeEventListener('storage', refreshFromStorage);
+    };
+  }, [refreshData]);
+
+  useEffect(() => {
+    const liveCapableSeason = seasonStatus === 'active' || seasonStatus === 'in_progress';
+    if (!currentSeason || !liveCapableSeason) return undefined;
+
+    const hasLiveFixtures = fixtures.some(fixture => fixture?.status === 'live');
+    const intervalMs = hasLiveFixtures ? LIVE_MATCH_REFRESH_INTERVAL_MS : IDLE_MATCH_REFRESH_INTERVAL_MS;
+
+    function refreshWhenVisible() {
+      if (document.visibilityState === 'visible') {
+        refreshMatchData();
+      }
+    }
+
+    const intervalId = window.setInterval(refreshWhenVisible, intervalMs);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [currentSeason, fixtures, refreshMatchData, seasonStatus]);
 
   return {
     loading,

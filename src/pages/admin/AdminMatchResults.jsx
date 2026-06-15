@@ -1,11 +1,30 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { notifyMatchDataUpdated } from "../../lib/matchDataEvents";
 import { supabase } from "../../lib/supabase";
 import AdminFormField from "./components/AdminFormField";
 import AdminAlert from "./components/AdminAlert";
 import AdminMatchGalleryManager from "./components/AdminMatchGalleryManager";
-import { Check, ChevronDown, ChevronUp, Loader2, Save, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Loader2, Plus, Save, Trash2, Users } from "lucide-react";
 
 const EMPTY_TEAM_SELECTION = { home: [], away: [] };
+const EMPTY_OWN_GOAL_DRAFTS = { home: "", away: "" };
+const MOBILE_RESULT_STEPS = [
+  { key: "home-attendance", label: "Obecnosc gospodarzy" },
+  { key: "away-attendance", label: "Obecnosc gosci" },
+  { key: "result", label: "Wynik meczu" },
+  { key: "home-stats", label: "Statystyki gospodarzy" },
+  { key: "away-stats", label: "Statystyki gosci" },
+];
+
+function isStatsStepKey(key) {
+  return key === "home-stats" || key === "away-stats";
+}
+
+function mobileResultSaveLabel(status) {
+  if (status === "live") return "Rozpocznij mecz";
+  if (status === "completed") return "Zapisz mecz";
+  return "Zapisz status";
+}
 
 function createEmptyPlayerStats() {
   return {
@@ -20,6 +39,23 @@ function uniqueIds(ids) {
   return Array.from(new Set((ids || []).filter(Boolean)));
 }
 
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
+}
+
+function isOwnGoalEvent(event) {
+  return event?.event_type === "OWN_GOAL" || (event?.event_type === "GOAL" && event?.is_own_goal === true);
+}
+
+function getOwnGoalScorerTeamId(match, scoringSide) {
+  return scoringSide === "home" ? match.away_team_id : match.home_team_id;
+}
+
+function getOwnGoalEventsForSide(match, events, scoringSide) {
+  const scorerTeamId = getOwnGoalScorerTeamId(match, scoringSide);
+  return (events || []).filter((event) => isOwnGoalEvent(event) && event.team_id === scorerTeamId);
+}
+
 function parseCount(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
@@ -29,6 +65,27 @@ function parseScoreValue(value) {
   if (value === "" || value === null || value === undefined) return null;
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? Math.max(parsed, 0) : null;
+}
+
+function formatResultEditTimestamp(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("pl-PL", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function isMissingActiveMatchDutyFeature(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    error?.code === "42P01" ||
+    error?.code === "42883" ||
+    message.includes("active_match_assignments") ||
+    message.includes("ensure_active_match_assignment")
+  );
 }
 
 function normalizeCounterInput(value, max) {
@@ -59,23 +116,37 @@ function sortPlayerIdsByRoster(ids, rosterRows) {
   });
 }
 
+function getRelatedPlayer(row, key = "players") {
+  const related = row?.[key];
+  return Array.isArray(related) ? related[0] : related;
+}
+
+function normalizeRosterSourceRow(row) {
+  const player = getRelatedPlayer(row);
+  const id = player?.id || row?.player_id || row?.id;
+  if (!id) return null;
+
+  return {
+    id,
+    name: player?.display_name || row?.display_name || row?.name || "Bez nazwy",
+    pos: player?.position || row?.position || row?.pos || "",
+    shirtNumber: row?.shirt_number ?? row?.number ?? null,
+    isCaptain: row?.is_captain ?? row?.isCaptain ?? false,
+    leagueId: row?.league_id || null,
+  };
+}
+
 function buildRosterRows(teamPlayers, lineupRows, eventRows, teamId) {
   const byId = new Map();
 
   for (const row of teamPlayers || []) {
-    const player = row.players;
-    if (!player?.id) continue;
-    byId.set(player.id, {
-      id: player.id,
-      name: player.display_name || "Bez nazwy",
-      pos: player.position || "",
-      shirtNumber: row.shirt_number ?? null,
-      isCaptain: row.is_captain || false,
-    });
+    const normalized = normalizeRosterSourceRow(row);
+    if (!normalized) continue;
+    byId.set(normalized.id, normalized);
   }
 
   for (const row of (lineupRows || []).filter((item) => item.team_id === teamId)) {
-    const player = row.players;
+    const player = getRelatedPlayer(row);
     if (!row.player_id) continue;
     const current = byId.get(row.player_id);
     byId.set(row.player_id, {
@@ -88,7 +159,7 @@ function buildRosterRows(teamPlayers, lineupRows, eventRows, teamId) {
   }
 
   for (const row of (eventRows || []).filter((item) => item.team_id === teamId)) {
-    const scorer = row.player;
+    const scorer = getRelatedPlayer(row, "player");
     if (row.player_id && scorer && !byId.has(row.player_id)) {
       byId.set(row.player_id, {
         id: row.player_id,
@@ -99,7 +170,7 @@ function buildRosterRows(teamPlayers, lineupRows, eventRows, teamId) {
       });
     }
 
-    const assist = row.assist;
+    const assist = getRelatedPlayer(row, "assist");
     if (row.assist_player_id && assist && !byId.has(row.assist_player_id)) {
       byId.set(row.assist_player_id, {
         id: row.assist_player_id,
@@ -367,7 +438,7 @@ function buildMatchEventsPayload(match, participantSelection, playerStatsForm, e
   const homeCards = buildCardEvents(match.id, match.home_team_id, participantSelection.home, playerStatsForm);
   const awayCards = buildCardEvents(match.id, match.away_team_id, participantSelection.away, playerStatsForm);
   const preservedOwnGoals = (existingEvents || [])
-    .filter((event) => event.event_type === "GOAL" && event.is_own_goal)
+    .filter((event) => isOwnGoalEvent(event))
     .map((event) => ({
       match_id: match.id,
       event_type: "GOAL",
@@ -769,11 +840,588 @@ function ParticipantStatsTable({
   );
 }
 
+function OwnGoalScoringTeamEditor({
+  title,
+  selectLabel,
+  players,
+  events,
+  draftValue,
+  onDraftChange,
+  onAdd,
+  onRemove,
+  darkMode,
+  disabled,
+}) {
+  const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
+  const playerById = new Map((players || []).map((player) => [player.id, player]));
+  const inputClass = darkMode
+    ? "border-white/10 bg-white/5 text-white"
+    : "border-gray-300 bg-white text-gray-900";
+
+  return (
+    <div className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"}`}>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-sm font-bold">{title}</div>
+          <div className={`text-xs ${textMuted}`}>{selectLabel}</div>
+        </div>
+        {events.length > 0 && (
+          <div className={`text-xs font-bold ${textMuted}`}>Samobóje: {events.length}</div>
+        )}
+      </div>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <select
+          value={draftValue}
+          onChange={(event) => onDraftChange(event.target.value)}
+          disabled={disabled || players.length === 0}
+          className={`h-11 rounded-xl border px-3 text-sm ${inputClass} disabled:opacity-60`}
+        >
+          <option value="">Wybierz zawodnika</option>
+          {players.map((player) => (
+            <option key={player.id} value={player.id}>
+              {player.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={onAdd}
+          disabled={disabled || !draftValue}
+          className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-green-500 px-4 py-2 text-sm font-bold text-black hover:bg-green-400 disabled:opacity-60"
+        >
+          <Plus size={15} />
+          Dodaj
+        </button>
+      </div>
+
+      {events.length > 0 && (
+        <div className="mt-3 grid gap-2">
+          {events.map((event, index) => {
+            const player = playerById.get(event.player_id);
+            const relatedPlayer = getRelatedPlayer(event, "player");
+            const playerName = player?.name || relatedPlayer?.display_name || "Zawodnik";
+            return (
+              <div
+                key={event.id || `${event.player_id}-${index}`}
+                className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm ${
+                  darkMode ? "border-orange-400/20 bg-orange-500/10" : "border-orange-200 bg-orange-50"
+                }`}
+              >
+                <span className="min-w-0 truncate font-semibold">{playerName}</span>
+                <button
+                  type="button"
+                  onClick={() => onRemove(event)}
+                  disabled={disabled}
+                  className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold disabled:opacity-50 ${
+                    darkMode
+                      ? "border-white/10 bg-white/5 text-gray-100 hover:bg-white/10"
+                      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <Trash2 size={12} />
+                  Usuń
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobileAttendanceStep({
+  teamKey,
+  teamName,
+  roster,
+  selectedIds,
+  onTogglePlayer,
+  onSelectAll,
+  onClear,
+  darkMode,
+  disabled,
+}) {
+  const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
+  const selected = new Set(selectedIds || []);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-lg font-bold leading-tight">{teamName}</div>
+          <div className={`text-xs mt-1 ${textMuted}`}>
+            Zaznacz zawodnikow, ktorzy wystapili w meczu.
+          </div>
+        </div>
+        <div className={`shrink-0 rounded-xl border px-3 py-2 text-sm font-bold ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-white"}`}>
+          {selected.size}/{roster.length}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => onSelectAll(teamKey)}
+          disabled={disabled || roster.length === 0}
+          className={`rounded-xl border px-3 py-3 text-sm font-semibold ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"} disabled:opacity-50`}
+        >
+          Zaznacz wszystkich
+        </button>
+        <button
+          type="button"
+          onClick={() => onClear(teamKey)}
+          disabled={disabled || selected.size === 0}
+          className={`rounded-xl border px-3 py-3 text-sm font-semibold ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"} disabled:opacity-50`}
+        >
+          Wyczysc
+        </button>
+      </div>
+
+      {roster.length === 0 ? (
+        <div className={`rounded-xl border p-4 text-sm ${darkMode ? "border-white/10 bg-black/10 text-gray-300" : "border-gray-200 bg-gray-50 text-gray-700"}`}>
+          Brak zawodnikow w kadrze tej druzyny.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {roster.map((player) => {
+            const checked = selected.has(player.id);
+            return (
+              <label
+                key={player.id}
+                className={`flex min-h-[58px] items-center gap-3 rounded-2xl border px-3 py-3 ${
+                  checked
+                    ? darkMode
+                      ? "border-emerald-400/50 bg-emerald-500/10"
+                      : "border-emerald-300 bg-emerald-50"
+                    : darkMode
+                      ? "border-white/10 bg-white/5"
+                      : "border-gray-200 bg-white"
+                } ${disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => onTogglePlayer(teamKey, player.id)}
+                  disabled={disabled}
+                  className="h-5 w-5 shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold leading-tight">
+                    {player.shirtNumber ? `${player.shirtNumber}. ` : ""}
+                    {player.isCaptain ? "(C) " : ""}
+                    {player.name}
+                  </div>
+                  <div className={`text-xs mt-1 ${textMuted}`}>{player.pos || "Bez pozycji"}</div>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobileResultStep({
+  match,
+  scoreForm,
+  setScoreForm,
+  onStatusChange,
+  onWalkoverWinnerChange,
+  refereeOptions,
+  darkMode,
+  disabled,
+}) {
+  const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
+  const inputClass = darkMode
+    ? "bg-white/5 border-white/10 text-white"
+    : "bg-white border-gray-300 text-gray-900";
+  const scoreInputsDisabled = disabled || ["scheduled", "live", "postponed", "cancelled", "unplayed"].includes(scoreForm.status);
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <div className="text-lg font-bold">Wynik spotkania</div>
+        <div className={`text-xs mt-1 ${textMuted}`}>
+          Najpierw ustaw status, potem wpisz bramki i dane organizacyjne.
+        </div>
+      </div>
+
+      <AdminFormField
+        label="Status"
+        name="status"
+        type="select"
+        value={scoreForm.status}
+        onChange={(e) => onStatusChange(e.target.value)}
+        darkMode={darkMode}
+        disabled={disabled}
+        options={[
+          { value: "scheduled", label: "Zaplanowany" },
+          { value: "live", label: "Rozpoczety" },
+          { value: "completed", label: "Zakonczony" },
+          { value: "walkover", label: "Walkower" },
+          { value: "postponed", label: "Przelozony" },
+          { value: "cancelled", label: "Odwolany" },
+          { value: "unplayed", label: "Nierozegrany" },
+        ]}
+      />
+
+      {scoreForm.status === "walkover" && (
+        <AdminFormField
+          label="Wygral walkowerem"
+          name="walkover_winner"
+          type="select"
+          value={scoreForm.walkover_winner || "home"}
+          onChange={(e) => onWalkoverWinnerChange(e.target.value)}
+          darkMode={darkMode}
+          disabled={disabled}
+          options={[
+            { value: "home", label: match.home_team_name },
+            { value: "away", label: match.away_team_name },
+          ]}
+        />
+      )}
+
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2">
+        <label className="space-y-2">
+          <span className={`block text-xs font-bold leading-tight ${textMuted}`}>{match.home_team_name}</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min="0"
+            value={scoreForm.home_goals ?? ""}
+            disabled={scoreInputsDisabled}
+            onChange={(e) => setScoreForm((prev) => ({ ...prev, home_goals: e.target.value }))}
+            className={`h-16 w-full rounded-2xl border px-3 text-center text-3xl font-black ${inputClass} disabled:opacity-55`}
+          />
+        </label>
+        <div className={`pb-4 text-2xl font-black ${textMuted}`}>:</div>
+        <label className="space-y-2">
+          <span className={`block text-xs font-bold leading-tight text-right ${textMuted}`}>{match.away_team_name}</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min="0"
+            value={scoreForm.away_goals ?? ""}
+            disabled={scoreInputsDisabled}
+            onChange={(e) => setScoreForm((prev) => ({ ...prev, away_goals: e.target.value }))}
+            className={`h-16 w-full rounded-2xl border px-3 text-center text-3xl font-black ${inputClass} disabled:opacity-55`}
+          />
+        </label>
+      </div>
+
+      <AdminFormField
+        label="Sedzia"
+        name="referee_id"
+        type="select"
+        value={scoreForm.referee_id || ""}
+        onChange={(e) => setScoreForm((prev) => ({ ...prev, referee_id: e.target.value }))}
+        darkMode={darkMode}
+        disabled={disabled}
+        options={refereeOptions}
+      />
+
+      <AdminFormField
+        label="Link do nagrania"
+        name="video_url"
+        type="url"
+        value={scoreForm.video_url || ""}
+        onChange={(e) => setScoreForm((prev) => ({ ...prev, video_url: e.target.value }))}
+        darkMode={darkMode}
+        disabled={disabled}
+        placeholder="https://..."
+      />
+    </div>
+  );
+}
+
+function MobileStatsStep({
+  title,
+  score,
+  totals,
+  unassignedGoals,
+  players,
+  ownGoalEditor,
+  showOwnGoalEditor,
+  playerStatsForm,
+  mvpPlayerId,
+  onToggleMvp,
+  onStatChange,
+  darkMode,
+  disabled,
+  textMuted,
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-lg font-bold leading-tight">{title}</div>
+          <div className={`text-xs mt-1 ${textMuted}`}>
+            Wpisz gole, asysty oraz kartki tylko przy zawodnikach z dorobkiem.
+          </div>
+        </div>
+        <div className={`shrink-0 rounded-xl border px-3 py-2 text-xs font-bold ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-white"}`}>
+          Gole {totals.goals}/{score ?? "-"}
+        </div>
+      </div>
+
+      {unassignedGoals > 0 && (
+        <div className={`rounded-xl border px-3 py-2 text-sm ${darkMode ? "border-blue-400/20 bg-blue-500/10 text-blue-200" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
+          Nierozpisane gole: {unassignedGoals}. To jest dozwolone - zapisze sie wynik meczu, a statystyki tylko wpisanym zawodnikom.
+        </div>
+      )}
+
+      {showOwnGoalEditor ? ownGoalEditor : null}
+
+      <ParticipantStatsTable
+        title={title}
+        players={players}
+        playerStatsForm={playerStatsForm}
+        mvpPlayerId={mvpPlayerId}
+        onToggleMvp={onToggleMvp}
+        onStatChange={onStatChange}
+        darkMode={darkMode}
+        disabled={disabled}
+      />
+    </div>
+  );
+}
+
+function MobileMatchResultWizard({
+  match,
+  darkMode,
+  step,
+  onStepChange,
+  scoreForm,
+  setScoreForm,
+  onStatusChange,
+  onWalkoverWinnerChange,
+  refereeOptions,
+  homeRoster,
+  awayRoster,
+  participantSelection,
+  onToggleParticipant,
+  onSelectAllParticipants,
+  onClearParticipants,
+  homeSelectedRows,
+  awaySelectedRows,
+  playerStatsForm,
+  mvpPlayerId,
+  onToggleMvp,
+  onStatChange,
+  homeTotals,
+  awayTotals,
+  homeUnassignedGoals,
+  awayUnassignedGoals,
+  homeOwnGoalEditor,
+  awayOwnGoalEditor,
+  onSave,
+  saving,
+}) {
+  const wizardTopRef = useRef(null);
+  const textMuted = darkMode ? "text-gray-400" : "text-gray-500";
+  const currentIndex = Math.max(0, MOBILE_RESULT_STEPS.findIndex((item) => item.key === step));
+  const currentStep = MOBILE_RESULT_STEPS[currentIndex] || MOBILE_RESULT_STEPS[0];
+  const isLast = currentIndex === MOBILE_RESULT_STEPS.length - 1;
+  const statsAllowed = scoreForm.status === "completed";
+  const savesFromCurrentStep = isLast || (currentStep.key === "result" && !statsAllowed);
+  const statsDisabled = saving || !statsAllowed;
+
+  const scrollToWizardTop = () => {
+    window.requestAnimationFrame(() => {
+      wizardTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  useEffect(() => {
+    if (!statsAllowed && isStatsStepKey(currentStep.key)) {
+      onStepChange("result");
+      scrollToWizardTop();
+    }
+  }, [currentStep.key, onStepChange, statsAllowed]);
+
+  const goTo = (index) => {
+    const next = MOBILE_RESULT_STEPS[index];
+    if (!next) return;
+    if (!statsAllowed && isStatsStepKey(next.key)) {
+      onStepChange("result");
+      scrollToWizardTop();
+      return;
+    }
+    onStepChange(next.key);
+    scrollToWizardTop();
+  };
+
+  const nextLabels = {
+    "home-attendance": "Dalej: obecnosc gosci",
+    "away-attendance": "Dalej: wynik",
+    result: "Dalej: statystyki gospodarzy",
+    "home-stats": "Dalej: statystyki gosci",
+  };
+
+  return (
+    <div
+      ref={wizardTopRef}
+      style={{ scrollMarginTop: 92 }}
+      className={`rounded-2xl border p-4 space-y-4 ${darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"}`}
+    >
+      <div>
+        <div className={`text-xs font-bold uppercase tracking-[0.16em] ${textMuted}`}>
+          Krok {currentIndex + 1} z {MOBILE_RESULT_STEPS.length}
+        </div>
+        <div className="mt-1 text-xl font-black leading-tight">{currentStep.label}</div>
+        <div className="mt-3 grid grid-cols-5 gap-1.5">
+          {MOBILE_RESULT_STEPS.map((item, index) => {
+            const blocked = isStatsStepKey(item.key) && !statsAllowed;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => goTo(index)}
+                disabled={saving || blocked}
+                className={`h-2 rounded-full transition-colors disabled:cursor-not-allowed ${
+                  blocked
+                    ? darkMode
+                      ? "bg-white/10 opacity-40"
+                      : "bg-gray-200 opacity-70"
+                    : index <= currentIndex
+                      ? "bg-emerald-500"
+                      : darkMode
+                        ? "bg-white/15"
+                        : "bg-gray-300"
+                }`}
+                aria-label={item.label}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {currentStep.key === "home-attendance" && (
+        <MobileAttendanceStep
+          teamKey="home"
+          teamName={match.home_team_name}
+          roster={homeRoster}
+          selectedIds={participantSelection.home}
+          onTogglePlayer={onToggleParticipant}
+          onSelectAll={onSelectAllParticipants}
+          onClear={onClearParticipants}
+          darkMode={darkMode}
+          disabled={saving}
+        />
+      )}
+
+      {currentStep.key === "away-attendance" && (
+        <MobileAttendanceStep
+          teamKey="away"
+          teamName={match.away_team_name}
+          roster={awayRoster}
+          selectedIds={participantSelection.away}
+          onTogglePlayer={onToggleParticipant}
+          onSelectAll={onSelectAllParticipants}
+          onClear={onClearParticipants}
+          darkMode={darkMode}
+          disabled={saving}
+        />
+      )}
+
+      {currentStep.key === "result" && (
+        <MobileResultStep
+          match={match}
+          scoreForm={scoreForm}
+          setScoreForm={setScoreForm}
+          onStatusChange={onStatusChange}
+          onWalkoverWinnerChange={onWalkoverWinnerChange}
+          refereeOptions={refereeOptions}
+          darkMode={darkMode}
+          disabled={saving}
+        />
+      )}
+
+      {currentStep.key === "home-stats" && (
+        <MobileStatsStep
+          title={match.home_team_name}
+          score={parseScoreValue(scoreForm.home_goals)}
+          totals={homeTotals}
+          unassignedGoals={homeUnassignedGoals}
+          players={homeSelectedRows}
+          ownGoalEditor={homeOwnGoalEditor}
+          showOwnGoalEditor={statsAllowed}
+          playerStatsForm={playerStatsForm}
+          mvpPlayerId={mvpPlayerId}
+          onToggleMvp={onToggleMvp}
+          onStatChange={onStatChange}
+          darkMode={darkMode}
+          disabled={statsDisabled}
+          textMuted={textMuted}
+        />
+      )}
+
+      {currentStep.key === "away-stats" && (
+        <MobileStatsStep
+          title={match.away_team_name}
+          score={parseScoreValue(scoreForm.away_goals)}
+          totals={awayTotals}
+          unassignedGoals={awayUnassignedGoals}
+          players={awaySelectedRows}
+          ownGoalEditor={awayOwnGoalEditor}
+          showOwnGoalEditor={statsAllowed}
+          playerStatsForm={playerStatsForm}
+          mvpPlayerId={mvpPlayerId}
+          onToggleMvp={onToggleMvp}
+          onStatChange={onStatChange}
+          darkMode={darkMode}
+          disabled={statsDisabled}
+          textMuted={textMuted}
+        />
+      )}
+
+      {scoreForm.status !== "completed" && (currentStep.key === "home-stats" || currentStep.key === "away-stats") && (
+        <div className={`rounded-xl border px-3 py-2 text-sm ${darkMode ? "border-blue-400/20 bg-blue-500/10 text-blue-200" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
+          Statystyki zawodnikow sa aktywne tylko dla meczu ze statusem "Zakonczony".
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-2 pt-1">
+        <button
+          type="button"
+          onClick={() => goTo(currentIndex - 1)}
+          disabled={saving || currentIndex === 0}
+          className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold ${
+            darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-white"
+          } disabled:opacity-45`}
+        >
+          <ArrowLeft size={16} />
+          Wstecz
+        </button>
+
+        <button
+          type="button"
+          onClick={savesFromCurrentStep ? onSave : () => goTo(currentIndex + 1)}
+          disabled={saving}
+          className="flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-green-500 px-3 py-3 text-sm font-bold text-black hover:bg-green-400 disabled:opacity-60"
+        >
+          {saving ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : savesFromCurrentStep ? (
+            <Save size={16} />
+          ) : (
+            <ArrowRight size={16} />
+          )}
+          {savesFromCurrentStep ? mobileResultSaveLabel(scoreForm.status) : nextLabels[currentStep.key] || "Dalej"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminMatchResults({ darkMode }) {
   const [seasons, setSeasons] = useState([]);
   const [leagues, setLeagues] = useState([]);
   const [referees, setReferees] = useState([]);
   const [matches, setMatches] = useState([]);
+  const [resultEditsByMatchId, setResultEditsByMatchId] = useState({});
   const [availableRounds, setAvailableRounds] = useState([]);
   const [selectedSeason, setSelectedSeason] = useState("");
   const [selectedLeague, setSelectedLeague] = useState("");
@@ -786,6 +1434,8 @@ export default function AdminMatchResults({ darkMode }) {
   const [participantSelection, setParticipantSelection] = useState(EMPTY_TEAM_SELECTION);
   const [participantDrafts, setParticipantDrafts] = useState(EMPTY_TEAM_SELECTION);
   const [pickerOpen, setPickerOpen] = useState(null);
+  const [mobileWizardStep, setMobileWizardStep] = useState(MOBILE_RESULT_STEPS[0].key);
+  const [ownGoalDrafts, setOwnGoalDrafts] = useState(EMPTY_OWN_GOAL_DRAFTS);
   const [playerStatsForm, setPlayerStatsForm] = useState({});
   const [scoreForm, setScoreForm] = useState({});
   const [mvpPlayerId, setMvpPlayerId] = useState("");
@@ -793,6 +1443,7 @@ export default function AdminMatchResults({ darkMode }) {
   const [loadingExpandedMatch, setLoadingExpandedMatch] = useState(false);
   const [savingMatchData, setSavingMatchData] = useState(false);
   const [refereesTableMissing, setRefereesTableMissing] = useState(false);
+  const [resultEditsTableMissing, setResultEditsTableMissing] = useState(false);
   const [alert, setAlert] = useState({ type: null, message: null });
 
   const card = darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-200";
@@ -806,6 +1457,8 @@ export default function AdminMatchResults({ darkMode }) {
     setParticipantSelection(EMPTY_TEAM_SELECTION);
     setParticipantDrafts(EMPTY_TEAM_SELECTION);
     setPickerOpen(null);
+    setMobileWizardStep(MOBILE_RESULT_STEPS[0].key);
+    setOwnGoalDrafts(EMPTY_OWN_GOAL_DRAFTS);
     setPlayerStatsForm({});
     setMvpPlayerId("");
   }, []);
@@ -851,6 +1504,46 @@ export default function AdminMatchResults({ darkMode }) {
     setLoading(false);
   }, []);
 
+  const loadResultEdits = useCallback(async (matchRows) => {
+    const matchIds = uniqueIds((matchRows || []).map((match) => match.id));
+
+    if (matchIds.length === 0) {
+      setResultEditsByMatchId({});
+      return {};
+    }
+
+    const { data, error } = await supabase
+      .from("match_result_edits")
+      .select("match_id, editor_name_snapshot, edited_at")
+      .in("match_id", matchIds);
+
+    if (error) {
+      const message = String(error?.message || "");
+      const lowerMessage = message.toLowerCase();
+      const tableMissing =
+        lowerMessage.includes("match_result_edits") ||
+        (lowerMessage.includes("relation") && lowerMessage.includes("does not exist"));
+
+      setResultEditsByMatchId({});
+      setResultEditsTableMissing(tableMissing);
+
+      if (!tableMissing) {
+        console.warn("Match result edits fetch:", message);
+      }
+
+      return {};
+    }
+
+    const nextMap = {};
+    for (const row of data || []) {
+      if (row.match_id) nextMap[row.match_id] = row;
+    }
+
+    setResultEditsTableMissing(false);
+    setResultEditsByMatchId(nextMap);
+    return nextMap;
+  }, []);
+
   const loadMatches = useCallback(async () => {
     if (!selectedSeason || !selectedLeague) return [];
 
@@ -876,8 +1569,9 @@ export default function AdminMatchResults({ darkMode }) {
 
     setAvailableRounds(rounds);
     setMatches(filtered);
+    await loadResultEdits(filtered);
     return allRows;
-  }, [selectedSeason, selectedLeague, selectedRound]);
+  }, [selectedSeason, selectedLeague, selectedRound, loadResultEdits]);
 
   const selectedSeasonObj = useMemo(
     () => seasons.find((season) => season.id === selectedSeason),
@@ -928,7 +1622,7 @@ export default function AdminMatchResults({ darkMode }) {
     status === "postponed" ? "Przelozony" :
     status === "cancelled" ? "Odwolany" :
     status === "unplayed" ? "Nierozegrany" :
-    status === "live" ? "W trakcie" :
+    status === "live" ? "Rozpoczety" :
     "Zaplanowany"
   );
 
@@ -944,6 +1638,7 @@ export default function AdminMatchResults({ darkMode }) {
     setExpandedMatch(match.id);
     setLoadingExpandedMatch(true);
     setPickerOpen(null);
+    setMobileWizardStep(MOBILE_RESULT_STEPS[0].key);
 
     const rawStatus = match.status || "scheduled";
     const isWalkover = rawStatus === "walkover_home" || rawStatus === "walkover_away";
@@ -971,14 +1666,12 @@ export default function AdminMatchResults({ darkMode }) {
           .select("player_id, is_captain, shirt_number, players(id, display_name, position)")
           .eq("team_id", match.home_team_id)
           .eq("season_id", match.season_id)
-          .eq("league_id", match.league_id)
           .is("left_date", null),
         supabase
           .from("team_players")
           .select("player_id, is_captain, shirt_number, players(id, display_name, position)")
           .eq("team_id", match.away_team_id)
           .eq("season_id", match.season_id)
-          .eq("league_id", match.league_id)
           .is("left_date", null),
         supabase
           .from("match_lineups")
@@ -1071,9 +1764,9 @@ export default function AdminMatchResults({ darkMode }) {
     });
   }
 
-  function applyParticipantSelection(teamKey) {
+  function commitParticipantSelection(teamKey, rawPlayerIds) {
     const roster = teamKey === "home" ? homeRoster : awayRoster;
-    const nextTeamIds = sortPlayerIdsByRoster(participantDrafts[teamKey], roster);
+    const nextTeamIds = sortPlayerIdsByRoster(rawPlayerIds || [], roster);
     const nextSelection = {
       ...participantSelection,
       [teamKey]: nextTeamIds,
@@ -1092,7 +1785,83 @@ export default function AdminMatchResults({ darkMode }) {
     if (mvpPlayerId && !nextSelectedIds.includes(mvpPlayerId)) {
       setMvpPlayerId("");
     }
+  }
+
+  function applyParticipantSelection(teamKey) {
+    commitParticipantSelection(teamKey, participantDrafts[teamKey]);
     setPickerOpen(null);
+  }
+
+  function toggleParticipantSelection(teamKey, playerId) {
+    const current = new Set(participantSelection[teamKey] || []);
+    if (current.has(playerId)) current.delete(playerId);
+    else current.add(playerId);
+    commitParticipantSelection(teamKey, Array.from(current));
+  }
+
+  function selectAllParticipants(teamKey) {
+    const roster = teamKey === "home" ? homeRoster : awayRoster;
+    commitParticipantSelection(teamKey, roster.map((player) => player.id));
+  }
+
+  function clearParticipants(teamKey) {
+    commitParticipantSelection(teamKey, []);
+  }
+
+  function setOwnGoalDraft(scoringSide, playerId) {
+    setOwnGoalDrafts((prev) => ({
+      ...prev,
+      [scoringSide]: playerId,
+    }));
+  }
+
+  function ensureParticipant(teamKey, playerId) {
+    const roster = teamKey === "home" ? homeRoster : awayRoster;
+    setParticipantSelection((prev) => ({
+      ...prev,
+      [teamKey]: sortPlayerIdsByRoster(uniqueIds([...(prev[teamKey] || []), playerId]), roster),
+    }));
+    setParticipantDrafts((prev) => ({
+      ...prev,
+      [teamKey]: sortPlayerIdsByRoster(uniqueIds([...(prev[teamKey] || []), playerId]), roster),
+    }));
+    setPlayerStatsForm((prev) => ({
+      ...prev,
+      [playerId]: prev[playerId] || createEmptyPlayerStats(),
+    }));
+  }
+
+  function addOwnGoal(match, scoringSide) {
+    const playerId = ownGoalDrafts[scoringSide];
+    if (!match?.id || !playerId) return;
+
+    const scorerTeamKey = scoringSide === "home" ? "away" : "home";
+    const scorerTeamId = getOwnGoalScorerTeamId(match, scoringSide);
+    const roster = scorerTeamKey === "home" ? homeRoster : awayRoster;
+    const player = roster.find((item) => item.id === playerId);
+
+    setMatchEvents((prev) => [
+      ...prev,
+      {
+        id: `draft-own-goal-${Date.now()}-${playerId}`,
+        event_type: "GOAL",
+        team_id: scorerTeamId,
+        player_id: playerId,
+        assist_player_id: null,
+        minute: null,
+        event_order: (prev || []).length + 1,
+        is_penalty: false,
+        is_own_goal: true,
+        notes: null,
+        player: player ? { id: player.id, display_name: player.name, position: player.pos || "" } : null,
+      },
+    ]);
+    ensureParticipant(scorerTeamKey, playerId);
+    setOwnGoalDraft(scoringSide, "");
+  }
+
+  function removeOwnGoal(eventToRemove) {
+    setMatchEvents((prev) => (prev || []).filter((event) => event !== eventToRemove));
   }
 
   function updatePlayerStat(playerId, field, value) {
@@ -1121,6 +1890,32 @@ export default function AdminMatchResults({ darkMode }) {
 
   function toggleMvp(playerId) {
     setMvpPlayerId((current) => (current === playerId ? "" : playerId));
+  }
+
+  function updateScoreStatus(nextStatus) {
+    setScoreForm((prev) => {
+      const next = { ...prev, status: nextStatus };
+      if (nextStatus === "walkover") {
+        const winner = next.walkover_winner || "home";
+        next.walkover_winner = winner;
+        next.home_goals = winner === "home" ? 3 : 0;
+        next.away_goals = winner === "away" ? 3 : 0;
+      }
+      if (["scheduled", "live", "postponed", "cancelled", "unplayed"].includes(nextStatus)) {
+        next.home_goals = "";
+        next.away_goals = "";
+      }
+      return next;
+    });
+  }
+
+  function updateWalkoverWinner(winner) {
+    setScoreForm((prev) => ({
+      ...prev,
+      walkover_winner: winner,
+      home_goals: winner === "home" ? 3 : 0,
+      away_goals: winner === "away" ? 3 : 0,
+    }));
   }
 
   async function saveMatch(match) {
@@ -1152,6 +1947,14 @@ export default function AdminMatchResults({ darkMode }) {
       let eventsPayload = [];
       let nextMvpPlayerId = null;
 
+      if (resolvedStatus === "live") {
+        if (participantSelection.home.length === 0 || participantSelection.away.length === 0) {
+          throw new Error("Aby rozpoczac mecz, zaznacz obecnosc zawodnikow obu druzyn.");
+        }
+
+        lineupsPayload = buildLineupsPayload(match, participantSelection, homeRoster, awayRoster);
+      }
+
       if (resolvedStatus === "completed") {
         if (homeGoals === null || awayGoals === null) {
           throw new Error("Przy zakonczonym meczu wpisz wynik dla obu druzyn.");
@@ -1168,10 +1971,10 @@ export default function AdminMatchResults({ darkMode }) {
         const homeTotals = teamTotals(participantSelection.home, playerStatsForm);
         const awayTotals = teamTotals(participantSelection.away, playerStatsForm);
         const preservedHomeOwnGoals = (matchEvents || []).filter(
-          (event) => event.event_type === "GOAL" && event.is_own_goal && event.team_id === match.away_team_id
+          (event) => isOwnGoalEvent(event) && event.team_id === match.away_team_id
         ).length;
         const preservedAwayOwnGoals = (matchEvents || []).filter(
-          (event) => event.event_type === "GOAL" && event.is_own_goal && event.team_id === match.home_team_id
+          (event) => isOwnGoalEvent(event) && event.team_id === match.home_team_id
         ).length;
 
         if (hasSelectedParticipants) {
@@ -1231,8 +2034,16 @@ export default function AdminMatchResults({ darkMode }) {
 
       if (updateError) throw updateError;
 
-      const existingEventIds = (matchEvents || []).map((event) => event.id).filter(Boolean);
-      if (existingEventIds.length > 0) {
+      if (resolvedStatus === "live") {
+        const { error: assignmentError } = await supabase.rpc("ensure_active_match_assignment", { p_match_id: match.id });
+        if (assignmentError && !isMissingActiveMatchDutyFeature(assignmentError)) {
+          console.warn("Active match assignment:", assignmentError.message);
+        }
+      }
+
+      const shouldReplaceEvents = resolvedStatus !== "live";
+      const existingEventIds = (matchEvents || []).map((event) => event.id).filter(isUuid);
+      if (shouldReplaceEvents && existingEventIds.length > 0) {
         const { error: suspensionDeleteError } = await supabase
           .from("suspensions")
           .delete()
@@ -1240,11 +2051,13 @@ export default function AdminMatchResults({ darkMode }) {
         if (suspensionDeleteError) throw suspensionDeleteError;
       }
 
-      const { error: deleteEventsError } = await supabase
-        .from("match_events")
-        .delete()
-        .eq("match_id", match.id);
-      if (deleteEventsError) throw deleteEventsError;
+      if (shouldReplaceEvents) {
+        const { error: deleteEventsError } = await supabase
+          .from("match_events")
+          .delete()
+          .eq("match_id", match.id);
+        if (deleteEventsError) throw deleteEventsError;
+      }
 
       const { error: deleteLineupsError } = await supabase
         .from("match_lineups")
@@ -1259,12 +2072,23 @@ export default function AdminMatchResults({ darkMode }) {
         if (insertLineupsError) throw insertLineupsError;
       }
 
-      if (eventsPayload.length > 0) {
+      if (shouldReplaceEvents && eventsPayload.length > 0) {
         const { error: insertEventsError } = await supabase
           .from("match_events")
           .insert(eventsPayload);
         if (insertEventsError) throw insertEventsError;
       }
+
+      const { error: auditError } = await supabase.rpc("touch_match_result_edit", { p_match_id: match.id });
+      if (auditError) {
+        console.warn("Match result audit update:", auditError.message);
+      }
+
+      notifyMatchDataUpdated({
+        matchId: match.id,
+        source: "admin-match-results-save",
+        status: resolvedStatus,
+      });
 
       setAlert({ type: "success", message: "Mecz zostal zapisany." });
       const allRows = await loadMatches();
@@ -1337,6 +2161,12 @@ export default function AdminMatchResults({ darkMode }) {
         </div>
       )}
 
+      {resultEditsTableMissing && (
+        <div className={`rounded-xl border p-3 text-sm ${darkMode ? "border-amber-400/30 bg-amber-500/10 text-amber-200" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+          Brakuje historii edycji wynikow w bazie. W Supabase uruchom plik <code className="font-mono">supabase/migrations/020_match_result_edits.sql</code>.
+        </div>
+      )}
+
       {matches.length === 0 ? (
         <div className={`rounded-2xl border p-8 text-center ${card}`}>
           <p className={textMuted}>Brak meczow. Wygeneruj terminarz w zakladce "Terminarz".</p>
@@ -1350,10 +2180,43 @@ export default function AdminMatchResults({ darkMode }) {
               expandedMatch === match.id ? parseScoreValue(scoreForm.home_goals) : parseScoreValue(match.home_goals);
             const currentAwayScore =
               expandedMatch === match.id ? parseScoreValue(scoreForm.away_goals) : parseScoreValue(match.away_goals);
+            const homeOwnGoalEvents = getOwnGoalEventsForSide(match, matchEvents, "home");
+            const awayOwnGoalEvents = getOwnGoalEventsForSide(match, matchEvents, "away");
             const homeUnassignedGoals =
-              currentHomeScore === null ? 0 : Math.max(currentHomeScore - homeTotals.goals, 0);
+              currentHomeScore === null ? 0 : Math.max(currentHomeScore - homeTotals.goals - homeOwnGoalEvents.length, 0);
             const awayUnassignedGoals =
-              currentAwayScore === null ? 0 : Math.max(currentAwayScore - awayTotals.goals, 0);
+              currentAwayScore === null ? 0 : Math.max(currentAwayScore - awayTotals.goals - awayOwnGoalEvents.length, 0);
+            const homeOwnGoalEditor = (
+              <OwnGoalScoringTeamEditor
+                title={`Gole samobójcze dla ${match.home_team_name}`}
+                selectLabel={`Wybierz zawodnika drużyny ${match.away_team_name}`}
+                players={awayRoster}
+                events={homeOwnGoalEvents}
+                draftValue={ownGoalDrafts.home}
+                onDraftChange={(playerId) => setOwnGoalDraft("home", playerId)}
+                onAdd={() => addOwnGoal(match, "home")}
+                onRemove={removeOwnGoal}
+                darkMode={darkMode}
+                disabled={!isEditable || savingMatchData || scoreForm.status !== "completed"}
+              />
+            );
+            const awayOwnGoalEditor = (
+              <OwnGoalScoringTeamEditor
+                title={`Gole samobójcze dla ${match.away_team_name}`}
+                selectLabel={`Wybierz zawodnika drużyny ${match.home_team_name}`}
+                players={homeRoster}
+                events={awayOwnGoalEvents}
+                draftValue={ownGoalDrafts.away}
+                onDraftChange={(playerId) => setOwnGoalDraft("away", playerId)}
+                onAdd={() => addOwnGoal(match, "away")}
+                onRemove={removeOwnGoal}
+                darkMode={darkMode}
+                disabled={!isEditable || savingMatchData || scoreForm.status !== "completed"}
+              />
+            );
+            const resultEditInfo = resultEditsByMatchId[match.id];
+            const resultEditorName = resultEditInfo?.editor_name_snapshot || "brak danych";
+            const resultEditTime = formatResultEditTimestamp(resultEditInfo?.edited_at);
 
             return (
               <div key={match.id} className={`rounded-2xl border overflow-hidden ${card}`}>
@@ -1379,6 +2242,7 @@ export default function AdminMatchResults({ darkMode }) {
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                       match.status === "completed" ? "bg-green-500/20 text-green-400" :
                       String(match.status || "").startsWith("walkover") ? "bg-orange-500/20 text-orange-400" :
+                      match.status === "live" ? "bg-emerald-500/20 text-emerald-300" :
                       match.status === "postponed" ? "bg-blue-500/20 text-blue-400" :
                       match.status === "cancelled" ? "bg-red-500/20 text-red-400" :
                       match.status === "unplayed" ? "bg-slate-500/20 text-slate-300" :
@@ -1417,6 +2281,7 @@ export default function AdminMatchResults({ darkMode }) {
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                         match.status === "completed" ? "bg-green-500/20 text-green-400" :
                         String(match.status || "").startsWith("walkover") ? "bg-orange-500/20 text-orange-400" :
+                        match.status === "live" ? "bg-emerald-500/20 text-emerald-300" :
                         match.status === "postponed" ? "bg-blue-500/20 text-blue-400" :
                         match.status === "cancelled" ? "bg-red-500/20 text-red-400" :
                         match.status === "unplayed" ? "bg-slate-500/20 text-slate-300" :
@@ -1438,7 +2303,42 @@ export default function AdminMatchResults({ darkMode }) {
                     ) : (
                       <>
                         {isEditable ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-7 gap-3 items-end">
+                          <>
+                            <div className="md:hidden">
+                              <MobileMatchResultWizard
+                                match={match}
+                                darkMode={darkMode}
+                                step={mobileWizardStep}
+                                onStepChange={setMobileWizardStep}
+                                scoreForm={scoreForm}
+                                setScoreForm={setScoreForm}
+                                onStatusChange={updateScoreStatus}
+                                onWalkoverWinnerChange={updateWalkoverWinner}
+                                refereeOptions={refereeOptions}
+                                homeRoster={homeRoster}
+                                awayRoster={awayRoster}
+                                participantSelection={participantSelection}
+                                onToggleParticipant={toggleParticipantSelection}
+                                onSelectAllParticipants={selectAllParticipants}
+                                onClearParticipants={clearParticipants}
+                                homeSelectedRows={homeSelectedRows}
+                                awaySelectedRows={awaySelectedRows}
+                                playerStatsForm={playerStatsForm}
+                                mvpPlayerId={mvpPlayerId}
+                                onToggleMvp={toggleMvp}
+                                onStatChange={updatePlayerStat}
+                                homeTotals={homeTotals}
+                                awayTotals={awayTotals}
+                                homeUnassignedGoals={homeUnassignedGoals}
+                                awayUnassignedGoals={awayUnassignedGoals}
+                                homeOwnGoalEditor={homeOwnGoalEditor}
+                                awayOwnGoalEditor={awayOwnGoalEditor}
+                                onSave={() => saveMatch(match)}
+                                saving={savingMatchData}
+                              />
+                            </div>
+
+                          <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-7 gap-3 items-end">
                             <AdminFormField
                               label={`Bramki ${match.home_team_abbr || match.home_team_name}`}
                               name="home_goals"
@@ -1447,6 +2347,7 @@ export default function AdminMatchResults({ darkMode }) {
                               onChange={(e) => setScoreForm((prev) => ({ ...prev, home_goals: e.target.value }))}
                               darkMode={darkMode}
                               min={0}
+                              disabled={savingMatchData || ["scheduled", "live", "postponed", "cancelled", "unplayed"].includes(scoreForm.status)}
                             />
                             <AdminFormField
                               label={`Bramki ${match.away_team_abbr || match.away_team_name}`}
@@ -1456,32 +2357,18 @@ export default function AdminMatchResults({ darkMode }) {
                               onChange={(e) => setScoreForm((prev) => ({ ...prev, away_goals: e.target.value }))}
                               darkMode={darkMode}
                               min={0}
+                              disabled={savingMatchData || ["scheduled", "live", "postponed", "cancelled", "unplayed"].includes(scoreForm.status)}
                             />
                             <AdminFormField
                               label="Status"
                               name="status"
                               type="select"
                               value={scoreForm.status}
-                              onChange={(e) => {
-                                const nextStatus = e.target.value;
-                                setScoreForm((prev) => {
-                                  const next = { ...prev, status: nextStatus };
-                                  if (nextStatus === "walkover") {
-                                    const winner = next.walkover_winner || "home";
-                                    next.walkover_winner = winner;
-                                    next.home_goals = winner === "home" ? 3 : 0;
-                                    next.away_goals = winner === "away" ? 3 : 0;
-                                  }
-                                  if (["scheduled", "postponed", "cancelled", "unplayed"].includes(nextStatus)) {
-                                    next.home_goals = "";
-                                    next.away_goals = "";
-                                  }
-                                  return next;
-                                });
-                              }}
+                              onChange={(e) => updateScoreStatus(e.target.value)}
                               darkMode={darkMode}
                               options={[
                                 { value: "scheduled", label: "Zaplanowany" },
+                                { value: "live", label: "Rozpoczety" },
                                 { value: "completed", label: "Zakonczony" },
                                 { value: "walkover", label: "Walkower" },
                                 { value: "postponed", label: "Przelozony" },
@@ -1495,15 +2382,7 @@ export default function AdminMatchResults({ darkMode }) {
                                 name="walkover_winner"
                                 type="select"
                                 value={scoreForm.walkover_winner || "home"}
-                                onChange={(e) => {
-                                  const winner = e.target.value;
-                                  setScoreForm((prev) => ({
-                                    ...prev,
-                                    walkover_winner: winner,
-                                    home_goals: winner === "home" ? 3 : 0,
-                                    away_goals: winner === "away" ? 3 : 0,
-                                  }));
-                                }}
+                                onChange={(e) => updateWalkoverWinner(e.target.value)}
                                 darkMode={darkMode}
                                 options={[
                                   { value: "home", label: match.home_team_name },
@@ -1542,6 +2421,7 @@ export default function AdminMatchResults({ darkMode }) {
                               Zapisz mecz
                             </button>
                           </div>
+                          </>
                         ) : (
                           <div className={`flex items-center gap-4 text-sm py-1 ${textMuted}`}>
                             <span>
@@ -1555,7 +2435,15 @@ export default function AdminMatchResults({ darkMode }) {
                           </div>
                         )}
 
-                        <div className={`rounded-xl border p-4 ${darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"}`}>
+                        <div className={`text-xs ${textMuted}`}>
+                          Ostatnia edycja wyniku:{" "}
+                          <span className={darkMode ? "text-gray-200 font-semibold" : "text-gray-700 font-semibold"}>
+                            {resultEditorName}
+                          </span>
+                          {resultEditTime ? <span> - {resultEditTime}</span> : null}
+                        </div>
+
+                        <div className={`rounded-xl border p-4 ${isEditable ? "hidden md:block" : ""} ${darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-gray-50"}`}>
                           <div className="font-semibold text-sm">Dobor zawodnikow i statystyki meczu</div>
                           <p className={`text-xs mt-1 ${textMuted}`}>
                             Wynik meczu mozesz zapisac bez skladu. Zawodnikow wybieraj tylko wtedy, gdy chcesz dopisac statystyki lub MVP.
@@ -1564,7 +2452,7 @@ export default function AdminMatchResults({ darkMode }) {
 
                           {scoreForm.status !== "completed" && (
                             <div className={`mt-3 rounded-xl border px-3 py-2 text-sm ${darkMode ? "border-blue-400/20 bg-blue-500/10 text-blue-200" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
-                              Statystyki zawodnikow sa zapisywane tylko dla meczu ze statusem "Zakonczony". Przy innych statusach zapis wyniku wyczysci sklad, zdarzenia i MVP.
+                              Statystyki zawodnikow sa zapisywane tylko dla meczu ze statusem "Zakonczony". Przy statusie "Rozpoczety" zapisujesz sama liste obecnosci, a zdarzenia dopisujesz w zakladce Aktywny mecz.
                             </div>
                           )}
 
@@ -1599,6 +2487,13 @@ export default function AdminMatchResults({ darkMode }) {
                             />
                           </div>
 
+                          {scoreForm.status === "completed" && (
+                            <div className="mt-4 grid lg:grid-cols-2 gap-4">
+                              {homeOwnGoalEditor}
+                              {awayOwnGoalEditor}
+                            </div>
+                          )}
+
                           <div className="mt-4 grid xl:grid-cols-2 gap-4">
                             <ParticipantStatsTable
                               title={`${match.home_team_name} • uczestnicy`}
@@ -1624,10 +2519,10 @@ export default function AdminMatchResults({ darkMode }) {
 
                           <div className={`mt-4 flex flex-wrap gap-2 text-xs ${textMuted}`}>
                             <span className={`px-2 py-1 rounded-full border ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-white"}`}>
-                              {match.home_team_name}: gole {homeTotals.goals}, asysty {homeTotals.assists}, ZK {homeTotals.yellow}, CZK {homeTotals.red}
+                              {match.home_team_name}: gole {homeTotals.goals}, samob. {homeOwnGoalEvents.length}, asysty {homeTotals.assists}, ZK {homeTotals.yellow}, CZK {homeTotals.red}
                             </span>
                             <span className={`px-2 py-1 rounded-full border ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-white"}`}>
-                              {match.away_team_name}: gole {awayTotals.goals}, asysty {awayTotals.assists}, ZK {awayTotals.yellow}, CZK {awayTotals.red}
+                              {match.away_team_name}: gole {awayTotals.goals}, samob. {awayOwnGoalEvents.length}, asysty {awayTotals.assists}, ZK {awayTotals.yellow}, CZK {awayTotals.red}
                             </span>
                             {homeUnassignedGoals > 0 && (
                               <span className={`px-2 py-1 rounded-full border ${darkMode ? "border-blue-400/20 bg-blue-500/10 text-blue-200" : "border-blue-200 bg-blue-50 text-blue-800"}`}>

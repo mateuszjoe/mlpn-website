@@ -16,6 +16,8 @@ export const supabase = createClient(
   supabaseAnonKey || '',
   {
     auth: {
+      detectSessionInUrl: false,
+      flowType: 'pkce',
       storageKey: 'mlpn-auth',
     },
   }

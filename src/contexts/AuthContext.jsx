@@ -9,6 +9,97 @@ import {
 
 const AuthContext = createContext(null);
 const AUTH_TIMEOUT_MS = 8000;
+const POST_LOGIN_ROUTE_KEY = 'mlpn:post-login-route';
+
+function storePostLoginRoute(route) {
+  if (!route || typeof window === 'undefined') return;
+
+  try {
+    window.localStorage?.setItem(POST_LOGIN_ROUTE_KEY, route);
+  } catch {
+    // Brak dostepu do localStorage nie blokuje logowania.
+  }
+}
+
+function applyStoredPostLoginRoute() {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const route = window.localStorage?.getItem(POST_LOGIN_ROUTE_KEY);
+    if (!route) return;
+
+    window.localStorage.removeItem(POST_LOGIN_ROUTE_KEY);
+    window.setTimeout(() => {
+      const targetUrl = route.startsWith('#')
+        ? `${window.location.origin}/${route}`
+        : new URL(route, window.location.origin).toString();
+
+      window.history.replaceState(
+        window.history.state && typeof window.history.state === 'object'
+          ? { ...window.history.state }
+          : {},
+        '',
+        targetUrl
+      );
+      window.dispatchEvent(new Event('popstate'));
+      window.dispatchEvent(new Event('hashchange'));
+    }, 0);
+  } catch {
+    // Nawigacja po logowaniu jest wygoda, nie warunkiem dzialania sesji.
+  }
+}
+
+function getOAuthCallbackParams() {
+  if (typeof window === 'undefined') return null;
+
+  const params = new URLSearchParams(window.location.search || '');
+  const code = params.get('code');
+  const error = params.get('error_description') || params.get('error');
+
+  if (!code && !error) return null;
+  return { code, error };
+}
+
+async function getInitialSession() {
+  const callbackParams = getOAuthCallbackParams();
+
+  if (callbackParams?.error) {
+    throw new Error(callbackParams.error);
+  }
+
+  if (callbackParams?.code) {
+    const { data, error } = await withTimeout(
+      supabase.auth.exchangeCodeForSession(callbackParams.code),
+      AUTH_TIMEOUT_MS,
+      'OAuth callback'
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    return data?.session ?? null;
+  }
+
+  const sessionResponse = await withTimeout(supabase.auth.getSession(), AUTH_TIMEOUT_MS, 'auth session');
+  return sessionResponse?.data?.session ?? null;
+}
+
+function clearOAuthCallbackUrl() {
+  if (typeof window === 'undefined' || !getOAuthCallbackParams()) return;
+
+  try {
+    window.history.replaceState(
+      window.history.state && typeof window.history.state === 'object'
+        ? { ...window.history.state }
+        : {},
+      '',
+      `${window.location.origin}/`
+    );
+  } catch {
+    // Czyszczenie URL nie moze blokowac auth.
+  }
+}
 
 function clearStoredAuth() {
   const shouldRemove = (key) => key === 'mlpn-auth' || key.startsWith('sb-');
@@ -119,6 +210,7 @@ export function AuthProvider({ children }) {
       if (!isMounted.current || syncRequestId.current !== requestId) return;
       setProfile((current) => (current?.id === session.user.id ? current : null));
     } finally {
+      applyStoredPostLoginRoute();
       if (blockUi) {
         stopLoading();
       }
@@ -131,8 +223,8 @@ export function AuthProvider({ children }) {
 
     async function initAuth() {
       try {
-        const sessionResponse = await withTimeout(supabase.auth.getSession(), AUTH_TIMEOUT_MS, 'auth session');
-        await syncSessionState(sessionResponse?.data?.session ?? null, {
+        const session = await getInitialSession();
+        await syncSessionState(session, {
           blockUi: true,
           resetProfile: true,
         });
@@ -142,7 +234,9 @@ export function AuthProvider({ children }) {
           setUser(null);
           setProfile(null);
         }
+        applyStoredPostLoginRoute();
       } finally {
+        clearOAuthCallbackUrl();
         stopLoading();
         initialized.current = true;
       }
@@ -182,6 +276,34 @@ export function AuthProvider({ children }) {
       await syncSessionState(activeSession, { blockUi: false, resetProfile: true });
 
       stopLoading();
+      return data;
+    } catch (error) {
+      stopLoading();
+      throw error;
+    }
+  }
+
+  async function signInWithProvider(provider, { next = '#/typer' } = {}) {
+    setLoading(true);
+    startLoadingGuard();
+
+    try {
+      storePostLoginRoute(next);
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithOAuth({
+          provider,
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+          },
+        }),
+        AUTH_TIMEOUT_MS,
+        `${provider} sign in`
+      );
+
+      if (error) {
+        throw error;
+      }
+
       return data;
     } catch (error) {
       stopLoading();
@@ -235,6 +357,7 @@ export function AuthProvider({ children }) {
     isAccountActive,
     hasAdminAccess,
     signIn,
+    signInWithProvider,
     signOut,
     isAdmin,
     isEditor,

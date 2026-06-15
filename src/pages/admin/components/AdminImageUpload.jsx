@@ -72,6 +72,15 @@ async function convertFileToWebp(file, maxSide = 1024, quality = 0.92) {
   });
 }
 
+async function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Nie udalo sie odczytac pliku."));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function AdminImageUpload({
   bucket,
   folder,
@@ -83,10 +92,12 @@ export default function AdminImageUpload({
   convertToWebp = false,
   webpMaxSide = 1024,
   helperText = "",
+  fallbackToDataUrl = false,
 }) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentUrl);
   const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
 
   const borderColor = darkMode ? "border-white/10" : "border-gray-300";
 
@@ -100,15 +111,29 @@ export default function AdminImageUpload({
 
     setUploading(true);
     setError(null);
+    setNotice(null);
 
     try {
       if (file.size > maxFileSizeMB * 1024 * 1024) {
         throw new Error(`Plik za duzy (max ${maxFileSizeMB}MB).`);
       }
 
-      const uploadFile = convertToWebp
-        ? await convertFileToWebp(file, webpMaxSide)
-        : file;
+      let uploadFile;
+      try {
+        uploadFile = convertToWebp
+          ? await convertFileToWebp(file, webpMaxSide)
+          : file;
+      } catch (conversionError) {
+        if (!fallbackToDataUrl) {
+          throw conversionError;
+        }
+
+        const dataUrl = await fileToDataUrl(file);
+        setPreview(dataUrl);
+        onUpload(dataUrl);
+        setNotice("Nie udalo sie przekonwertowac obrazu, wiec oryginalny plik zostal dodany bezposrednio do formularza. Kliknij Zapisz.");
+        return;
+      }
 
       const ext = uploadFile.name.split(".").pop().toLowerCase();
       const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -121,7 +146,15 @@ export default function AdminImageUpload({
         });
 
       if (uploadError) {
-        throw new Error("Blad uploadu: " + uploadError.message);
+        if (!fallbackToDataUrl) {
+          throw new Error("Blad uploadu: " + uploadError.message);
+        }
+
+        const dataUrl = await fileToDataUrl(uploadFile);
+        setPreview(dataUrl);
+        onUpload(dataUrl);
+        setNotice("Storage odmowil zapisu, wiec logo zostalo dodane bezposrednio do formularza. Kliknij Zapisz sponsora.");
+        return;
       }
 
       const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
@@ -153,6 +186,7 @@ export default function AdminImageUpload({
         </label>
       </div>
       {helperText && <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{helperText}</p>}
+      {notice && <p className="text-xs text-yellow-400">{notice}</p>}
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );

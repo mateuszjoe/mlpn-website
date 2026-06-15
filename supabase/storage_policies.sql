@@ -3,6 +3,17 @@
 -- Wklej to w SQL Editor AFTER creating buckets in Dashboard
 -- ============================================================
 
+-- Buckety uzywane przez panel admina.
+-- Jesli bucket juz istnieje, zostanie tylko upewnione publiczne serwowanie plikow.
+INSERT INTO storage.buckets (id, name, public)
+VALUES
+  ('team-logos', 'team-logos', true),
+  ('player-photos', 'player-photos', true),
+  ('match-galleries', 'match-galleries', true),
+  ('sponsor-logos', 'sponsor-logos', true)
+ON CONFLICT (id) DO UPDATE SET
+  public = EXCLUDED.public;
+
 -- Team logos - publiczny odczyt, admin zapis
 CREATE POLICY "team_logos_public_read" ON storage.objects
   FOR SELECT USING (bucket_id = 'team-logos');
@@ -41,3 +52,21 @@ CREATE POLICY "match_galleries_admin_update" ON storage.objects
 
 CREATE POLICY "match_galleries_admin_delete" ON storage.objects
   FOR DELETE USING (bucket_id = 'match-galleries' AND is_admin());
+
+-- Sponsor logos - publiczny odczyt, admin zapis
+DROP POLICY IF EXISTS "sponsor_logos_public_read" ON storage.objects;
+DROP POLICY IF EXISTS "sponsor_logos_admin_insert" ON storage.objects;
+DROP POLICY IF EXISTS "sponsor_logos_admin_update" ON storage.objects;
+DROP POLICY IF EXISTS "sponsor_logos_admin_delete" ON storage.objects;
+
+CREATE POLICY "sponsor_logos_public_read" ON storage.objects
+  FOR SELECT USING (bucket_id = 'sponsor-logos');
+
+CREATE POLICY "sponsor_logos_admin_insert" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'sponsor-logos' AND is_admin());
+
+CREATE POLICY "sponsor_logos_admin_update" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'sponsor-logos' AND is_admin());
+
+CREATE POLICY "sponsor_logos_admin_delete" ON storage.objects
+  FOR DELETE USING (bucket_id = 'sponsor-logos' AND is_admin());

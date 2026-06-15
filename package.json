@@ -1,7 +1,7 @@
 {
   "name": "mlpn-website",
   "version": "1.0.0",
-  "homepage": "https://mateuszjoe.github.io/mlpn-website",
+  "homepage": "https://mlpn.pl",
   "description": "Miejska Liga Piłki Nożnej w Sulejówku",
   "keywords": [
     "mlpn",
@@ -27,6 +27,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "postbuild": "node scripts/copy-404.js",
+    "sync:world-cup": "node scripts/sync-world-cup-matches.js",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",

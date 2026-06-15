@@ -5,7 +5,7 @@ import AdminTable from "./components/AdminTable";
 import AdminModal from "./components/AdminModal";
 import AdminAlert from "./components/AdminAlert";
 import AdminImageUpload from "./components/AdminImageUpload";
-import { Plus, Lock, AlertTriangle, GitMerge, UserMinus } from "lucide-react";
+import { Plus, Lock, AlertTriangle, GitMerge, UserMinus, Unlink } from "lucide-react";
 
 const ADMIN_PAGE_SIZE = 1000;
 
@@ -122,6 +122,26 @@ function isMergedPlayerRecord(player) {
   return notes.includes("[MERGED_TO:");
 }
 
+function mergedTargetId(player) {
+  const notes = String(privateRow(player)?.notes || "");
+  return notes.match(/\[MERGED_TO:([0-9a-f-]{36})\]/i)?.[1] || "";
+}
+
+function unwrapRelation(value) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function unmergeContextKey(context) {
+  return `${context?.season_id || ""}|${context?.league_id || ""}|${context?.team_id || ""}`;
+}
+
+function mergeNotesBody(player) {
+  const notes = String(privateRow(player)?.notes || "");
+  return notes
+    .replace(/\[MERGED_TO:[0-9a-f-]{36}\][^\n\r]*(\r?\n)?/gi, "")
+    .trim();
+}
+
 function calcAge(birthYear) {
   if (!birthYear) return null;
   const year = new Date().getFullYear();
@@ -162,6 +182,29 @@ export default function AdminPlayers({ darkMode }) {
   const [mergeLoadingStats, setMergeLoadingStats] = useState(false);
   const [mergeBusy, setMergeBusy] = useState(false);
   const [mergeStatStrategy, setMergeStatStrategy] = useState(DEFAULT_PLAYER_MERGE_STAT_STRATEGY);
+  const [showUnmergePicker, setShowUnmergePicker] = useState(false);
+  const [showUnmergeCompare, setShowUnmergeCompare] = useState(false);
+  const [unmergeSearch, setUnmergeSearch] = useState("");
+  const [unmergeSource, setUnmergeSource] = useState(null);
+  const [unmergeTarget, setUnmergeTarget] = useState(null);
+  const [unmergeContexts, setUnmergeContexts] = useState([]);
+  const [unmergeSelectedKeys, setUnmergeSelectedKeys] = useState([]);
+  const [unmergeLoading, setUnmergeLoading] = useState(false);
+  const [unmergeBusy, setUnmergeBusy] = useState(false);
+  const [showMergeEdit, setShowMergeEdit] = useState(false);
+  const [mergeEditSource, setMergeEditSource] = useState(null);
+  const [mergeEditForm, setMergeEditForm] = useState({
+    target_id: "",
+    first_name: "",
+    last_name: "",
+    position: "POM",
+    birth_year: "",
+    preferred_foot: "",
+    photo_url: "",
+    city: "",
+    notes: "",
+  });
+  const [mergeEditBusy, setMergeEditBusy] = useState(false);
   const [playerTeams, setPlayerTeams] = useState({});
   const [releasingId, setReleasingId] = useState(null);
   const [dupPrompt, setDupPrompt] = useState({
@@ -235,6 +278,47 @@ export default function AdminPlayers({ darkMode }) {
   const visiblePlayers = useMemo(
     () => players.filter((player) => !isMergedPlayerRecord(player)),
     [players]
+  );
+
+  const playersById = useMemo(
+    () => new Map(players.map((player) => [String(player.id), player])),
+    [players]
+  );
+
+  const mergedPlayerRecords = useMemo(
+    () => players.filter((player) => isMergedPlayerRecord(player)),
+    [players]
+  );
+
+  const filteredUnmergeRecords = useMemo(() => {
+    if (!unmergeSearch.trim()) return mergedPlayerRecords;
+    const q = normalizePlayerKey(unmergeSearch, "");
+    return mergedPlayerRecords.filter((player) => {
+      const target = playersById.get(String(mergedTargetId(player)));
+      const blob = [
+        normalizePlayerKey(player.first_name, player.last_name),
+        normalizePlayerKey(player.city || "", ""),
+        normalizePlayerKey(target?.first_name, target?.last_name),
+        normalizePlayerKey(target?.city || "", ""),
+      ].join("");
+      return blob.includes(q);
+    });
+  }, [mergedPlayerRecords, playersById, unmergeSearch]);
+
+  const mergeEditTargetOptions = useMemo(
+    () =>
+      players
+        .filter((player) => String(player.id) !== String(mergeEditSource?.id || ""))
+        .filter((player) => !isMergedPlayerRecord(player) || String(player.id) === String(mergeEditForm.target_id || ""))
+        .sort((a, b) =>
+          String(a.last_name || "").localeCompare(String(b.last_name || ""), "pl") ||
+          String(a.first_name || "").localeCompare(String(b.first_name || ""), "pl")
+        )
+        .map((player) => ({
+          value: player.id,
+          label: `${player.display_name || `${player.first_name} ${player.last_name}`}${player.birth_year ? ` (${player.birth_year})` : ""}${player.city ? ` - ${player.city}` : ""}`,
+        })),
+    [players, mergeEditSource, mergeEditForm.target_id]
   );
 
   const duplicateGroups = useMemo(() => {
@@ -338,6 +422,35 @@ export default function AdminPlayers({ darkMode }) {
     setMergeLoadingStats(false);
     setMergeBusy(false);
     setMergeStatStrategy(DEFAULT_PLAYER_MERGE_STAT_STRATEGY);
+  };
+
+  const closePlayerUnmergeFlow = () => {
+    setShowUnmergePicker(false);
+    setShowUnmergeCompare(false);
+    setUnmergeSearch("");
+    setUnmergeSource(null);
+    setUnmergeTarget(null);
+    setUnmergeContexts([]);
+    setUnmergeSelectedKeys([]);
+    setUnmergeLoading(false);
+    setUnmergeBusy(false);
+  };
+
+  const closeMergeEditFlow = () => {
+    setShowMergeEdit(false);
+    setMergeEditSource(null);
+    setMergeEditForm({
+      target_id: "",
+      first_name: "",
+      last_name: "",
+      position: "POM",
+      birth_year: "",
+      preferred_foot: "",
+      photo_url: "",
+      city: "",
+      notes: "",
+    });
+    setMergeEditBusy(false);
   };
 
   const throwIfError = (result, label) => {
@@ -789,6 +902,256 @@ export default function AdminPlayers({ darkMode }) {
     }
   };
 
+  const openUnmergeForSource = async (sourcePlayer) => {
+    if (!sourcePlayer?.id) return;
+
+    const targetId = mergedTargetId(sourcePlayer);
+    const targetPlayer = playersById.get(String(targetId));
+    if (!targetId || !targetPlayer) {
+      setAlert({
+        type: "error",
+        message: "Nie udało się znaleźć zawodnika docelowego dla tego scalenia.",
+      });
+      return;
+    }
+
+    setShowUnmergePicker(false);
+    setShowUnmergeCompare(true);
+    setUnmergeSource(sourcePlayer);
+    setUnmergeTarget(targetPlayer);
+    setUnmergeContexts([]);
+    setUnmergeSelectedKeys([]);
+    setUnmergeLoading(true);
+
+    try {
+      const [teamRowsRes, statsRowsRes] = await Promise.all([
+        supabase
+          .from("team_players")
+          .select("id, season_id, league_id, team_id, joined_date, left_date, is_captain, shirt_number, seasons(year), leagues(code, name), teams(name)")
+          .eq("player_id", targetPlayer.id)
+          .order("joined_date", { ascending: false }),
+        supabase
+          .from("player_season_stats")
+          .select("id, season_id, league_id, team_id, appearances, goals, assists, yellow_cards, red_cards, seasons(year), leagues(code, name), teams(name)")
+          .eq("player_id", targetPlayer.id),
+      ]);
+
+      throwIfError(teamRowsRes, "team_players unmerge select");
+      throwIfError(statsRowsRes, "player_season_stats unmerge select");
+
+      const statByExactKey = new Map();
+      const statBySeasonLeague = new Map();
+      for (const row of statsRowsRes.data || []) {
+        const exactKey = unmergeContextKey(row);
+        statByExactKey.set(exactKey, row);
+        statBySeasonLeague.set(`${row.season_id || ""}|${row.league_id || ""}`, row);
+      }
+
+      const contextsByKey = new Map();
+      const addContext = (row, source) => {
+        if (!row?.season_id || !row?.league_id || !row?.team_id) return;
+
+        const key = unmergeContextKey(row);
+        const season = unwrapRelation(row.seasons);
+        const league = unwrapRelation(row.leagues);
+        const team = unwrapRelation(row.teams);
+        const exactStats = statByExactKey.get(key);
+        const seasonStats = statBySeasonLeague.get(`${row.season_id || ""}|${row.league_id || ""}`);
+        const stats = exactStats || seasonStats || {};
+
+        const current = contextsByKey.get(key) || {};
+        contextsByKey.set(key, {
+          key,
+          season_id: row.season_id,
+          league_id: row.league_id,
+          team_id: row.team_id,
+          season_year: current.season_year ?? season?.year ?? unwrapRelation(stats.seasons)?.year ?? null,
+          league_code: current.league_code ?? league?.code ?? unwrapRelation(stats.leagues)?.code ?? "",
+          league_name: current.league_name ?? league?.name ?? unwrapRelation(stats.leagues)?.name ?? "",
+          team_name: current.team_name ?? team?.name ?? unwrapRelation(stats.teams)?.name ?? "",
+          joined_date: current.joined_date ?? row.joined_date ?? null,
+          left_date: current.left_date ?? row.left_date ?? null,
+          appearances: Number(stats.appearances || 0),
+          goals: Number(stats.goals || 0),
+          assists: Number(stats.assists || 0),
+          yellow_cards: Number(stats.yellow_cards || 0),
+          red_cards: Number(stats.red_cards || 0),
+          has_exact_stats: !!exactStats,
+          source: current.source === "team_players" ? current.source : source,
+        });
+      };
+
+      for (const row of teamRowsRes.data || []) addContext(row, "team_players");
+      for (const row of statsRowsRes.data || []) addContext(row, "player_season_stats");
+
+      const contexts = [...contextsByKey.values()].sort((a, b) =>
+        Number(b.season_year || 0) - Number(a.season_year || 0) ||
+        String(a.league_code || "").localeCompare(String(b.league_code || ""), "pl") ||
+        String(a.team_name || "").localeCompare(String(b.team_name || ""), "pl")
+      );
+
+      setUnmergeContexts(contexts);
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message: err.message || "Nie udało się przygotować odscalania zawodnika.",
+      });
+    } finally {
+      setUnmergeLoading(false);
+    }
+  };
+
+  const openMergeEditForSource = (sourcePlayer) => {
+    if (!sourcePlayer?.id) return;
+
+    const targetId = mergedTargetId(sourcePlayer);
+    setMergeEditSource(sourcePlayer);
+    setMergeEditForm({
+      target_id: targetId,
+      first_name: sourcePlayer.first_name || "",
+      last_name: sourcePlayer.last_name || "",
+      position: sourcePlayer.position || "POM",
+      birth_year: sourcePlayer.birth_year || "",
+      preferred_foot: sourcePlayer.preferred_foot || "",
+      photo_url: sourcePlayer.photo_url || "",
+      city: sourcePlayer.city || "",
+      notes: mergeNotesBody(sourcePlayer),
+    });
+    setShowUnmergePicker(false);
+    setShowMergeEdit(true);
+  };
+
+  const updateMergeEditField = (event) => {
+    const { name, value } = event.target;
+    setMergeEditForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const saveMergeEdit = async (event) => {
+    event.preventDefault();
+    if (!mergeEditSource?.id) return;
+
+    const targetId = mergeEditForm.target_id;
+    if (!targetId || String(targetId) === String(mergeEditSource.id)) {
+      setAlert({ type: "error", message: "Wybierz prawidłowy rekord docelowy scalenia." });
+      return;
+    }
+
+    const firstName = String(mergeEditForm.first_name || "").trim();
+    const lastName = String(mergeEditForm.last_name || "").trim();
+    if (!firstName || !lastName) {
+      setAlert({ type: "error", message: "Imię i nazwisko scalonego rekordu są wymagane." });
+      return;
+    }
+
+    setMergeEditBusy(true);
+    try {
+      const playerPayload = {
+        first_name: firstName,
+        last_name: lastName,
+        position: mergeEditForm.position || "POM",
+        birth_year: mergeEditForm.birth_year ? parseInt(mergeEditForm.birth_year, 10) : null,
+        preferred_foot: mergeEditForm.preferred_foot || null,
+        photo_url: mergeEditForm.photo_url || null,
+        city: mergeEditForm.city || null,
+        is_active: false,
+      };
+
+      throwIfError(
+        await supabase.from("players").update(playerPayload).eq("id", mergeEditSource.id),
+        "players merged source update"
+      );
+
+      const marker = `[MERGED_TO:${targetId}] ${new Date().toISOString()}`;
+      const cleanNotes = String(mergeEditForm.notes || "").trim();
+      throwIfError(
+        await supabase
+          .from("players_private")
+          .upsert(
+            {
+              player_id: mergeEditSource.id,
+              notes: cleanNotes ? `${marker}\n${cleanNotes}` : marker,
+            },
+            { onConflict: "player_id" }
+          ),
+        "players_private merged marker update"
+      );
+
+      setAlert({
+        type: "success",
+        message: "Scalenie zostało poprawione. Jeśli trzeba przenieść historię meczową, użyj odscalania zakresu.",
+      });
+      closeMergeEditFlow();
+      loadData();
+    } catch (err) {
+      setAlert({ type: "error", message: err.message || "Nie udało się zapisać edycji scalenia." });
+    } finally {
+      setMergeEditBusy(false);
+    }
+  };
+
+  const toggleUnmergeContext = (key) => {
+    setUnmergeSelectedKeys((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key]
+    );
+  };
+
+  const executeUnmergePlayers = async () => {
+    if (!unmergeSource?.id || !unmergeTarget?.id) return;
+
+    const selectedContexts = unmergeContexts
+      .filter((context) => unmergeSelectedKeys.includes(context.key))
+      .map((context) => ({
+        season_id: context.season_id,
+        league_id: context.league_id,
+        team_id: context.team_id,
+      }));
+
+    if (selectedContexts.length === 0) {
+      setAlert({ type: "error", message: "Wybierz co najmniej jeden sezon/drużynę do odscalenia." });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Odscalić ${unmergeSource.display_name} z rekordu ${unmergeTarget.display_name} i przenieść ${selectedContexts.length} wybranych zakresów?`
+    );
+    if (!confirmed) return;
+
+    setUnmergeBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("unmerge_player_contexts", {
+        p_source_player_id: unmergeSource.id,
+        p_target_player_id: unmergeTarget.id,
+        p_contexts: selectedContexts,
+      });
+      if (error) throw error;
+
+      const result = Array.isArray(data) ? data[0] || {} : data || {};
+      const movedBits = [
+        `${result.team_rows || 0} wpisów kadry`,
+        `${result.stat_rows || 0} statystyk sezonowych`,
+        `${result.lineup_rows || 0} składów`,
+        `${result.event_rows || 0} zdarzeń`,
+        `${result.assist_rows || 0} asyst`,
+        `${result.suspension_rows || 0} pauz`,
+        `${result.mvp_rows || 0} MVP`,
+      ].join(", ");
+
+      setAlert({
+        type: "success",
+        message: `Odscalono zawodnika ${unmergeSource.display_name}. Przeniesiono: ${movedBits}.`,
+      });
+      closePlayerUnmergeFlow();
+      loadData();
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message: err.message || "Nie udało się odscalić zawodnika.",
+      });
+    } finally {
+      setUnmergeBusy(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const { payload, rodoPayload } = buildPayloads();
@@ -988,6 +1351,20 @@ export default function AdminPlayers({ darkMode }) {
             {duplicateGroups.length > 0 && (
               <span className={`px-2 py-0.5 rounded-full text-xs ${darkMode ? "bg-orange-500/15 text-orange-300" : "bg-orange-100 text-orange-700"}`}>
                 {duplicateGroups.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowUnmergePicker(true)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-medium text-sm transition-colors ${
+              darkMode ? "border-white/10 text-gray-300 hover:bg-white/5" : "border-gray-200 text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            <Unlink size={16} /> Odscalaj
+            {mergedPlayerRecords.length > 0 && (
+              <span className={`px-2 py-0.5 rounded-full text-xs ${darkMode ? "bg-blue-500/15 text-blue-300" : "bg-blue-100 text-blue-700"}`}>
+                {mergedPlayerRecords.length}
               </span>
             )}
           </button>
@@ -1305,6 +1682,392 @@ export default function AdminPlayers({ darkMode }) {
               className="px-4 py-2 rounded-xl bg-orange-500 text-black font-medium text-sm hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {mergeBusy ? "Scalanie..." : "Scalaj zawodników"}
+            </button>
+          </div>
+        </div>
+      </AdminModal>
+
+      {/* Player unmerge - merged records picker */}
+      <AdminModal
+        isOpen={showUnmergePicker}
+        onClose={() => {
+          setShowUnmergePicker(false);
+          setUnmergeSearch("");
+        }}
+        title="Odscalaj zawodników"
+        darkMode={darkMode}
+        xwide
+      >
+        <div className="space-y-4">
+          <div className={`rounded-xl border p-3 ${darkMode ? "border-blue-500/30 bg-blue-500/5" : "border-blue-200 bg-blue-50"}`}>
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={16} className="text-blue-400 mt-0.5 shrink-0" />
+              <div>
+                <div className="text-sm font-medium">Przywracanie rekordu po omyłkowym scaleniu</div>
+                <div className={`text-xs ${textMuted}`}>
+                  Wybierz nieaktywny rekord oznaczony jako scalony, a potem wskaż sezony i drużyny, które mają wrócić na tego zawodnika.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <input
+              type="text"
+              value={unmergeSearch}
+              onChange={(e) => setUnmergeSearch(e.target.value)}
+              placeholder="Szukaj po zawodniku odscalanym albo docelowym"
+              className={`w-full md:flex-1 px-3 py-2 rounded-xl border text-sm outline-none ${
+                darkMode
+                  ? "bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+                  : "bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+              }`}
+            />
+            <div className={`text-xs px-3 py-2 rounded-xl border ${darkMode ? "border-white/10 bg-white/5 text-gray-300" : "border-gray-200 bg-gray-50 text-gray-600"}`}>
+              rekordów: {filteredUnmergeRecords.length}
+            </div>
+          </div>
+
+          <div className={`rounded-xl border p-2 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
+            <div className="space-y-2 max-h-[52vh] overflow-y-auto pr-1">
+              {filteredUnmergeRecords.length > 0 ? filteredUnmergeRecords.map((player) => {
+                const target = playersById.get(String(mergedTargetId(player)));
+                return (
+                  <div
+                    key={`unmerge-player-${player.id}`}
+                    className={`rounded-xl border p-3 ${
+                      darkMode ? "border-white/10 bg-black/10" : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-semibold truncate">{player.display_name}</div>
+                        <div className={`text-xs mt-1 ${textMuted}`}>
+                          scalony do: {target?.display_name || "nie znaleziono rekordu docelowego"}
+                        </div>
+                        <div className={`text-xs mt-1 ${textMuted}`}>
+                          {player.birth_year || "brak rocznika"}{player.city ? `, ${player.city}` : ""} • ID {String(player.id).slice(0, 8)}...
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openMergeEditForSource(player)}
+                          className={`text-xs px-3 py-1.5 rounded-lg border font-medium ${
+                            darkMode ? "border-white/10 text-gray-300 hover:bg-white/5" : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          Edytuj scalenie
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openUnmergeForSource(player)}
+                          className={`text-xs px-3 py-1.5 rounded-lg font-medium ${darkMode ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/20" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}
+                        >
+                          Wybierz zakres
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div className={`text-sm text-center py-6 ${textMuted}`}>Brak scalonych rekordów dla tej frazy.</div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => { setShowUnmergePicker(false); setUnmergeSearch(""); }}
+              className={`px-4 py-2 rounded-xl text-sm ${textMuted} hover:bg-white/5`}
+            >
+              Zamknij
+            </button>
+          </div>
+        </div>
+      </AdminModal>
+
+      {/* Player merge edit */}
+      <AdminModal
+        isOpen={showMergeEdit}
+        onClose={closeMergeEditFlow}
+        title="Edytuj scalenie"
+        darkMode={darkMode}
+        wide
+      >
+        <form onSubmit={saveMergeEdit} className="space-y-4">
+          <div className={`rounded-xl border p-3 ${darkMode ? "border-blue-500/30 bg-blue-500/5" : "border-blue-200 bg-blue-50"}`}>
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={16} className="text-blue-400 mt-0.5 shrink-0" />
+              <div>
+                <div className="text-sm font-medium">Ta edycja poprawia metadane scalenia</div>
+                <div className={`text-xs ${textMuted}`}>
+                  Możesz zmienić ukryty rekord zawodnika i wskazać właściwy rekord docelowy. Historia meczowa nie jest tu przenoszona - do tego użyj "Odscal wybrany zakres".
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <AdminFormField
+            label="Rekord docelowy scalenia"
+            name="target_id"
+            type="select"
+            value={mergeEditForm.target_id}
+            onChange={updateMergeEditField}
+            options={mergeEditTargetOptions}
+            required
+            darkMode={darkMode}
+            helpText="To pole decyduje, z którego rekordu odscalanie będzie później przenosiło historię."
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AdminFormField
+              label="Imię ukrytego rekordu"
+              name="first_name"
+              value={mergeEditForm.first_name}
+              onChange={updateMergeEditField}
+              required
+              darkMode={darkMode}
+            />
+            <AdminFormField
+              label="Nazwisko ukrytego rekordu"
+              name="last_name"
+              value={mergeEditForm.last_name}
+              onChange={updateMergeEditField}
+              required
+              darkMode={darkMode}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <AdminFormField
+              label="Pozycja"
+              name="position"
+              type="select"
+              value={mergeEditForm.position}
+              onChange={updateMergeEditField}
+              required
+              darkMode={darkMode}
+              options={[
+                { value: "BR", label: "Bramkarz" },
+                { value: "OBR", label: "Obrońca" },
+                { value: "POM", label: "Pomocnik" },
+                { value: "NAP", label: "Napastnik" },
+              ]}
+            />
+            <AdminFormField
+              label="Rocznik"
+              name="birth_year"
+              type="number"
+              value={mergeEditForm.birth_year}
+              onChange={updateMergeEditField}
+              darkMode={darkMode}
+              min={1960}
+              max={2015}
+            />
+            <AdminFormField
+              label="Noga"
+              name="preferred_foot"
+              type="select"
+              value={mergeEditForm.preferred_foot}
+              onChange={updateMergeEditField}
+              darkMode={darkMode}
+              options={[
+                { value: "Prawa", label: "Prawa" },
+                { value: "Lewa", label: "Lewa" },
+                { value: "Obie", label: "Obie" },
+              ]}
+            />
+          </div>
+
+          <AdminFormField
+            label="Miasto"
+            name="city"
+            value={mergeEditForm.city}
+            onChange={updateMergeEditField}
+            darkMode={darkMode}
+          />
+
+          <AdminImageUpload
+            bucket="player-photos"
+            folder="photos"
+            currentUrl={mergeEditForm.photo_url}
+            onUpload={(url) => setMergeEditForm((current) => ({ ...current, photo_url: url }))}
+            darkMode={darkMode}
+            label="Zdjęcie ukrytego rekordu"
+          />
+
+          <AdminFormField
+            label="Notatka scalenia"
+            name="notes"
+            type="textarea"
+            value={mergeEditForm.notes}
+            onChange={updateMergeEditField}
+            darkMode={darkMode}
+            helpText="Znacznik MERGED_TO zostanie dopisany automatycznie, tutaj wpisz tylko ludzką notatkę."
+          />
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={closeMergeEditFlow}
+              disabled={mergeEditBusy}
+              className={`px-4 py-2 rounded-xl text-sm ${textMuted} hover:bg-white/5 disabled:opacity-50`}
+            >
+              Anuluj
+            </button>
+            <button
+              type="submit"
+              disabled={mergeEditBusy}
+              className="px-4 py-2 rounded-xl bg-blue-500 text-white font-medium text-sm hover:bg-blue-400 disabled:opacity-40"
+            >
+              {mergeEditBusy ? "Zapisywanie..." : "Zapisz scalenie"}
+            </button>
+          </div>
+        </form>
+      </AdminModal>
+
+      {/* Player unmerge - context chooser */}
+      <AdminModal
+        isOpen={showUnmergeCompare}
+        onClose={closePlayerUnmergeFlow}
+        title="Odscalaj zawodnika - wybierz zakres"
+        darkMode={darkMode}
+        xwide
+      >
+        <div className="space-y-4">
+          <div className={`rounded-xl border p-3 ${darkMode ? "border-orange-500/30 bg-orange-500/5" : "border-orange-200 bg-orange-50"}`}>
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={16} className="text-orange-400 mt-0.5 shrink-0" />
+              <div>
+                <div className="text-sm font-medium">Wybieraj tylko zakres, który na pewno należy do odscalanego zawodnika</div>
+                <div className={`text-xs ${textMuted}`}>
+                  Operacja przenosi kadry, składy, gole, asysty, kartki, MVP, pauzy i statystyki sezonowe dla wskazanych sezonów/drużyn.
+                  Jeśli dwie różne osoby grały w tym samym sezonie, tej samej lidze i tej samej drużynie, taki przypadek trzeba sprawdzić ręcznie.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
+              <div className={`text-xs font-semibold uppercase tracking-[0.14em] ${textMuted}`}>Odscalany rekord</div>
+              <div className="mt-1 font-semibold">{unmergeSource?.display_name || "-"}</div>
+              <div className={`text-xs mt-1 ${textMuted}`}>
+                {unmergeSource?.birth_year || "brak rocznika"}{unmergeSource?.city ? `, ${unmergeSource.city}` : ""} • zostanie ponownie aktywny
+              </div>
+            </div>
+            <div className={`rounded-xl border p-3 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
+              <div className={`text-xs font-semibold uppercase tracking-[0.14em] ${textMuted}`}>Obecny rekord docelowy</div>
+              <div className="mt-1 font-semibold">{unmergeTarget?.display_name || "-"}</div>
+              <div className={`text-xs mt-1 ${textMuted}`}>
+                {unmergeTarget?.birth_year || "brak rocznika"}{unmergeTarget?.city ? `, ${unmergeTarget.city}` : ""} • z niego przenosimy wybrane zakresy
+              </div>
+            </div>
+          </div>
+
+          {unmergeLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium">Zakresy do przeniesienia</div>
+                  <div className={`text-xs ${textMuted}`}>Zaznacz sezony/drużyny należące do odscalanego zawodnika.</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUnmergeSelectedKeys(unmergeContexts.map((context) => context.key))}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${darkMode ? "border-white/10 text-gray-300 hover:bg-white/5" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+                  >
+                    Zaznacz wszystko
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUnmergeSelectedKeys([])}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${darkMode ? "border-white/10 text-gray-300 hover:bg-white/5" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+                  >
+                    Wyczyść
+                  </button>
+                </div>
+              </div>
+
+              <div className={`rounded-xl border ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
+                {unmergeContexts.length > 0 ? (
+                  <div className="divide-y divide-white/10">
+                    {unmergeContexts.map((context) => {
+                      const checked = unmergeSelectedKeys.includes(context.key);
+                      return (
+                        <label
+                          key={`unmerge-context-${context.key}`}
+                          className={`flex items-start gap-3 p-3 cursor-pointer ${darkMode ? "hover:bg-white/5" : "hover:bg-white"}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleUnmergeContext(context.key)}
+                            className="mt-1 w-4 h-4"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold">{context.team_name || "Drużyna bez nazwy"}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded ${darkMode ? "bg-white/10 text-gray-300" : "bg-gray-100 text-gray-600"}`}>
+                                {context.season_year || "sezon ?"} • {context.league_code || context.league_name || "liga ?"}
+                              </span>
+                              {!context.has_exact_stats && (
+                                <span className={`text-xs px-2 py-0.5 rounded ${darkMode ? "bg-orange-500/10 text-orange-300" : "bg-orange-100 text-orange-700"}`}>
+                                  statystyki sezonu z innego wpisu drużyny
+                                </span>
+                              )}
+                            </div>
+                            <div className={`text-xs mt-1 ${textMuted}`}>
+                              Kadra: {context.joined_date || "brak daty"}{context.left_date ? ` - ${context.left_date}` : " - aktywny wpis"}
+                            </div>
+                            <div className={`text-xs mt-1 ${textMuted}`}>
+                              Wyst. {context.appearances || 0}, gole {context.goals || 0}, asysty {context.assists || 0}, ZK {context.yellow_cards || 0}, CK {context.red_cards || 0}
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className={`text-sm text-center py-8 ${textMuted}`}>
+                    Brak sezonów lub drużyn do przeniesienia z rekordu docelowego.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => { setShowUnmergeCompare(false); setShowUnmergePicker(true); }}
+              disabled={unmergeBusy}
+              className={`px-4 py-2 rounded-xl text-sm ${textMuted} hover:bg-white/5 disabled:opacity-50`}
+            >
+              Wróć
+            </button>
+            <button
+              type="button"
+              onClick={closePlayerUnmergeFlow}
+              disabled={unmergeBusy}
+              className={`px-4 py-2 rounded-xl text-sm ${textMuted} hover:bg-white/5 disabled:opacity-50`}
+            >
+              Anuluj
+            </button>
+            <button
+              type="button"
+              onClick={executeUnmergePlayers}
+              disabled={unmergeBusy || unmergeLoading || unmergeSelectedKeys.length === 0}
+              className="px-4 py-2 rounded-xl bg-blue-500 text-white font-medium text-sm hover:bg-blue-400 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {unmergeBusy ? "Odscalanie..." : "Odscal wybrany zakres"}
             </button>
           </div>
         </div>
