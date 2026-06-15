@@ -2108,6 +2108,7 @@ function ModerationButton({ children, icon, onClick, disabled, tone = "neutral",
 export default function WorldCupTyperPage({ darkMode }) {
   const { user, profile, isAdmin, signIn, signInWithProvider } = useAuth();
   const [tab, setTab] = useState("ranking");
+  const [pickSubTab, setPickSubTab] = useState("open");
   const [matchView, setMatchView] = useState("date");
   const [matchSegmentId, setMatchSegmentId] = useState("");
   const [rankingPage, setRankingPage] = useState(1);
@@ -2526,6 +2527,23 @@ export default function WorldCupTyperPage({ darkMode }) {
     () => MATCHES.filter((match) => isMatchInPickWindow(match, windowNow)),
     [MATCHES, windowNow]
   );
+  // "Moje typy" w dwóch zakładkach:
+  // - Do wytypowania: jeszcze otwarte (gwizdek nie zablokowany), od najbliższych.
+  // - Zamknięte: po blokadzie, z Twoim typem (i wynikiem), od najświeższych.
+  const openPickMatches = useMemo(
+    () =>
+      MATCHES.filter((match) => hasKnownTeams(match) && !isMatchLockedForPicking(match, windowNow)).sort(
+        (a, b) => (getKickoffMs(a) ?? Infinity) - (getKickoffMs(b) ?? Infinity)
+      ),
+    [MATCHES, windowNow]
+  );
+  const closedPickMatches = useMemo(
+    () =>
+      MATCHES.filter((match) => hasKnownTeams(match) && isMatchLockedForPicking(match, windowNow)).sort(
+        (a, b) => (getKickoffMs(b) ?? 0) - (getKickoffMs(a) ?? 0)
+      ),
+    [MATCHES, windowNow]
+  );
   const defaultMatchSegmentId = getCurrentScheduleSegmentId(MATCH_SCHEDULE_SEGMENTS, windowNow);
   const selectedMatchSegmentId = MATCH_SCHEDULE_SEGMENTS.some((segment) => segment.id === matchSegmentId)
     ? matchSegmentId
@@ -2535,7 +2553,21 @@ export default function WorldCupTyperPage({ darkMode }) {
     MATCH_SCHEDULE_SEGMENTS.findIndex((segment) => segment.id === selectedMatchSegmentId)
   );
   const selectedMatchSegment = MATCH_SCHEDULE_SEGMENTS[selectedMatchSegmentIndex] || null;
-  const selectedScheduleMatches = selectedMatchSegment?.matches || [];
+  // W obrębie kolejki: najpierw rozegrane (od najświeższych), potem nadchodzące
+  // (od najbliższych). Mecz "rozegrany" = gwizdek już minął.
+  const selectedScheduleMatches = useMemo(() => {
+    const list = selectedMatchSegment?.matches || [];
+    const played = [];
+    const upcoming = [];
+    list.forEach((match) => {
+      const kickoffMs = getKickoffMs(match);
+      if (kickoffMs !== null && kickoffMs <= windowNow) played.push(match);
+      else upcoming.push(match);
+    });
+    played.sort((a, b) => (getKickoffMs(b) ?? 0) - (getKickoffMs(a) ?? 0));
+    upcoming.sort((a, b) => (getKickoffMs(a) ?? 0) - (getKickoffMs(b) ?? 0));
+    return [...played, ...upcoming];
+  }, [selectedMatchSegment, windowNow]);
   const changeMatchSegment = (direction) => {
     if (!MATCH_SCHEDULE_SEGMENTS.length) return;
     const nextIndex = Math.min(
@@ -2552,7 +2584,6 @@ export default function WorldCupTyperPage({ darkMode }) {
       }) || null,
     [MATCHES, windowNow]
   );
-  const pickWindowEndLabel = formatKickoff(new Date(windowNow + PICK_WINDOW_MS).toISOString());
   const featuredMatch = availablePickMatches[0] || nextKnownMatch || VISIBLE_SCHEDULE_MATCHES[0];
   const authBusy = !!authProviderLoading || emailAuthLoading;
 
@@ -3760,31 +3791,52 @@ export default function WorldCupTyperPage({ darkMode }) {
       {tab === "picks" && user && !needsTyperProfile && !profileSetupOpen && (
         <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
           <div className="space-y-3">
-            <Card darkMode={darkMode}>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-lg font-black">
-                    <Clock size={19} />
-                    Okno typowania
-                  </div>
-                  <div className={cx("mt-1 text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
-                    Najbliższe 3 dni, do {pickWindowEndLabel}. Blokada 5 minut przed startem meczu.
-                  </div>
-                </div>
-                <Pill darkMode={darkMode} tone={availablePickMatches.length ? "good" : "warn"}>
-                  {availablePickMatches.length} meczów do typowania
-                </Pill>
-              </div>
-            </Card>
+            <div className={cx("inline-flex rounded-xl border p-1", darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-100")}>
+              {[
+                ["open", "Do wytypowania", openPickMatches.length],
+                ["closed", "Zamknięte", closedPickMatches.length],
+              ].map(([id, label, count]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setPickSubTab(id)}
+                  className={cx(
+                    "min-h-[40px] rounded-lg px-3 text-sm font-black transition-colors",
+                    pickSubTab === id ? "bg-white text-gray-900 shadow-sm" : darkMode ? "text-gray-200" : "text-gray-700"
+                  )}
+                >
+                  {label} ({count})
+                </button>
+              ))}
+            </div>
 
-            {availablePickMatches.length === 0 && (
+            {pickSubTab === "open" && (
+              <Card darkMode={darkMode}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-lg font-black">
+                      <Clock size={19} />
+                      Do wytypowania
+                    </div>
+                    <div className={cx("mt-1 text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+                      Od najbliższego meczu. Blokada 5 minut przed gwizdkiem.
+                    </div>
+                  </div>
+                  <Pill darkMode={darkMode} tone={openPickMatches.length ? "good" : "warn"}>
+                    {openPickMatches.length} do wytypowania
+                  </Pill>
+                </div>
+              </Card>
+            )}
+
+            {pickSubTab === "open" && openPickMatches.length === 0 && (
               <Card darkMode={darkMode}>
                 <div className="flex items-start gap-3">
                   <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-black/10">
                     <Calendar size={18} />
                   </div>
                   <div>
-                    <div className="font-black">Brak spotkań w aktywnym oknie</div>
+                    <div className="font-black">Wszystko wytypowane</div>
                     <div className={cx("mt-1 text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
                       {nextKnownMatch
                         ? `Najbliższy znany mecz: ${team(nextKnownMatch.home).name} - ${team(nextKnownMatch.away).name}, ${nextKnownMatch.kickoffLabel}.`
@@ -3795,7 +3847,7 @@ export default function WorldCupTyperPage({ darkMode }) {
               </Card>
             )}
 
-            {availablePickMatches.map((match) => {
+            {pickSubTab === "open" && openPickMatches.map((match) => {
               const pick = picks[match.id] || { home: 0, away: 0, confirmed: false };
               const disabled = match.status !== "open" || isMatchLockedForPicking(match, windowNow);
               const scored = scorePick(match, pick);
@@ -3900,6 +3952,50 @@ export default function WorldCupTyperPage({ darkMode }) {
               );
             })}
 
+            {pickSubTab === "closed" && closedPickMatches.length === 0 && (
+              <Card darkMode={darkMode}>
+                <div className="font-black">Brak zamkniętych meczów</div>
+                <div className={cx("mt-1 text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
+                  Tu pojawią się Twoje typy po zablokowaniu meczu (5 minut przed gwizdkiem).
+                </div>
+              </Card>
+            )}
+
+            {pickSubTab === "closed" &&
+              closedPickMatches.map((match) => {
+                const pick = picks[match.id];
+                const scored = match.result && pick ? scorePick(match, pick) : null;
+
+                return (
+                  <Card key={match.id} darkMode={darkMode}>
+                    <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto] md:items-center">
+                      <TeamBadge id={match.home} />
+                      <div className="text-center">
+                        <div
+                          className={cx(
+                            "mx-auto inline-flex min-h-[44px] min-w-[76px] items-center justify-center rounded-2xl border px-3 text-xl font-black tabular-nums",
+                            darkMode ? "border-white/10 bg-white/10" : "border-gray-200 bg-gray-50"
+                          )}
+                        >
+                          {match.result ? `${match.result.home}:${match.result.away}` : "—:—"}
+                        </div>
+                        <div className="mt-1 text-xs font-bold opacity-70">{match.kickoffLabel}</div>
+                      </div>
+                      <TeamBadge id={match.away} align="right" />
+                      <div className="flex flex-wrap items-center justify-start gap-1.5 md:justify-end">
+                        <Pill darkMode={darkMode} tone={pick ? "info" : "neutral"}>
+                          {pick ? `Twój typ ${pick.home}:${pick.away}` : "Brak typu"}
+                        </Pill>
+                        {scored && (
+                          <Pill darkMode={darkMode} tone={scored.points > 0 ? "good" : "neutral"}>
+                            {scored.points} pkt
+                          </Pill>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
           </div>
 
           <div className="space-y-4">
