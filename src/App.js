@@ -1043,7 +1043,7 @@ function displayTeamName(team) {
       ? team.name
       : "";
   // Domyślnie pełna nazwa drużyny. Jedyny wyjątek: 1 Warszawska Brygada Pancerna.
-  if (normalizedTeam === "1 Warszawska Brygada Pancerna") return "I WBP";
+  if (normalizedTeam === "1 Warszawska Brygada Pancerna") return "I WBPanc";
   // Skróty drużynowe pisane wielkimi literami
   const abbreviations = ['fc', 'sc', 'stm', 'es', 'ks', 'lks', 'aks', 'gks', 'mks', 'rks', 'wks', 'bks', 'uks', 'ts'];
   return normalizedTeam.replace(/\b\w+\b/g, (word) => {
