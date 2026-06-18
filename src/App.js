@@ -925,6 +925,15 @@ const COMPLETED_FIXTURE_STATUSES = new Set([
   "walkover_away",
 ]);
 
+function fixtureDayNumber(value) {
+  if (!value) return null;
+  const match = String(value).slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  return Math.round(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])) / 86400000
+  );
+}
+
 function getCalendarCurrentRoundForLeague(
   fixtures,
   leagueId,
@@ -952,6 +961,46 @@ function getCalendarCurrentRoundForLeague(
     fixturesByRound.get(fixtureRound).push(fixture);
   }
 
+  // Domyślnie pokaż kolejkę wypadającą na dzień przeglądania (lub najbliższą
+  // datą, gdy danego dnia nie ma żadnego meczu). Datę kolejki reprezentujemy
+  // medianą dat jej meczów, żeby pojedyncze przełożone spotkanie nie zaburzało
+  // wyboru.
+  const now = new Date();
+  const todayNum = Math.round(
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000
+  );
+
+  let bestRound = null;
+  let bestDistance = Infinity;
+  let bestIsFuture = false;
+
+  for (const [fixtureRound, roundFixtures] of fixturesByRound.entries()) {
+    const dayNumbers = roundFixtures
+      .map((fixture) => fixtureDayNumber(fixture?.scheduleDate || fixture?.date))
+      .filter((value) => value !== null)
+      .sort((a, b) => a - b);
+
+    if (!dayNumbers.length) continue;
+
+    const medianDay = dayNumbers[Math.floor((dayNumbers.length - 1) / 2)];
+    const distance = Math.abs(medianDay - todayNum);
+    const isFuture = medianDay >= todayNum;
+
+    if (
+      distance < bestDistance ||
+      (distance === bestDistance && isFuture && !bestIsFuture) ||
+      (distance === bestDistance && isFuture === bestIsFuture && bestRound !== null && fixtureRound < bestRound)
+    ) {
+      bestDistance = distance;
+      bestRound = fixtureRound;
+      bestIsFuture = isFuture;
+    }
+  }
+
+  if (bestRound !== null) return bestRound;
+
+  // Brak dat w terminarzu – zachowaj poprzednie zachowanie (pierwsza
+  // nierozegrana kolejka, a gdy wszystko rozegrane – ostatnia).
   const sortedRounds = [...fixturesByRound.keys()].sort((a, b) => a - b);
   const firstIncompleteRound = sortedRounds.find((fixtureRound) =>
     fixturesByRound.get(fixtureRound).some((fixture) => {
