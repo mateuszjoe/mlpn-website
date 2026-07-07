@@ -16,6 +16,7 @@ import AdminControlCenter from "./AdminControlCenter";
 import AdminUsers from "./AdminUsers";
 import AdminReferees from "./AdminReferees";
 import AdminSponsors from "./AdminSponsors";
+import AdminGraphicsCreator from "./AdminGraphicsCreator";
 import {
   LayoutDashboard,
   Calendar,
@@ -35,6 +36,7 @@ import {
   Newspaper,
   Handshake,
   Radio,
+  Image as ImageIcon,
 } from "lucide-react";
 
 const ADMIN_MENU_ITEMS = [
@@ -48,15 +50,18 @@ const ADMIN_MENU_ITEMS = [
   { id: "results", label: "Wyniki", icon: <Trophy size={18} /> },
   { id: "active-match", label: "Aktywny mecz", icon: <Radio size={18} /> },
   { id: "news", label: "Aktualności", icon: <Newspaper size={18} /> },
+  { id: "graphics", label: "Grafiki", icon: <ImageIcon size={18} /> },
   { id: "sponsors", label: "Sponsorzy", icon: <Handshake size={18} /> },
   { id: "referees", label: "Sedziowie", icon: <Scale size={18} /> },
   { id: "control-center", label: "Ustawienia", icon: <SlidersHorizontal size={18} /> },
   { id: "users", label: "Konta", icon: <UserPlus size={18} /> },
 ];
 
-export default function AdminPanel({ darkMode, goHome }) {
+export default function AdminPanel({ darkMode, goHome, activeSection = "dashboard", setActiveSection }) {
   const { user, isAdmin, hasAdminAccess, accountStatus, canAny, signOut, loading } = useAuth();
-  const [adminSection, setAdminSection] = useState("dashboard");
+  const [fallbackSection, setFallbackSection] = useState(activeSection || "dashboard");
+  const adminSection = activeSection || fallbackSection;
+  const setAdminSection = setActiveSection || setFallbackSection;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const adminMenu = ADMIN_MENU_ITEMS.filter((item) => {
@@ -143,6 +148,8 @@ export default function AdminPanel({ darkMode, goHome }) {
         return <AdminActiveMatch darkMode={darkMode} />;
       case "news":
         return <AdminNews darkMode={darkMode} />;
+      case "graphics":
+        return <AdminGraphicsCreator darkMode={darkMode} />;
       case "sponsors":
         return <AdminSponsors darkMode={darkMode} />;
       case "referees":

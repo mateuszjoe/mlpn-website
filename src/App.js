@@ -587,9 +587,37 @@ const INFO_SLUG_TO_SECTION = Object.fromEntries(
   Object.entries(INFO_SECTION_TO_SLUG).map(([section, slug]) => [slug, section])
 );
 
+const ADMIN_SECTION_TO_SLUG = {
+  dashboard: "",
+  wizard: "generator",
+  seasons: "sezony",
+  teams: "druzyny",
+  players: "zawodnicy",
+  rosters: "kadry",
+  schedule: "terminarz",
+  results: "wyniki",
+  "active-match": "aktywny-mecz",
+  news: "aktualnosci",
+  graphics: "grafiki",
+  sponsors: "sponsorzy",
+  referees: "sedziowie",
+  "control-center": "ustawienia",
+  users: "konta",
+};
+
+const ADMIN_SLUG_TO_SECTION = {
+  ...Object.fromEntries(
+    Object.entries(ADMIN_SECTION_TO_SLUG)
+      .filter(([, slug]) => slug)
+      .map(([section, slug]) => [slug, section])
+  ),
+  ...Object.fromEntries(Object.keys(ADMIN_SECTION_TO_SLUG).map((section) => [section, section])),
+};
+
 const HOME_SECTIONS = new Set(Object.keys(HOME_SECTION_TO_SLUG));
 const LEAGUE_SECTIONS = new Set(Object.keys(LEAGUE_SECTION_TO_SLUG));
 const INFO_SECTIONS = new Set(Object.keys(INFO_SECTION_TO_SLUG));
+const ADMIN_SECTIONS = new Set(Object.keys(ADMIN_SECTION_TO_SLUG));
 const APP_CONTEXTS = new Set([
   "home",
   "tournaments",
@@ -612,7 +640,7 @@ function normalizeSectionForContext(context, section) {
   if (context === "info") return INFO_SECTIONS.has(section) ? section : "about";
   if (LEAGUE_SECTIONS.has(section) && LEAGUE_CONTEXT_TO_SLUG[context]) return section;
   if (LEAGUE_CONTEXT_TO_SLUG[context]) return "home";
-  if (context === "admin") return section || "dashboard";
+  if (context === "admin") return ADMIN_SECTIONS.has(section) ? section : "dashboard";
   return section || "home";
 }
 
@@ -787,9 +815,10 @@ function parseRouteString(route) {
   }
 
   if (segments[0] === "admin") {
+    const adminSection = ADMIN_SLUG_TO_SECTION[segments[1]] || rawSection || "dashboard";
     return {
       activeContext: "admin",
-      activeSection: "dashboard",
+      activeSection: normalizeSectionForContext("admin", adminSection),
       selectedTeam: null,
       selectedMatchId: null,
       selectedPlayerId: null,
@@ -899,7 +928,8 @@ function buildRouteUrl({
   } else if (baseContext === "info") {
     path = `/info/${INFO_SECTION_TO_SLUG[baseSection] || INFO_SECTION_TO_SLUG.about}`;
   } else if (baseContext === "admin") {
-    path = "/admin";
+    const adminSectionPath = ADMIN_SECTION_TO_SLUG[baseSection] || "";
+    path = adminSectionPath ? `/admin/${adminSectionPath}` : "/admin";
   } else if (LEAGUE_CONTEXT_TO_SLUG[baseContext]) {
     const leaguePath = LEAGUE_CONTEXT_TO_SLUG[baseContext];
     const sectionPath = LEAGUE_SECTION_TO_SLUG[baseSection] || "";
@@ -6175,7 +6205,14 @@ export default function App() {
 
     // admin context
     if (activeContext === "admin") {
-      return <AdminPanel darkMode={darkMode} goHome={goHome} />;
+      return (
+        <AdminPanel
+          darkMode={darkMode}
+          goHome={goHome}
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+        />
+      );
     }
 
     // tournaments context
