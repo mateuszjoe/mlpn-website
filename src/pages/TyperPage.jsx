@@ -5,6 +5,7 @@ import {
   Bell,
   Calendar,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Crown,
   Eye,
@@ -65,6 +66,119 @@ const STAGE_LABELS = {
   "finał": "Finał",
 };
 
+const STAGE_ALIASES = {
+  GROUP: "group",
+  GROUP_STAGE: "group",
+  "1_16_FINALU": "round32",
+  LAST_32: "round32",
+  ROUND_OF_32: "round32",
+  ROUND_32: "round32",
+  "1_8_FINALU": "round16",
+  LAST_16: "round16",
+  ROUND_OF_16: "round16",
+  ROUND_16: "round16",
+  CWIERCFINAL: "quarter",
+  CWIERCFINALY: "quarter",
+  QUARTER_FINAL: "quarter",
+  QUARTER_FINALS: "quarter",
+  QUARTERFINAL: "quarter",
+  QUARTERFINALS: "quarter",
+  QF: "quarter",
+  POLFINAL: "semi",
+  POLFINALY: "semi",
+  SEMI_FINAL: "semi",
+  SEMI_FINALS: "semi",
+  SEMIFINAL: "semi",
+  SEMIFINALS: "semi",
+  SF: "semi",
+  MECZ_O_3_MIEJSCE: "third",
+  MECZ_O_TRZECIE_MIEJSCE: "third",
+  THIRD_PLACE: "third",
+  THIRD_PLACE_GAME: "third",
+  THIRD: "third",
+  FINAL: "final",
+};
+
+Object.assign(STAGE_LABELS, {
+  round32: "1/16 fina\u0142u",
+  round16: "1/8 fina\u0142u",
+  quarter: "\u0106wier\u0107fina\u0142",
+  semi: "P\u00f3\u0142fina\u0142",
+  third: "Mecz o 3. miejsce",
+  final: "Fina\u0142",
+});
+
+function normalizeLookupKey(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\u0142/g, "l")
+    .replace(/\u0141/g, "L")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function normalizeStageKey(stage) {
+  const raw = String(stage || "").trim();
+  if (!raw) return "";
+  if (STAGE_LABELS[raw]) return raw;
+
+  const upper = normalizeLookupKey(raw);
+
+  return STAGE_ALIASES[upper] || raw.toLowerCase();
+}
+
+function normalizeTeamDisplayKey(value) {
+  return String(value || "")
+    .replace(/\u0142/g, "l")
+    .replace(/\u0141/g, "L")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+const EXTRA_POLISH_TEAM_NAMES = {
+  "Bosnia and Herzegovina": "Bośnia i Hercegowina",
+  "Cote d'Ivoire": "Wybrzeże Kości Słoniowej",
+  "Côte d'Ivoire": "Wybrzeże Kości Słoniowej",
+  "Democratic Republic of Congo": "DR Konga",
+  "DR Congo": "DR Konga",
+  "Korea Republic": "Korea Płd.",
+  Turkey: "Turcja",
+  "United States of America": "USA",
+};
+
+const POLISH_TEAM_NAMES_BY_KEY = Object.entries({
+  ...Object.fromEntries(Object.entries(EXTRA_POLISH_TEAM_NAMES).map(([en, pl]) => [pl, en])),
+  ...teamNameAliases,
+}).reduce((map, [polishName, englishName]) => {
+  map[normalizeTeamDisplayKey(polishName)] = polishName;
+  map[normalizeTeamDisplayKey(englishName)] = polishName;
+  return map;
+}, {});
+
+function isPlaceholderTeamName(value) {
+  const key = normalizeTeamDisplayKey(value);
+  return (
+    !key ||
+    ["tbd", "doustalenia", "null"].includes(key) ||
+    key.includes("winner") ||
+    key.includes("loser") ||
+    key.includes("runnerup") ||
+    key.includes("zwyciezca") ||
+    key.includes("przegrany")
+  );
+}
+
+function localizeTeamName(value) {
+  const raw = String(value || "").trim();
+  if (isPlaceholderTeamName(raw)) return "Do ustalenia";
+  return POLISH_TEAM_NAMES_BY_KEY[normalizeTeamDisplayKey(raw)] || raw || "Do ustalenia";
+}
+
 function formatKickoff(isoValue) {
   if (!isoValue) return "Termin do ustalenia";
   const date = new Date(isoValue);
@@ -103,12 +217,12 @@ function isMatchInPickWindow(match, nowMs) {
 
 function normalizeWorldCupTeam(rawTeam = {}) {
   const id = rawTeam.id || `team-${rawTeam.name || "tbd"}`;
-  const name = rawTeam.name === "TBD" ? "Do ustalenia" : rawTeam.name || "Do ustalenia";
+  const name = localizeTeamName(rawTeam.name);
   return {
     id,
     name,
     crest: rawTeam.crest || "",
-    isTbd: !rawTeam.id || rawTeam.name === "TBD",
+    isTbd: !rawTeam.id || isPlaceholderTeamName(rawTeam.name) || isPlaceholderTeamName(name),
   };
 }
 
@@ -116,6 +230,7 @@ function normalizeWorldCupMatch(rawMatch = {}) {
   const homeTeam = normalizeWorldCupTeam(rawMatch.homeTeam);
   const awayTeam = normalizeWorldCupTeam(rawMatch.awayTeam);
   const finished = rawMatch.status === "FINISHED";
+  const rawStage = normalizeStageKey(rawMatch.stage);
   const result =
     finished &&
     rawMatch.homeScore !== null && rawMatch.homeScore !== undefined &&
@@ -125,8 +240,8 @@ function normalizeWorldCupMatch(rawMatch = {}) {
 
   return {
     id: rawMatch.id,
-    stage: STAGE_LABELS[rawMatch.stage] || rawMatch.stage || "Mecz",
-    rawStage: rawMatch.stage || "",
+    stage: STAGE_LABELS[rawStage] || rawMatch.stage || "Mecz",
+    rawStage,
     group: rawMatch.group || null,
     matchday: rawMatch.matchday || null,
     kickoffAt: rawMatch.kickoffAt || null,
@@ -137,7 +252,7 @@ function normalizeWorldCupMatch(rawMatch = {}) {
     awayTeam,
     status: finished ? "finished" : "open",
     result,
-    knockout: rawMatch.stage && rawMatch.stage !== "group",
+    knockout: !!rawStage && rawStage !== "group",
     duration: rawMatch.duration || "REGULAR",
     winner: rawMatch.winner || null,
   };
@@ -333,6 +448,12 @@ function getScheduleSegmentMeta(match) {
 
   const rawStage = match.rawStage || match.stage || "knockout";
   const knockoutOrder = {
+    round32: 10,
+    round16: 11,
+    quarter: 12,
+    semi: 13,
+    third: 14,
+    final: 15,
     "1/16 finału": 10,
     "1/8 finału": 11,
     "ćwierćfinał": 12,
@@ -598,6 +719,8 @@ const LIVE_KICKOFF_TOLERANCE_MS = 3 * 60 * 60 * 1000;
 
 function normalizeTeamName(value) {
   return String(value || "")
+    .replace(/\u0142/g, "l")
+    .replace(/\u0141/g, "L")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
@@ -606,7 +729,7 @@ function normalizeTeamName(value) {
 
 function teamKeyFromName(name) {
   const raw = String(name || "").trim();
-  if (!raw) return "";
+  if (!raw || isPlaceholderTeamName(raw)) return "";
   return normalizeTeamName(teamNameAliases[raw] || raw);
 }
 
@@ -614,6 +737,18 @@ function teamKeyFromName(name) {
 function matchEspnEventToMatch(match, espnEvents) {
   const homeKey = teamKeyFromName(team(match.home).name) || teamKeyFromName(match.homeTeam?.name);
   const awayKey = teamKeyFromName(team(match.away).name) || teamKeyFromName(match.awayTeam?.name);
+  const matchEventId = normalizeExternalEventId(match.id);
+
+  if (matchEventId) {
+    const direct = (espnEvents || []).find((event) => normalizeExternalEventId(event.id) === matchEventId);
+    if (direct) {
+      return {
+        event: direct,
+        swapped: !!homeKey && !!awayKey && direct.homeKey === awayKey && direct.awayKey === homeKey,
+      };
+    }
+  }
+
   if (!homeKey || !awayKey) return null;
 
   const kickoffMs = getKickoffMs(match);
@@ -1132,6 +1267,12 @@ function parseEspnInt(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function normalizeExternalEventId(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^wc-/i, "");
+}
+
 // Parsuje wszystkie zdarzenia ESPN (z kluczami drużyn do dopasowania po nazwie).
 // `state`: "pre" | "in" | "post". Bierzemy "in" (live) i "post" (świeżo
 // zakończone) — reszta jest pomijana wyżej tam, gdzie nie jest potrzebna.
@@ -1149,8 +1290,8 @@ function parseEspnEvents(data) {
     const away = competitors.find((entry) => entry.homeAway === "away");
     if (!home || !away) continue;
 
-    const homeName = home.team?.displayName || home.team?.name || home.team?.shortDisplayName || "?";
-    const awayName = away.team?.displayName || away.team?.name || away.team?.shortDisplayName || "?";
+    const homeName = localizeTeamName(home.team?.displayName || home.team?.name || home.team?.shortDisplayName || "?");
+    const awayName = localizeTeamName(away.team?.displayName || away.team?.name || away.team?.shortDisplayName || "?");
 
     parsed.push({
       id: String(event.id),
@@ -1275,6 +1416,10 @@ function LiveScoreTeam({ name, crest, logo, align = "left" }) {
 }
 
 function TyperLiveMatches({ matches, picks, darkMode, espnEvents, updatedAt }) {
+  // Domyślnie zwinięta — sama belka z listą meczów na żywo zajmowała za dużo
+  // miejsca na mobile, zwłaszcza gdy grało kilka spotkań naraz.
+  const [collapsed, setCollapsed] = useState(true);
+
   // Dopasowanie meczu w toku do naszego meczu PO NAZWIE + czasie (nie po samej
   // minucie gwizdka), żeby mecze grane równocześnie nie myliły się ze sobą.
   const rows = useMemo(() => {
@@ -1323,8 +1468,13 @@ function TyperLiveMatches({ matches, picks, darkMode, espnEvents, updatedAt }) {
         darkMode ? "border-red-400/30 bg-[#160d12] text-white" : "border-red-200 bg-white text-gray-950"
       )}
     >
-      <div className="flex items-center justify-between gap-3 border-b px-4 py-3"
-        style={{ borderColor: darkMode ? "rgba(248,113,113,0.25)" : "#fecaca" }}>
+      <button
+        type="button"
+        onClick={() => setCollapsed((c) => !c)}
+        aria-expanded={!collapsed}
+        className="flex w-full items-center justify-between gap-3 border-b px-4 py-3 text-left"
+        style={{ borderColor: darkMode ? "rgba(248,113,113,0.25)" : "#fecaca" }}
+      >
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
@@ -1335,14 +1485,21 @@ function TyperLiveMatches({ matches, picks, darkMode, espnEvents, updatedAt }) {
             {rows.length === 1 ? "1 mecz w toku" : `${rows.length} mecze w toku`}
           </span>
         </div>
-        {updatedAt && (
-          <span className={cx("text-[11px] font-bold", darkMode ? "text-gray-500" : "text-gray-400")}>
-            odświeżono{" "}
-            {new Intl.DateTimeFormat("pl-PL", { hour: "2-digit", minute: "2-digit" }).format(updatedAt)}
-          </span>
-        )}
-      </div>
+        <div className="flex items-center gap-2">
+          {updatedAt && (
+            <span className={cx("hidden text-[11px] font-bold sm:inline", darkMode ? "text-gray-500" : "text-gray-400")}>
+              odświeżono{" "}
+              {new Intl.DateTimeFormat("pl-PL", { hour: "2-digit", minute: "2-digit" }).format(updatedAt)}
+            </span>
+          )}
+          <ChevronDown
+            size={18}
+            className={cx("shrink-0 transition-transform", darkMode ? "text-gray-400" : "text-gray-500", !collapsed && "rotate-180")}
+          />
+        </div>
+      </button>
 
+      {!collapsed && (
       <div className="divide-y" style={{ borderColor: darkMode ? "rgba(255,255,255,0.06)" : "#f1f5f9" }}>
         {rows.map((row) => {
           const pickStatus = row.pick ? getLivePickStatus(row.pick, row.homeScore, row.awayScore) : null;
@@ -1381,6 +1538,7 @@ function TyperLiveMatches({ matches, picks, darkMode, espnEvents, updatedAt }) {
           );
         })}
       </div>
+      )}
     </section>
   );
 }
@@ -2189,7 +2347,7 @@ export default function WorldCupTyperPage({ darkMode }) {
 
         setTyperBackendReady(backendReady);
 
-        if (backendReady && remoteMatches.length >= 64) {
+        if (backendReady && remoteMatches.length > 0) {
           setRawWorldCupMatches(remoteMatches);
         }
       } catch (error) {
