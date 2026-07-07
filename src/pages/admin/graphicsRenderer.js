@@ -1430,9 +1430,13 @@ function drawPlayerVote(ctx, form, images, layout, top, bottom) {
   const t = layout.t;
   const cands = form.candidates.slice(0, 3);
   const areaH = bottom - top;
-  const r = Math.min((layout.width - layout.M * 2) / (cands.length * 2.15), areaH * 0.3);
-  const gap = r * (layout.isStory ? 1 : 0.8);
-  const totalW = cands.length * r * 2 + (cands.length - 1) * gap;
+  const n = cands.length || 1;
+  const gapFactor = layout.isStory ? 1 : 0.8;
+  // Width actually used by n circles + (n-1) gaps is n*2r + (n-1)*gapFactor*r —
+  // size r against that exact figure so the last candidate never spills past the card.
+  const r = Math.min((layout.width - layout.M * 2) / (n * 2 + (n - 1) * gapFactor), areaH * 0.3);
+  const gap = r * gapFactor;
+  const totalW = n * r * 2 + (n - 1) * gap;
   let x = layout.width / 2 - totalW / 2 + r;
   const cy = top + areaH * 0.4;
 
