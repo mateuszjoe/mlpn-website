@@ -185,6 +185,9 @@ const STANDINGS_SELECT = [
   "goals_for",
   "goals_against",
   "points",
+  "team_id",
+  "league_id",
+  "season_id",
 ].join(",");
 
 const SPONSOR_PROFILE_MARKER = "[MLPN_SPONSOR_PROFILE]";
@@ -727,7 +730,26 @@ export default function AdminGraphicsCreator({ darkMode }) {
         .eq("league_code", leagueCode)
         .order("position", { ascending: true });
       if (error) throw error;
-      setStandings(data || []);
+      const rows = data || [];
+
+      // Drop teams that withdrew mid-season (season_teams.left_round) — a graphic
+      // shouldn't show a defunct team sitting in the table with 0 played matches.
+      let activeRows = rows;
+      if (rows.length) {
+        const { season_id: seasonUuid, league_id: leagueUuid } = rows[0];
+        const { data: withdrawals, error: withdrawalsError } = await supabase
+          .from("season_teams")
+          .select("team_id")
+          .eq("season_id", seasonUuid)
+          .eq("league_id", leagueUuid)
+          .not("left_round", "is", null);
+        if (withdrawalsError) throw withdrawalsError;
+        const withdrawnIds = new Set((withdrawals || []).map((row) => row.team_id));
+        if (withdrawnIds.size) {
+          activeRows = rows.filter((row) => !withdrawnIds.has(row.team_id));
+        }
+      }
+      setStandings(activeRows);
     } catch (error) {
       setAlert({ type: "error", message: error.message || "Nie udało się wczytać tabeli." });
     } finally {
