@@ -531,7 +531,13 @@ function buildRowReusePlan({
     );
   }
 
-  const preservedRows = futureRows.filter((match) => preservedIdSet.has(String(match.id)));
+  // A preserved catch-up can already have been moved before startRound by a
+  // previous successful run. Resolve protected IDs against the full league
+  // snapshot so a second preview verifies the applied state instead of
+  // treating the catch-up as missing.
+  const preservedRows = sortRowsForReuse(
+    (existingMatches || []).filter((match) => preservedIdSet.has(String(match.id)))
+  );
   if (preservedRows.length !== preservedIdSet.size) {
     throw new Error("Nie znaleziono wszystkich wskazanych meczow zaleglych do zachowania.");
   }

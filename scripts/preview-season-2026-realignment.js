@@ -22,6 +22,31 @@ const SEASON_NAME = "Sezon 2026";
 const SCHEDULE_HIDDEN_MARKER = "[MLPN_SCHEDULE_HIDDEN]";
 const SECOND_LEAGUE_CATCHUP_MATCH_ID = "34ca790c-9128-48ce-9c74-8c18f069e9f1";
 const SECOND_LEAGUE_RETURN_MATCH_ID = "73bed1d3-7159-41be-8ec9-ae4483e81e7d";
+const SECOND_LEAGUE_NANKATSU_RKS_MATCH_ID = "2a9b5cde-310b-4f5f-adb3-7986658d33d8";
+const SECOND_LEAGUE_CATCHUP_OVERRIDES = {
+  round: 7,
+  match_date: "2026-09-02",
+  match_time: "19:20",
+};
+const SECOND_LEAGUE_NANKATSU_RKS_WALKOVER = {
+  round: 7,
+  match_date: "2026-09-02",
+  match_time: "18:10",
+  status: "walkover_home",
+  home_goals: 3,
+  away_goals: 0,
+  notes: null,
+};
+const FIRST_LEAGUE_OVERDUE_OVERRIDES = new Map([
+  [
+    "3b9167d4-331a-42ce-9b6e-37706b4934c0",
+    { match_date: "2026-08-25", match_time: "19:40" },
+  ],
+  [
+    "316c2f14-5539-4212-b3a2-552aa0145750",
+    { match_date: "2026-08-25", match_time: "20:50" },
+  ],
+]);
 const TEAM_NAMES = {
   oldrembham: "Oldrembham Forest",
   nankatsu: "Nankatsu",
@@ -31,6 +56,7 @@ const TEAM_NAMES = {
   joga: "Joga Finito",
   stm: "STM FC",
   pjm: "PJM",
+  rks: "RKS Pendrachy",
 };
 const LEAGUE_PLANS = {
   first: {
@@ -516,7 +542,10 @@ function printTextReport(report, summaryOnly) {
     `Zaległy Joga - Tidy zachowany: K${report.requiredChecks.outstandingJogaTidy.round}, ${report.requiredChecks.outstandingJogaTidy.match_date} ${report.requiredChecks.outstandingJogaTidy.match_time}.`
   );
   console.log(
-    `Normalny rewanż PJM - STM zachowuje ID ${report.requiredChecks.stmPjmReturn.match_id}; zaległy STM - PJM zachowuje osobne ID ${report.requiredChecks.outstandingStmPjm.id}.`
+    `Brakujący mecz I rundy RKS - Nankatsu zweryfikowany jako walkower ${report.requiredChecks.nankatsuRksWalkover.home_goals}:${report.requiredChecks.nankatsuRksWalkover.away_goals}: K${report.requiredChecks.nankatsuRksWalkover.round}, ${report.requiredChecks.nankatsuRksWalkover.match_date} ${report.requiredChecks.nankatsuRksWalkover.match_time}.`
+  );
+  console.log(
+    `Normalny rewanż PJM - STM zachowuje ID ${report.requiredChecks.stmPjmReturn.match_id}; zaległy STM - PJM zachowuje osobne ID ${report.requiredChecks.outstandingStmPjm.id} i termin ${report.requiredChecks.outstandingStmPjm.match_date} ${report.requiredChecks.outstandingStmPjm.match_time}.`
   );
   console.log(
     report.readyToApply
@@ -591,6 +620,16 @@ async function main() {
     startRound: LEAGUE_PLANS.first.startRound,
     seed: LEAGUE_PLANS.first.seed,
   });
+  for (const [matchId, override] of FIRST_LEAGUE_OVERDUE_OVERRIDES) {
+    const overdueMatch = requireRow(
+      firstPlan.preservedUnfinishedMatches,
+      (match) => match.id === matchId,
+      `zalegly mecz I ligi ${matchId}`
+    );
+    Object.assign(overdueMatch, override);
+  }
+  firstPlan.calendarConflicts = findCalendarConflicts(firstPlan);
+
   const secondFixedMatches = [{
     stageRound: 1,
     teamAId: ids.slimak,
@@ -605,7 +644,10 @@ async function main() {
     seed: LEAGUE_PLANS.second.seed,
     fixedMatches: secondFixedMatches,
     byeRounds: [{ stageRound: 8, teamId: ids.joga }],
-    preserveMatchIds: [SECOND_LEAGUE_CATCHUP_MATCH_ID],
+    preserveMatchIds: [
+      SECOND_LEAGUE_CATCHUP_MATCH_ID,
+      SECOND_LEAGUE_NANKATSU_RKS_MATCH_ID,
+    ],
   });
 
   const preservedCatchup = requireRow(
@@ -616,6 +658,19 @@ async function main() {
       match.away_team_id === ids.pjm,
     "zalegly pierwszy mecz STM FC - PJM"
   );
+  Object.assign(preservedCatchup, SECOND_LEAGUE_CATCHUP_OVERRIDES);
+
+  const nankatsuRksWalkover = requireRow(
+    secondPlan.rowPlan.preservedMatches,
+    (match) =>
+      match.id === SECOND_LEAGUE_NANKATSU_RKS_MATCH_ID &&
+      match.home_team_id === ids.rks &&
+      match.away_team_id === ids.nankatsu,
+    "zalegly pierwszy mecz RKS Pendrachy - Nankatsu"
+  );
+  Object.assign(nankatsuRksWalkover, SECOND_LEAGUE_NANKATSU_RKS_WALKOVER);
+  secondPlan.calendarConflicts = findCalendarConflicts(secondPlan);
+
   const stmPjmReturn = requireRow(
     secondPlan.rowPlan.updates,
     (update) =>
@@ -699,6 +754,14 @@ async function main() {
       secondLeagueEighthRoundBye: TEAM_NAMES.joga,
       outstandingJogaTidy: publicMatch(outstandingJogaTidy, teamNameById),
       outstandingStmPjm: publicMatch(preservedCatchup, teamNameById),
+      nankatsuRksWalkover: {
+        ...publicMatch(nankatsuRksWalkover, teamNameById),
+        home_goals: nankatsuRksWalkover.home_goals,
+        away_goals: nankatsuRksWalkover.away_goals,
+      },
+      rescheduledFirstLeagueMatches: firstPlan.preservedUnfinishedMatches
+        .filter((match) => FIRST_LEAGUE_OVERDUE_OVERRIDES.has(match.id))
+        .map((match) => publicMatch(match, teamNameById)),
       stmPjmReturn: {
         match_id: stmPjmReturn.matchId,
         round: stmPjmReturn.payload.round,

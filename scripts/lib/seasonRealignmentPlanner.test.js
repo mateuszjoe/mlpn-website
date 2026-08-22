@@ -142,6 +142,29 @@ test("zachowuje wskazany zalegly mecz poza nowym etapem", () => {
   assert.equal(plan.inserts.length, 0);
 });
 
+test("rozpoznaje zachowany zalegly mecz po przeniesieniu przed nowy etap", () => {
+  const existingMatches = [
+    { id: "catchup", round: 7, match_date: "2026-09-02", match_time: "19:20", status: "scheduled", home_team_id: "b", away_team_id: "a" },
+    { id: "return", round: 12, match_date: "2026-09-19", match_time: "13:40", status: "scheduled", home_team_id: "a", away_team_id: "b" },
+  ];
+  const desiredMatches = [
+    { round: 12, match_date: "2026-09-19", match_time: "13:40", home_team_id: "a", away_team_id: "b" },
+  ];
+
+  const plan = buildRowReusePlan({
+    existingMatches,
+    desiredMatches,
+    startRound: 10,
+    preserveMatchIds: ["catchup"],
+  });
+
+  assert.equal(plan.updates.length, 1);
+  assert.equal(plan.updates[0].matchId, "return");
+  assert.equal(plan.preservedMatches[0].id, "catchup");
+  assert.equal(plan.deleteMatchIds.length, 0);
+  assert.equal(plan.inserts.length, 0);
+});
+
 test("nie przydziela druzyny na dzien jej zachowanego zaleglego meczu", () => {
   const rounds = [{
     stage_round: 1,
