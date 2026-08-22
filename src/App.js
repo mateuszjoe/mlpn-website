@@ -6184,7 +6184,7 @@ export default function App() {
         <TeamProfile
           darkMode={darkMode}
           team={selectedTeam}
-          leagueId={currentLeagues.find((l) => l.teams.includes(selectedTeam))?.id}
+          leagueId={currentLeagues.find((l) => (l.allTeams || l.teams).includes(selectedTeam))?.id}
           teamRow={stats.teamStats[selectedTeam]}
           recentMatches={getTeamRecentMatches(selectedTeam, matches)}
           fixtures={fixtures}

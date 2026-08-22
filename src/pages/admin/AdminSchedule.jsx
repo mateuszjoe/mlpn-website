@@ -817,13 +817,25 @@ export default function AdminSchedule({ darkMode }) {
     try {
       const { data: seasonTeams, error: teamError } = await supabase
         .from("season_teams")
-        .select("team_id")
+        .select("team_id, joined_round, left_round")
         .eq("season_id", selectedSeason)
         .eq("league_id", selectedLeague);
 
       if (teamError) throw teamError;
 
-      const teamCount = seasonTeams?.length || 0;
+      const hasMidSeasonMembershipChanges = (seasonTeams || []).some(
+        (seasonTeam) =>
+          Number(seasonTeam.joined_round || 1) > 1 || seasonTeam.left_round != null
+      );
+      if (hasMidSeasonMembershipChanges) {
+        throw new Error(
+          "Ta liga ma drużyny dodane lub wycofane w trakcie sezonu. Zwykłe przetasowanie całego dwumeczu jest zablokowane, aby nie policzyć historycznych wpisów jako aktywnych drużyn."
+        );
+      }
+
+      const teamCount = (seasonTeams || []).filter((seasonTeam) =>
+        isSeasonTeamActiveOnRound(seasonTeam, suggestedStructureRound)
+      ).length;
       const basePlan = buildRegenerationPlan(matches, teamCount);
 
       const invalidRound = getGuidelineRounds(parsedReshuffleGuidelines).find(

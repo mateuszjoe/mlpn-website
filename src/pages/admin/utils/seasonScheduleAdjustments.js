@@ -1,6 +1,7 @@
 import { isEditableScheduleStatus, isLockedScheduleStatus } from "./scheduleRegeneration";
 
 const DEFAULT_SLOT_TIMES = ["14:30", "15:30", "16:30", "17:30", "18:30"];
+const SCHEDULE_HIDDEN_MARKER = "[MLPN_SCHEDULE_HIDDEN]";
 
 function toRoundNumber(value) {
   const round = Number(value);
@@ -493,6 +494,9 @@ export function buildMidSeasonSchedulePlan({
   const futureEditableMatches = (matches || []).filter(
     (match) => toRoundNumber(match.round) >= effectiveRound && isEditableScheduleStatus(match.status)
   );
+  const keepFutureScheduleHidden = futureEditableMatches.some((match) =>
+    String(match.notes || "").includes(SCHEDULE_HIDDEN_MARKER)
+  );
   const fixtures = buildRemainingFixtures(activeTeamIds, lockedMatches);
   const matchesPerRound = Math.floor(activeTeamIds.length / 2);
   const existingMaxRound = Math.max(
@@ -540,6 +544,7 @@ export function buildMidSeasonSchedulePlan({
         match_date: slot?.match_date || template.baseDate || null,
         match_time: slot?.match_time || DEFAULT_SLOT_TIMES[index] || DEFAULT_SLOT_TIMES[0],
         status: "scheduled",
+        notes: keepFutureScheduleHidden ? SCHEDULE_HIDDEN_MARKER : null,
       });
     });
   }

@@ -28,6 +28,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "postbuild": "node scripts/copy-404.js",
+    "preview:season-realignment": "node scripts/preview-season-2026-realignment.js",
+    "test:season-realignment": "node --test scripts/lib/seasonRealignmentPlanner.test.js",
     "sync:world-cup": "node scripts/sync-world-cup-matches.js",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",

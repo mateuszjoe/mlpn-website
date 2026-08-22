@@ -357,18 +357,21 @@ export async function fetchAllMatches(seasonYear) {
 // ============================================================
 
 export async function fetchTeamsForSeason(seasonYear) {
-  const { data: season } = await publicSupabase
+  const { data: season, error: seasonError } = await publicSupabase
     .from('seasons')
-    .select('id')
+    .select('id, status, is_current')
     .eq('year', seasonYear)
     .single();
 
+  if (seasonError) throw seasonError;
   if (!season) return [];
 
   const { data: seasonTeams, error } = await publicSupabase
     .from('season_teams')
     .select(`
       team_id,
+      joined_round,
+      left_round,
       final_position,
       promoted,
       relegated,
@@ -392,9 +395,20 @@ export async function fetchTeamsForSeason(seasonYear) {
         id: code,
         name: st.leagues.name,
         teams: [],
+        allTeams: [],
+        withdrawnTeams: [],
       };
     }
-    leagues[code].teams.push(st.teams.name);
+
+    const teamName = st.teams.name;
+    const includeHistoricalTeam = season.status === 'completed';
+    leagues[code].allTeams.push(teamName);
+
+    if (st.left_round == null || includeHistoricalTeam) {
+      leagues[code].teams.push(teamName);
+    } else {
+      leagues[code].withdrawnTeams.push(teamName);
+    }
   }
 
   return Object.values(leagues).sort((a, b) => {
