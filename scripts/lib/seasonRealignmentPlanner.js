@@ -500,6 +500,317 @@ function assignRoundsToSlots(
   return { rounds: scheduledRounds, matches: scheduledMatches };
 }
 
+function normalizeTeamIdRemap(teamIdRemap) {
+  if (teamIdRemap instanceof Map) return new Map(teamIdRemap);
+  return new Map(Object.entries(teamIdRemap || {}));
+}
+
+function orientLikeExistingPair(match, existingByPair) {
+  const existing = existingByPair.get(pairKey(match.home_team_id, match.away_team_id));
+  if (!existing) return { ...match };
+  return {
+    ...match,
+    home_team_id: existing.home_team_id,
+    away_team_id: existing.away_team_id,
+  };
+}
+
+function buildExistingRoundRobinStage({ existingMatches, teamIds, startRound }) {
+  const uniqueTeamIds = [...new Set(teamIds || [])];
+  const teamIdSet = new Set(uniqueTeamIds);
+  const roundCount = uniqueTeamIds.length % 2 === 1
+    ? uniqueTeamIds.length
+    : uniqueTeamIds.length - 1;
+  const matchesPerRound = Math.floor(uniqueTeamIds.length / 2);
+  const rounds = [];
+
+  for (let stageRound = 1; stageRound <= roundCount; stageRound += 1) {
+    const globalRound = Number(startRound) + stageRound - 1;
+    const matches = sortRowsForReuse(existingMatches || [])
+      .filter((match) => Number(match.round) === globalRound)
+      .filter(
+        (match) =>
+          teamIdSet.has(match.home_team_id) && teamIdSet.has(match.away_team_id)
+      );
+
+    if (matches.length !== matchesPerRound) {
+      throw new Error(
+        `Kolejka ${globalRound} ma ${matches.length} aktywnych meczow, oczekiwano ${matchesPerRound}.`
+      );
+    }
+
+    const usedTeamIds = new Set();
+    for (const match of matches) {
+      if (usedTeamIds.has(match.home_team_id) || usedTeamIds.has(match.away_team_id)) {
+        throw new Error(`Kolejka ${globalRound} zawiera druzyne wiecej niz raz.`);
+      }
+      usedTeamIds.add(match.home_team_id);
+      usedTeamIds.add(match.away_team_id);
+    }
+
+    const byeTeamIds = uniqueTeamIds.filter((teamId) => !usedTeamIds.has(teamId));
+    const expectedByeCount = uniqueTeamIds.length % 2 === 1 ? 1 : 0;
+    if (byeTeamIds.length !== expectedByeCount) {
+      throw new Error(
+        `Kolejka ${globalRound} ma ${byeTeamIds.length} pauz, oczekiwano ${expectedByeCount}.`
+      );
+    }
+
+    rounds.push({
+      stage_round: stageRound,
+      global_round: globalRound,
+      bye_team_id: byeTeamIds[0] || null,
+      matches: matches.map((match) => ({
+        home_team_id: match.home_team_id,
+        away_team_id: match.away_team_id,
+      })),
+    });
+  }
+
+  const verification = verifySingleRoundRobin(uniqueTeamIds, rounds);
+  if (!verification.ok) throw new Error(verification.errors.join("\n"));
+  return rounds;
+}
+
+function remapRoundRobinStage({
+  existingMatches,
+  teamIds,
+  startRound,
+  teamIdRemap,
+  fixedMatches = [],
+  byeRounds = [],
+}) {
+  const baseRounds = buildExistingRoundRobinStage({
+    existingMatches,
+    teamIds,
+    startRound,
+  });
+  const uniqueTeamIds = [...new Set(teamIds || [])];
+
+  // Idempotency: after the target schedule has been applied, reconstruct it
+  // directly instead of applying the swap for a second time.
+  if (scheduleMeetsConstraints(baseRounds, fixedMatches, byeRounds)) {
+    return {
+      rounds: applyFixedHomeTeams(baseRounds, fixedMatches),
+      remapped: false,
+    };
+  }
+
+  const remap = normalizeTeamIdRemap(teamIdRemap);
+  const remappedTeamIds = uniqueTeamIds.map((teamId) => remap.get(teamId) || teamId);
+  if (
+    new Set(remappedTeamIds).size !== uniqueTeamIds.length ||
+    remappedTeamIds.some((teamId) => !uniqueTeamIds.includes(teamId))
+  ) {
+    throw new Error("Mapowanie druzyn musi byc bijekcja w obrebie skladu etapu.");
+  }
+
+  const stageRoundNumbers = new Set(baseRounds.map((round) => round.global_round));
+  const existingByPair = new Map();
+  for (const match of sortRowsForReuse(existingMatches || [])) {
+    if (!stageRoundNumbers.has(Number(match.round))) continue;
+    existingByPair.set(pairKey(match.home_team_id, match.away_team_id), match);
+  }
+
+  const remappedRounds = baseRounds.map((round) => ({
+    ...round,
+    bye_team_id: round.bye_team_id
+      ? remap.get(round.bye_team_id) || round.bye_team_id
+      : null,
+    matches: round.matches.map((match) =>
+      orientLikeExistingPair(
+        {
+          home_team_id: remap.get(match.home_team_id) || match.home_team_id,
+          away_team_id: remap.get(match.away_team_id) || match.away_team_id,
+        },
+        existingByPair
+      )
+    ),
+  }));
+  const fixedRounds = applyFixedHomeTeams(remappedRounds, fixedMatches);
+
+  if (!scheduleMeetsConstraints(fixedRounds, fixedMatches, byeRounds)) {
+    throw new Error("Mapowanie druzyn nie spelnia wymaganych par lub pauz etapu.");
+  }
+  const verification = verifySingleRoundRobin(uniqueTeamIds, fixedRounds);
+  if (!verification.ok) throw new Error(verification.errors.join("\n"));
+
+  return { rounds: fixedRounds, remapped: true };
+}
+
+function assignRoundsToStableSlots(
+  rounds,
+  stageSlots,
+  existingMatches,
+  teamNameById = new Map(),
+  options = {}
+) {
+  const slotsByStageRound = new Map(
+    (stageSlots || []).map((entry) => [entry.stage_round, entry])
+  );
+  const blockedTeamDates = options.blockedTeamDates || new Map();
+  const fixedSlots = options.fixedSlots || [];
+  const teamIdRemap = normalizeTeamIdRemap(options.teamIdRemap);
+  const inverseTeamIdRemap = new Map();
+  for (const [sourceTeamId, targetTeamId] of teamIdRemap) {
+    if (inverseTeamIdRemap.has(targetTeamId)) {
+      throw new Error("Mapowanie druzyn dla slotow musi byc bijekcja.");
+    }
+    inverseTeamIdRemap.set(targetTeamId, sourceTeamId);
+  }
+  const globalRoundNumbers = new Set(
+    (stageSlots || []).map((entry) => Number(entry.global_round))
+  );
+  const existingByPair = new Map();
+  for (const match of sortRowsForReuse(existingMatches || [])) {
+    if (!globalRoundNumbers.has(Number(match.round))) continue;
+    existingByPair.set(pairKey(match.home_team_id, match.away_team_id), match);
+  }
+
+  function slotKey(slot) {
+    return `${slot.match_date}::${normalizeTime(slot.match_time)}`;
+  }
+
+  function isAllowed(match, slot) {
+    const homeBlockedDates = blockedTeamDates.get(match.home_team_id) || new Set();
+    const awayBlockedDates = blockedTeamDates.get(match.away_team_id) || new Set();
+    return !homeBlockedDates.has(slot.match_date) && !awayBlockedDates.has(slot.match_date);
+  }
+
+  const scheduledMatches = [];
+  const scheduledRounds = [];
+
+  for (const round of rounds || []) {
+    const slotRound = slotsByStageRound.get(round.stage_round);
+    if (!slotRound) throw new Error(`Brak slotow dla kolejki etapu ${round.stage_round}.`);
+
+    const roundFixedSlots = fixedSlots.filter(
+      (entry) => Number(entry.stageRound) === Number(round.stage_round)
+    );
+    const candidateSlots = sortSlots([
+      ...(slotRound.slots || []),
+      ...roundFixedSlots.map((entry) => ({
+        match_date: entry.match_date,
+        match_time: normalizeTime(entry.match_time),
+      })),
+    ]).filter(
+      (slot, index, slots) =>
+        slots.findIndex((candidate) => slotKey(candidate) === slotKey(slot)) === index
+    );
+    const orderedMatches = [...round.matches].sort((left, right) => {
+      const leftLabel = `${teamNameById.get(left.home_team_id) || left.home_team_id}|${teamNameById.get(left.away_team_id) || left.away_team_id}`;
+      const rightLabel = `${teamNameById.get(right.home_team_id) || right.home_team_id}|${teamNameById.get(right.away_team_id) || right.away_team_id}`;
+      return leftLabel.localeCompare(rightLabel, "pl");
+    });
+    const assignments = new Map();
+    const usedSlotKeys = new Set();
+
+    for (const fixedSlot of roundFixedSlots) {
+      const match = orderedMatches.find(
+        (candidate) =>
+          pairKey(candidate.home_team_id, candidate.away_team_id) ===
+          pairKey(fixedSlot.teamAId, fixedSlot.teamBId)
+      );
+      if (!match) {
+        throw new Error(`Brak wymaganej pary dla stalego slotu w kolejce ${round.stage_round}.`);
+      }
+      const slot = {
+        match_date: fixedSlot.match_date,
+        match_time: normalizeTime(fixedSlot.match_time),
+      };
+      if (usedSlotKeys.has(slotKey(slot))) {
+        throw new Error(`Staly slot ${slotKey(slot)} zostal wskazany wiecej niz raz.`);
+      }
+      if (!isAllowed(match, slot)) {
+        throw new Error(`Staly slot ${slotKey(slot)} koliduje z zaleglym meczem druzyny.`);
+      }
+      assignments.set(match, slot);
+      usedSlotKeys.add(slotKey(slot));
+    }
+
+    // Keep a pair on its current round/date/time whenever that slot is still
+    // available. This is what makes the output stable across repeated runs.
+    for (const match of orderedMatches) {
+      if (assignments.has(match)) continue;
+      const existing = existingByPair.get(pairKey(match.home_team_id, match.away_team_id));
+      if (!existing || Number(existing.round) !== Number(slotRound.global_round)) continue;
+      const slot = candidateSlots.find(
+        (candidate) =>
+          candidate.match_date === existing.match_date &&
+          normalizeTime(candidate.match_time) === normalizeTime(existing.match_time)
+      );
+      if (!slot || usedSlotKeys.has(slotKey(slot)) || !isAllowed(match, slot)) continue;
+      assignments.set(match, slot);
+      usedSlotKeys.add(slotKey(slot));
+    }
+
+    // A remapped pair inherits the slot occupied by its source pair in this
+    // round. For example, after Detox -> PJM, Tidy-PJM keeps the former
+    // Detox-Tidy slot. Exact pairs above always win, which keeps a second run
+    // idempotent after the remap has already been deployed.
+    for (const match of orderedMatches) {
+      if (assignments.has(match) || inverseTeamIdRemap.size === 0) continue;
+      const sourceHomeTeamId =
+        inverseTeamIdRemap.get(match.home_team_id) || match.home_team_id;
+      const sourceAwayTeamId =
+        inverseTeamIdRemap.get(match.away_team_id) || match.away_team_id;
+      const source = existingByPair.get(pairKey(sourceHomeTeamId, sourceAwayTeamId));
+      if (!source || Number(source.round) !== Number(slotRound.global_round)) continue;
+      const slot = candidateSlots.find(
+        (candidate) =>
+          candidate.match_date === source.match_date &&
+          normalizeTime(candidate.match_time) === normalizeTime(source.match_time)
+      );
+      if (!slot || usedSlotKeys.has(slotKey(slot)) || !isAllowed(match, slot)) continue;
+      assignments.set(match, slot);
+      usedSlotKeys.add(slotKey(slot));
+    }
+
+    const remainingMatches = orderedMatches.filter((match) => !assignments.has(match));
+    const remainingSlots = candidateSlots.filter((slot) => !usedSlotKeys.has(slotKey(slot)));
+
+    function backtrack(matchIndex) {
+      if (matchIndex >= remainingMatches.length) return true;
+      const match = remainingMatches[matchIndex];
+      for (let slotIndex = 0; slotIndex < remainingSlots.length; slotIndex += 1) {
+        const slot = remainingSlots[slotIndex];
+        const key = slotKey(slot);
+        if (usedSlotKeys.has(key) || !isAllowed(match, slot)) continue;
+        assignments.set(match, slot);
+        usedSlotKeys.add(key);
+        if (backtrack(matchIndex + 1)) return true;
+        assignments.delete(match);
+        usedSlotKeys.delete(key);
+      }
+      return false;
+    }
+
+    if (!backtrack(0)) {
+      throw new Error(
+        `Nie udalo sie stabilnie przydzielic godzin w kolejce ${slotRound.global_round}.`
+      );
+    }
+
+    const roundMatches = orderedMatches.map((match) => ({
+      ...match,
+      stage_round: round.stage_round,
+      round: slotRound.global_round,
+      match_date: assignments.get(match).match_date,
+      match_time: normalizeTime(assignments.get(match).match_time),
+      status: "scheduled",
+    }));
+    scheduledMatches.push(...roundMatches);
+    scheduledRounds.push({
+      stage_round: round.stage_round,
+      global_round: slotRound.global_round,
+      bye_team_id: round.bye_team_id,
+      matches: roundMatches,
+    });
+  }
+
+  return { rounds: scheduledRounds, matches: scheduledMatches };
+}
+
 function sortRowsForReuse(rows) {
   return [...rows].sort((left, right) => {
     const roundDiff = Number(left.round || 0) - Number(right.round || 0);
@@ -620,5 +931,7 @@ module.exports = {
   orientAsReturnFixtures,
   buildStageSlots,
   assignRoundsToSlots,
+  remapRoundRobinStage,
+  assignRoundsToStableSlots,
   buildRowReusePlan,
 };

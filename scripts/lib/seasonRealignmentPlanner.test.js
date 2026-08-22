@@ -8,6 +8,8 @@ const {
   orientAsReturnFixtures,
   buildStageSlots,
   assignRoundsToSlots,
+  remapRoundRobinStage,
+  assignRoundsToStableSlots,
   buildRowReusePlan,
 } = require("./seasonRealignmentPlanner");
 
@@ -195,4 +197,214 @@ test("nie przydziela druzyny na dzien jej zachowanego zaleglego meczu", () => {
   );
 
   assert.equal(matchA.match_date, "2026-09-06");
+});
+
+test("przemapowuje pauze przez zamiane druzyn i jest idempotentny", () => {
+  const teamIds = ["slimak", "tidy", "gosuansa", "detox", "pjm"];
+  const baseline = buildConstrainedSingleRoundRobin({
+    teamIds,
+    fixedMatches: [
+      { stageRound: 1, teamAId: "slimak", teamBId: "tidy", homeTeamId: "slimak" },
+      { stageRound: 1, teamAId: "gosuansa", teamBId: "pjm", homeTeamId: "gosuansa" },
+    ],
+    byeRounds: [{ stageRound: 1, teamId: "detox" }],
+    seed: 901,
+  });
+  const existingMatches = baseline.rounds.flatMap((round) =>
+    round.matches.map((match, index) => ({
+      id: `before-${round.stage_round}-${index}`,
+      round: 9 + round.stage_round,
+      match_date: `2026-09-${String(4 + round.stage_round).padStart(2, "0")}`,
+      match_time: index === 0 ? "18:10" : "19:20",
+      status: "scheduled",
+      ...match,
+    }))
+  );
+  const targetFixedMatches = [
+    { stageRound: 1, teamAId: "slimak", teamBId: "tidy", homeTeamId: "slimak" },
+    { stageRound: 1, teamAId: "gosuansa", teamBId: "detox", homeTeamId: "gosuansa" },
+  ];
+  const targetByeRounds = [{ stageRound: 1, teamId: "pjm" }];
+
+  const first = remapRoundRobinStage({
+    existingMatches,
+    teamIds,
+    startRound: 10,
+    teamIdRemap: new Map([["detox", "pjm"], ["pjm", "detox"]]),
+    fixedMatches: targetFixedMatches,
+    byeRounds: targetByeRounds,
+  });
+  assert.equal(first.remapped, true);
+  assert.equal(first.rounds[0].bye_team_id, "pjm");
+  assert.equal(
+    first.rounds[0].matches.some(
+      (match) => pairKey(match.home_team_id, match.away_team_id) === pairKey("gosuansa", "detox")
+    ),
+    true
+  );
+  assert.equal(verifySingleRoundRobin(teamIds, first.rounds).ok, true);
+
+  const appliedMatches = first.rounds.flatMap((round) =>
+    round.matches.map((match, index) => ({
+      id: `after-${round.stage_round}-${index}`,
+      round: 9 + round.stage_round,
+      match_date: `2026-10-${String(round.stage_round).padStart(2, "0")}`,
+      match_time: index === 0 ? "18:10" : "19:20",
+      status: "scheduled",
+      ...match,
+    }))
+  );
+  const second = remapRoundRobinStage({
+    existingMatches: appliedMatches,
+    teamIds,
+    startRound: 10,
+    teamIdRemap: new Map([["detox", "pjm"], ["pjm", "detox"]]),
+    fixedMatches: targetFixedMatches,
+    byeRounds: targetByeRounds,
+  });
+
+  assert.equal(second.remapped, false);
+  assert.deepEqual(second.rounds, first.rounds);
+});
+
+test("stabilnie przypisuje piec wskazanych slotow K10 i nie dryfuje po wdrozeniu", () => {
+  const rounds = [{
+    stage_round: 1,
+    global_round: 10,
+    bye_team_id: "pjm",
+    matches: [
+      { home_team_id: "slimak", away_team_id: "tidy" },
+      { home_team_id: "gosuansa", away_team_id: "detox" },
+      { home_team_id: "faludza", away_team_id: "stm" },
+      { home_team_id: "tiger", away_team_id: "joga" },
+      { home_team_id: "rks", away_team_id: "rayo" },
+    ],
+  }];
+  const existingMatches = [
+    { id: "st", round: 10, match_date: "2026-09-06", match_time: "13:40", home_team_id: "slimak", away_team_id: "tidy" },
+    { id: "gd", round: 15, match_date: "2026-10-11", match_time: "13:40", home_team_id: "gosuansa", away_team_id: "detox" },
+    { id: "fs", round: 10, match_date: "2026-09-05", match_time: "18:10", home_team_id: "faludza", away_team_id: "stm" },
+    { id: "tj", round: 10, match_date: "2026-09-07", match_time: "19:50", home_team_id: "tiger", away_team_id: "joga" },
+    { id: "rr", round: 10, match_date: "2026-09-06", match_time: "16:00", home_team_id: "rks", away_team_id: "rayo" },
+  ];
+  const stageSlots = [{
+    stage_round: 1,
+    global_round: 10,
+    slots: [
+      { match_date: "2026-09-05", match_time: "18:10" },
+      { match_date: "2026-09-06", match_time: "13:40" },
+      { match_date: "2026-09-06", match_time: "14:50" },
+      { match_date: "2026-09-06", match_time: "16:00" },
+      { match_date: "2026-09-07", match_time: "19:50" },
+    ],
+  }];
+  const fixedSlots = [
+    { stageRound: 1, teamAId: "slimak", teamBId: "tidy", match_date: "2026-09-05", match_time: "18:10" },
+    { stageRound: 1, teamAId: "gosuansa", teamBId: "detox", match_date: "2026-09-05", match_time: "20:30" },
+    { stageRound: 1, teamAId: "faludza", teamBId: "stm", match_date: "2026-09-06", match_time: "13:40" },
+    { stageRound: 1, teamAId: "tiger", teamBId: "joga", match_date: "2026-09-06", match_time: "14:50" },
+    { stageRound: 1, teamAId: "rks", teamBId: "rayo", match_date: "2026-09-06", match_time: "16:00" },
+  ];
+
+  const first = assignRoundsToStableSlots(
+    rounds,
+    stageSlots,
+    existingMatches,
+    new Map(),
+    { fixedSlots }
+  );
+  assert.deepEqual(
+    first.rounds[0].matches
+      .map((match) => `${pairKey(match.home_team_id, match.away_team_id)}@${match.match_date} ${match.match_time}`)
+      .sort(),
+    [
+      "detox::gosuansa@2026-09-05 20:30",
+      "faludza::stm@2026-09-06 13:40",
+      "joga::tiger@2026-09-06 14:50",
+      "rayo::rks@2026-09-06 16:00",
+      "slimak::tidy@2026-09-05 18:10",
+    ]
+  );
+
+  const appliedMatches = first.matches.map((match, index) => ({
+    ...match,
+    id: `applied-${index}`,
+  }));
+  const appliedSlots = [{
+    stage_round: 1,
+    global_round: 10,
+    slots: first.matches.map((match) => ({
+      match_date: match.match_date,
+      match_time: match.match_time,
+    })),
+  }];
+  const second = assignRoundsToStableSlots(
+    rounds,
+    appliedSlots,
+    appliedMatches,
+    new Map(),
+    { fixedSlots }
+  );
+
+  assert.deepEqual(second, first);
+});
+
+test("zmieniona para dziedziczy slot pary zrodlowej przez odwrotne mapowanie", () => {
+  const rounds = [{
+    stage_round: 1,
+    global_round: 13,
+    bye_team_id: "stm",
+    matches: [
+      { home_team_id: "tidy", away_team_id: "pjm" },
+      { home_team_id: "faludza", away_team_id: "detox" },
+    ],
+  }];
+  const existingMatches = [
+    { id: "source-dt", round: 13, match_date: "2026-09-26", match_time: "18:10", home_team_id: "detox", away_team_id: "tidy" },
+    { id: "source-fp", round: 13, match_date: "2026-09-27", match_time: "16:00", home_team_id: "faludza", away_team_id: "pjm" },
+  ];
+  const stageSlots = [{
+    stage_round: 1,
+    global_round: 13,
+    slots: [
+      { match_date: "2026-09-26", match_time: "18:10" },
+      { match_date: "2026-09-27", match_time: "16:00" },
+    ],
+  }];
+  const teamIdRemap = new Map([["detox", "pjm"], ["pjm", "detox"]]);
+
+  const first = assignRoundsToStableSlots(
+    rounds,
+    stageSlots,
+    existingMatches,
+    new Map(),
+    { teamIdRemap }
+  );
+  const tidyPjm = first.matches.find(
+    (match) => pairKey(match.home_team_id, match.away_team_id) === pairKey("tidy", "pjm")
+  );
+  const faludzaDetox = first.matches.find(
+    (match) => pairKey(match.home_team_id, match.away_team_id) === pairKey("faludza", "detox")
+  );
+  assert.deepEqual(
+    [tidyPjm.match_date, tidyPjm.match_time],
+    ["2026-09-26", "18:10"]
+  );
+  assert.deepEqual(
+    [faludzaDetox.match_date, faludzaDetox.match_time],
+    ["2026-09-27", "16:00"]
+  );
+
+  const appliedMatches = first.matches.map((match, index) => ({
+    ...match,
+    id: `applied-source-slot-${index}`,
+  }));
+  const second = assignRoundsToStableSlots(
+    rounds,
+    stageSlots,
+    appliedMatches,
+    new Map(),
+    { teamIdRemap }
+  );
+  assert.deepEqual(second, first);
 });

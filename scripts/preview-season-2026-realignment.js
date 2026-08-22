@@ -15,6 +15,8 @@ const {
   orientAsReturnFixtures,
   buildStageSlots,
   assignRoundsToSlots,
+  remapRoundRobinStage,
+  assignRoundsToStableSlots,
   buildRowReusePlan,
 } = require("./lib/seasonRealignmentPlanner");
 
@@ -57,6 +59,10 @@ const TEAM_NAMES = {
   stm: "STM FC",
   pjm: "PJM",
   rks: "RKS Pendrachy",
+  detox: "Detox",
+  gosuansa: "Gosuansa",
+  faludza: "Faludża",
+  tiger: "Tiger Wołomin",
 };
 const LEAGUE_PLANS = {
   first: {
@@ -343,6 +349,72 @@ function buildLeaguePreview({
   return plan;
 }
 
+function buildRemappedLeaguePreview({
+  leagueRows,
+  teamIds,
+  teamNameById,
+  startRound,
+  teamIdRemap,
+  fixedMatches,
+  byeRounds,
+  fixedSlots,
+  preserveMatchIds = [],
+}) {
+  const priorMatches = leagueRows.matches.filter((match) => Number(match.round) < startRound);
+  const preservedUnfinishedMatches = priorMatches.filter((match) =>
+    EDITABLE_STATUSES.has(String(match.status || "scheduled"))
+  );
+  const remapped = remapRoundRobinStage({
+    existingMatches: leagueRows.matches,
+    teamIds,
+    startRound,
+    teamIdRemap,
+    fixedMatches,
+    byeRounds,
+  });
+  const verification = verifySingleRoundRobin(teamIds, remapped.rounds);
+  if (!verification.ok) throw new Error(verification.errors.join("\n"));
+
+  const stageSlots = buildStageSlots({
+    existingMatches: leagueRows.matches,
+    startRound,
+    roundCount: remapped.rounds.length,
+    matchesPerRound: Math.floor(teamIds.length / 2),
+  });
+  const scheduled = assignRoundsToStableSlots(
+    remapped.rounds,
+    stageSlots,
+    leagueRows.matches,
+    teamNameById,
+    {
+      blockedTeamDates: buildBlockedTeamDates(preservedUnfinishedMatches),
+      fixedSlots,
+      teamIdRemap,
+    }
+  );
+  const rowPlan = buildRowReusePlan({
+    existingMatches: leagueRows.matches,
+    desiredMatches: scheduled.matches,
+    startRound,
+    preserveMatchIds,
+  });
+
+  const plan = {
+    startRound,
+    finalRound: startRound + remapped.rounds.length - 1,
+    teamIds,
+    activeTeamCount: teamIds.length,
+    generationAttempt: remapped.remapped ? 1 : 0,
+    verification,
+    schedule: scheduled,
+    rowPlan,
+    preservedUnfinishedMatches,
+    stableRemapApplied: remapped.remapped,
+  };
+  plan.calendarConflicts = findCalendarConflicts(plan);
+  return plan;
+}
+
 function publicMatch(match, teamNameById) {
   return {
     id: match.id || null,
@@ -405,15 +477,30 @@ function publicPlan(plan, teamNameById) {
 
 function assertRequiredSecondLeagueConditions(secondPlan, ids) {
   const firstStageRound = secondPlan.schedule.rounds.find((round) => round.stage_round === 1);
-  const requiredOpeningMatch = firstStageRound?.matches.find(
-    (match) => pairKey(match.home_team_id, match.away_team_id) === pairKey(ids.slimak, ids.tidy)
-  );
-  if (
-    !requiredOpeningMatch ||
-    requiredOpeningMatch.home_team_id !== ids.slimak ||
-    requiredOpeningMatch.away_team_id !== ids.tidy
-  ) {
-    throw new Error("Warunek FC Ślimak Halinów - Tidy Team w pierwszej kolejce nie zostal spelniony.");
+  if (firstStageRound?.bye_team_id !== ids.pjm) {
+    throw new Error("Warunek pauzy PJM w pierwszej kolejce rundy rewanzowej nie zostal spelniony.");
+  }
+
+  const requiredK10Matches = [
+    [ids.slimak, ids.tidy, "2026-09-05", "18:10"],
+    [ids.gosuansa, ids.detox, "2026-09-05", "20:30"],
+    [ids.faludza, ids.stm, "2026-09-06", "13:40"],
+    [ids.tiger, ids.joga, "2026-09-06", "14:50"],
+    [ids.rks, ids.rayo, "2026-09-06", "16:00"],
+  ];
+  for (const [homeTeamId, awayTeamId, matchDate, matchTime] of requiredK10Matches) {
+    const requiredMatch = firstStageRound?.matches.find(
+      (match) =>
+        match.home_team_id === homeTeamId &&
+        match.away_team_id === awayTeamId
+    );
+    if (
+      !requiredMatch ||
+      requiredMatch.match_date !== matchDate ||
+      String(requiredMatch.match_time || "").slice(0, 5) !== matchTime
+    ) {
+      throw new Error(`Nie zostal spelniony wymagany uklad K10: ${matchDate} ${matchTime}.`);
+    }
   }
 
   const eighthStageRound = secondPlan.schedule.rounds.find((round) => round.stage_round === 8);
@@ -630,20 +717,36 @@ async function main() {
   }
   firstPlan.calendarConflicts = findCalendarConflicts(firstPlan);
 
-  const secondFixedMatches = [{
-    stageRound: 1,
-    teamAId: ids.slimak,
-    teamBId: ids.tidy,
-    homeTeamId: ids.slimak,
-  }];
-  const secondPlan = buildLeaguePreview({
+  const secondFixedMatches = [
+    { stageRound: 1, teamAId: ids.slimak, teamBId: ids.tidy, homeTeamId: ids.slimak },
+    { stageRound: 1, teamAId: ids.gosuansa, teamBId: ids.detox, homeTeamId: ids.gosuansa },
+    { stageRound: 1, teamAId: ids.faludza, teamBId: ids.stm, homeTeamId: ids.faludza },
+    { stageRound: 1, teamAId: ids.tiger, teamBId: ids.joga, homeTeamId: ids.tiger },
+    { stageRound: 1, teamAId: ids.rks, teamBId: ids.rayo, homeTeamId: ids.rks },
+  ];
+  const secondByeRounds = [
+    { stageRound: 1, teamId: ids.pjm },
+    { stageRound: 8, teamId: ids.joga },
+  ];
+  const secondFixedSlots = [
+    { stageRound: 1, teamAId: ids.slimak, teamBId: ids.tidy, match_date: "2026-09-05", match_time: "18:10" },
+    { stageRound: 1, teamAId: ids.gosuansa, teamBId: ids.detox, match_date: "2026-09-05", match_time: "20:30" },
+    { stageRound: 1, teamAId: ids.faludza, teamBId: ids.stm, match_date: "2026-09-06", match_time: "13:40" },
+    { stageRound: 1, teamAId: ids.tiger, teamBId: ids.joga, match_date: "2026-09-06", match_time: "14:50" },
+    { stageRound: 1, teamAId: ids.rks, teamBId: ids.rayo, match_date: "2026-09-06", match_time: "16:00" },
+  ];
+  const secondPlan = buildRemappedLeaguePreview({
     leagueRows: secondRows,
     teamIds: secondTeamIds,
     teamNameById,
     startRound: LEAGUE_PLANS.second.startRound,
-    seed: LEAGUE_PLANS.second.seed,
+    teamIdRemap: new Map([
+      [ids.detox, ids.pjm],
+      [ids.pjm, ids.detox],
+    ]),
     fixedMatches: secondFixedMatches,
-    byeRounds: [{ stageRound: 8, teamId: ids.joga }],
+    byeRounds: secondByeRounds,
+    fixedSlots: secondFixedSlots,
     preserveMatchIds: [
       SECOND_LEAGUE_CATCHUP_MATCH_ID,
       SECOND_LEAGUE_NANKATSU_RKS_MATCH_ID,
