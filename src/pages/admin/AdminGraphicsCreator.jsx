@@ -19,6 +19,10 @@ import { supabase } from "../../lib/supabase";
 import AdminAlert from "./components/AdminAlert";
 import AdminFormField from "./components/AdminFormField";
 import {
+  getTablePositionOptions,
+  resolveTableRange,
+} from "./utils/graphicsTableRange";
+import {
   drawGraphic,
   FORMATIONS,
   getFormation,
@@ -293,6 +297,9 @@ function defaultForm() {
     subtitle: "",
     footerText: "mlpn.pl",
     accentColor: "#e7b23c",
+    tableRangeEnabled: false,
+    tableRangeFrom: "",
+    tableRangeTo: "",
     selectedTyperMatchIds: [],
     selectedSponsorIds: [],
     sponsorSelectionTouched: false,
@@ -576,6 +583,17 @@ export default function AdminGraphicsCreator({ darkMode }) {
     [rounds]
   );
 
+  const tablePositionOptions = useMemo(
+    () => getTablePositionOptions(standings),
+    [standings]
+  );
+  const tablePositions = useMemo(
+    () => tablePositionOptions.map((option) => Number(option.value)),
+    [tablePositionOptions]
+  );
+  const firstTablePosition = tablePositionOptions[0]?.value || "1";
+  const lastTablePosition = tablePositionOptions[tablePositionOptions.length - 1]?.value || firstTablePosition;
+
   const roundMatches = useMemo(() => {
     const rows = seasonMatches.filter((match) => String(match.round) === String(form.round));
     if (form.category === "round-results") return rows.filter((match) => isCompletedStatus(match.status));
@@ -808,6 +826,24 @@ export default function AdminGraphicsCreator({ darkMode }) {
   }, [form.seasonYear, form.leagueCode, loadStandings]);
 
   useEffect(() => {
+    if (!isTableSummaryCategory || !tablePositions.length) return;
+    setForm((current) => {
+      const range = resolveTableRange(
+        {
+          enabled: current.tableRangeEnabled,
+          from: current.tableRangeFrom,
+          to: current.tableRangeTo,
+        },
+        tablePositions
+      );
+      const from = String(range.from);
+      const to = String(range.to);
+      if (from === String(current.tableRangeFrom) && to === String(current.tableRangeTo)) return current;
+      return { ...current, tableRangeFrom: from, tableRangeTo: to };
+    });
+  }, [isTableSummaryCategory, tablePositions]);
+
+  useEffect(() => {
     if (form.round || !rounds.length) return;
     const today = new Date().toISOString().slice(0, 10);
     const upcoming = seasonMatches.find((match) => match.match_date && match.match_date >= today);
@@ -919,6 +955,19 @@ export default function AdminGraphicsCreator({ darkMode }) {
       return;
     }
     updateForm({ [name]: value });
+  };
+
+  const handleTableRangeChange = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => {
+      let from = name === "tableRangeFrom" ? value : String(current.tableRangeFrom || firstTablePosition);
+      let to = name === "tableRangeTo" ? value : String(current.tableRangeTo || lastTablePosition);
+
+      if (name === "tableRangeFrom" && Number(from) > Number(to)) to = from;
+      if (name === "tableRangeTo" && Number(to) < Number(from)) from = to;
+
+      return { ...current, tableRangeFrom: from, tableRangeTo: to };
+    });
   };
 
   const handleCategoryChange = (categoryId) => {
@@ -1375,6 +1424,47 @@ export default function AdminGraphicsCreator({ darkMode }) {
                     placeholder="np. 2026"
                   />
                 )}
+              </div>
+            )}
+
+            {isTableSummaryCategory && (
+              <div className={`space-y-3 rounded-xl border p-3 ${softPanel}`}>
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={form.tableRangeEnabled}
+                    onChange={(event) => updateForm({ tableRangeEnabled: event.target.checked })}
+                    className="h-4 w-4 accent-yellow-500"
+                  />
+                  Podziel tabelę – wyróżnij tylko wybrany zakres pozycji
+                </label>
+                {form.tableRangeEnabled && (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <AdminFormField
+                      label="Od pozycji"
+                      name="tableRangeFrom"
+                      type="select"
+                      value={String(form.tableRangeFrom || firstTablePosition)}
+                      onChange={handleTableRangeChange}
+                      darkMode={darkMode}
+                      includeEmptyOption={false}
+                      options={tablePositionOptions}
+                    />
+                    <AdminFormField
+                      label="Do pozycji"
+                      name="tableRangeTo"
+                      type="select"
+                      value={String(form.tableRangeTo || lastTablePosition)}
+                      onChange={handleTableRangeChange}
+                      darkMode={darkMode}
+                      includeEmptyOption={false}
+                      options={tablePositionOptions}
+                    />
+                  </div>
+                )}
+                <p className={`text-xs ${textMuted}`}>
+                  Pozostałe pozycje zostaną wyszarzone i lekko rozmyte, ale nadal widoczne w tle.
+                </p>
               </div>
             )}
 

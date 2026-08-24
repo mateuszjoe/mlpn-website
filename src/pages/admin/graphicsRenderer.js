@@ -2,6 +2,12 @@
 // Draws clean, brand-consistent POST/STORY graphics for the admin "Kreator grafik".
 // Pure module: receives pre-loaded images, no DOM/data fetching.
 
+import {
+  getTablePositions,
+  isTableRowDimmed,
+  resolveTableRange,
+} from "./utils/graphicsTableRange";
+
 // Full brand lockup (eagle + "MLPN SULEJÓWEK" + "isola RISTORANTE"), white version for dark art.
 export const BRAND_LOGO_SRC = "/logo2big.webp";
 
@@ -1491,6 +1497,17 @@ function drawTable(ctx, form, standings, images, layout, top, bottom) {
   const contentH = headH + rowH * rows.length;
   let y = top + Math.max(0, (areaH - contentH) / 2);
 
+  // Optional split view: dim + blur positions outside the chosen range instead of hiding them,
+  // so a post can focus on e.g. places 5-9 while keeping the rest of the table for context.
+  const tableRange = resolveTableRange(
+    {
+      enabled: form.tableRangeEnabled,
+      from: form.tableRangeFrom,
+      to: form.tableRangeTo,
+    },
+    getTablePositions(rows)
+  );
+
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, top - 4, layout.width, areaH + 8);
@@ -1514,7 +1531,8 @@ function drawTable(ctx, form, standings, images, layout, top, bottom) {
 
   rows.forEach((row, i) => {
     const position = row.position || i + 1;
-    const status = tableRowStatus(form.leagueCode, position, standings.length);
+    const dimmed = isTableRowDimmed(tableRange, position);
+    const status = dimmed ? null : tableRowStatus(form.leagueCode, position, standings.length);
     const rowFill = status === "promoted"
       ? (t.dark ? "rgba(34,197,94,0.24)" : "rgba(187,247,208,0.82)")
       : status === "relegated"
@@ -1527,6 +1545,11 @@ function drawTable(ctx, form, standings, images, layout, top, bottom) {
       : status === "relegated"
       ? "rgba(239,68,68,0.55)"
       : null;
+    ctx.save();
+    if (dimmed) {
+      ctx.filter = "blur(3px) grayscale(90%)";
+      ctx.globalAlpha = 0.4;
+    }
     if (rowFill) fillRoundRect(ctx, x, y, w, rowH, rowH * 0.2, rowFill, rowStroke, status ? 1.5 : 1);
     const cy = y + rowH / 2;
     drawText(ctx, `${position}`, cPos, cy, { size: rowH * 0.36, weight: 900, color: t.text });
@@ -1536,6 +1559,7 @@ function drawTable(ctx, form, standings, images, layout, top, bottom) {
     drawText(ctx, row.played ?? 0, cM, cy, { size: rowH * 0.32, weight: 700, color: t.textSoft });
     drawText(ctx, `${row.goals_for ?? 0}:${row.goals_against ?? 0}`, cGoals, cy, { size: rowH * 0.3, weight: 700, color: t.textSoft });
     drawText(ctx, row.points ?? 0, cPts, cy, { size: rowH * 0.4, weight: 900, color: BRAND.gold });
+    ctx.restore();
     y += rowH;
   });
   ctx.restore();
