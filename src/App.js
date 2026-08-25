@@ -27,6 +27,7 @@ import {
   Settings,
   LogIn,
   LogOut,
+  Archive,
 } from "lucide-react";
 import { useAuth } from "./contexts/AuthContext";
 import AdminPanel from "./pages/admin/AdminPanel";
@@ -546,6 +547,7 @@ const HOME_SECTION_TO_SLUG = {
   home: "",
   news: "aktualnosci",
   typer: "typer",
+  archive: "archiwum",
   polls: "ankiety",
   free: "wolni-zawodnicy",
   "teams-db": "baza-druzyn",
@@ -5516,11 +5518,6 @@ export default function App() {
       icon: <FileText size={18} className="e3d-ico" />,
     },
     {
-      id: "typer",
-      label: "Typer MŚ 2026",
-      icon: <Trophy size={18} className="e3d-ico" />,
-    },
-    {
       id: "polls",
       label: "Ankiety",
       icon: <Vote size={18} className="e3d-ico" />,
@@ -5539,6 +5536,11 @@ export default function App() {
       id: "players-db",
       label: "Baza zawodników",
       icon: <BarChart3 size={18} className="e3d-ico" />,
+    },
+    {
+      id: "archive",
+      label: "Archiwum",
+      icon: <Archive size={18} className="e3d-ico" />,
     },
   ];
 
@@ -6255,6 +6257,13 @@ export default function App() {
           return <PollsPage darkMode={darkMode} polls={polls} />;
         case "typer":
           return <WorldCupTyperPage darkMode={darkMode} />;
+        case "archive":
+          return (
+            <HomeArchivePage
+              darkMode={darkMode}
+              openTyper={() => navigateToSection("home", "typer")}
+            />
+          );
         case "free":
           return (
             <FreePlayersPage darkMode={darkMode} freeAgents={freeAgents} />
@@ -6762,6 +6771,9 @@ export default function App() {
                   const isActiveContext = activeContext === b.ctx;
                   const activeSubsectionLabel =
                     submenu.find((item) => item.id === activeSection)?.label ||
+                    (b.ctx === "home" && activeSection === "typer"
+                      ? "Typer MŚ 2026"
+                      : null) ||
                     (b.ctx === "info" ? "O nas" : "Główna");
 
                   return (
@@ -6840,7 +6852,11 @@ export default function App() {
                           {submenu.map((item) => (
                             (() => {
                               const isActiveSubsection =
-                                activeContext === b.ctx && activeSection === item.id;
+                                activeContext === b.ctx &&
+                                (activeSection === item.id ||
+                                  (b.ctx === "home" &&
+                                    activeSection === "typer" &&
+                                    item.id === "archive"));
                               return (
                             <button
                               key={`${b.ctx}-${item.id}`}
@@ -6899,6 +6915,9 @@ export default function App() {
                   {activeContext === "admin"
                     ? "Panel zarządzania"
                     : mobileContextMenus[activeContext]?.find((item) => item.id === activeSection)?.label ||
+                      (activeContext === "home" && activeSection === "typer"
+                        ? "Typer MŚ 2026"
+                        : null) ||
                       "Widok główny"}
                 </div>
               </div>
@@ -6976,7 +6995,10 @@ export default function App() {
                 onClick={() => navigateToSection(activeContext, item.id)}
                 className={classNames(
                   "w-full flex items-center gap-3 px-3 py-2 rounded mb-1 text-left e3d-item",
-                  activeSection === item.id
+                  activeSection === item.id ||
+                    (activeContext === "home" &&
+                      activeSection === "typer" &&
+                      item.id === "archive")
                     ? "bg-green-500/10 text-green-400"
                     : darkMode
                     ? "text-gray-400 hover:bg-white/5"
@@ -7391,6 +7413,80 @@ function Card({ darkMode, children, className = "" }) {
       )}
     >
       {children}
+    </div>
+  );
+}
+
+function HomeArchivePage({ darkMode, openTyper }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <div className="text-2xl font-extrabold">Archiwum</div>
+        <div
+          className={classNames(
+            "mt-1 text-sm",
+            darkMode ? "text-gray-400" : "text-gray-600"
+          )}
+        >
+          Zakończone akcje i materiały MLPN, które pozostawiamy do wglądu.
+        </div>
+      </div>
+
+      <Card darkMode={darkMode}>
+        <button
+          type="button"
+          onClick={openTyper}
+          className={classNames(
+            "group w-full rounded-xl p-1 text-left transition-colors",
+            darkMode ? "hover:bg-white/5" : "hover:bg-gray-50"
+          )}
+          aria-label="Otwórz archiwalny Typer MŚ 2026"
+        >
+          <div className="flex items-start gap-4">
+            <div
+              className={classNames(
+                "grid h-12 w-12 shrink-0 place-items-center rounded-2xl border",
+                darkMode
+                  ? "border-amber-300/20 bg-amber-400/10 text-amber-300"
+                  : "border-amber-200 bg-amber-50 text-amber-600"
+              )}
+            >
+              <Trophy size={24} strokeWidth={2.4} />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="text-lg font-extrabold">Typer MŚ 2026</div>
+                <span
+                  className={classNames(
+                    "rounded-full border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.12em]",
+                    darkMode
+                      ? "border-white/10 bg-white/5 text-gray-300"
+                      : "border-gray-200 bg-gray-100 text-gray-600"
+                  )}
+                >
+                  Zakończone
+                </span>
+              </div>
+              <p
+                className={classNames(
+                  "mt-1 text-sm leading-relaxed",
+                  darkMode ? "text-gray-300" : "text-gray-600"
+                )}
+              >
+                Końcowy ranking, typy i historia mundialowej zabawy kibiców MLPN.
+              </p>
+              <div className="mt-3 flex items-center gap-1 text-sm font-extrabold text-green-500">
+                Otwórz typera
+                <ChevronRight
+                  size={17}
+                  className="transition-transform group-hover:translate-x-0.5"
+                />
+              </div>
+            </div>
+          </div>
+        </button>
+      </Card>
     </div>
   );
 }
