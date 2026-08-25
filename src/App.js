@@ -31,7 +31,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "./contexts/AuthContext";
 import AdminPanel from "./pages/admin/AdminPanel";
-import WorldCupTyperPage from "./pages/TyperPage";
 import { useMLPNData } from "./hooks/useMLPNData";
 import {
   fetchMatchDetails,
@@ -43,7 +42,6 @@ import {
   fetchTeamsDirectory,
   fetchPlayersDirectory,
 } from "./services/supabaseQueries";
-import { syncStoredTyperData } from "./services/typerLocalSync";
 
 /* =========================================
    DRUŻYNY (legacy - dane teraz z Supabase)
@@ -546,7 +544,6 @@ const LEAGUE_SLUG_TO_CONTEXT = Object.fromEntries(
 const HOME_SECTION_TO_SLUG = {
   home: "",
   news: "aktualnosci",
-  typer: "typer",
   archive: "archiwum",
   polls: "ankiety",
   free: "wolni-zawodnicy",
@@ -5030,7 +5027,7 @@ function AppLoadingScreen({ darkMode, sponsor }) {
    APP
    ========================================= */
 export default function App() {
-  const { user, profile, hasAdminAccess, signOut } = useAuth();
+  const { user, hasAdminAccess, signOut } = useAuth();
   const isApplyingRouteRef = useRef(false);
   const routeReadyRef = useRef(false);
   const historyIndexRef = useRef(0);
@@ -5039,7 +5036,7 @@ export default function App() {
     return saved !== null ? saved === 'true' : false;
   });
   const [activeContext, setActiveContext] = useState("home"); // home | 1st | 2nd | 3rd | tournaments | info | admin
-  const [activeSection, setActiveSection] = useState("home"); // home/news/typer/polls/free | table/calendar/teams/players
+  const [activeSection, setActiveSection] = useState("home"); // home/news/archive/polls/free | table/calendar/teams/players
   const [statsInitialTab, setStatsInitialTab] = useState("scorers");
   const prevContextRef = useRef(activeContext);
   const calendarRoundAutoRef = useRef(false);
@@ -5090,29 +5087,6 @@ export default function App() {
 
   const [round, setRound] = useState(1);
   const [routeSeasonRequest, setRouteSeasonRequest] = useState(null);
-
-  useEffect(() => {
-    if (!user?.id) return;
-
-    let cancelled = false;
-
-    syncStoredTyperData({ user, profile })
-      .then((result) => {
-        if (cancelled) return;
-        if (result.restoredProfile || result.restoredPicks > 0) {
-          console.info("Typer local data synced:", result);
-        }
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          console.warn("Typer local data sync:", error.message);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [profile, user]);
 
   useEffect(() => {
     const requestedSeason = routeSeasonRequest;
@@ -6255,15 +6229,8 @@ export default function App() {
           );
         case "polls":
           return <PollsPage darkMode={darkMode} polls={polls} />;
-        case "typer":
-          return <WorldCupTyperPage darkMode={darkMode} />;
         case "archive":
-          return (
-            <HomeArchivePage
-              darkMode={darkMode}
-              openTyper={() => navigateToSection("home", "typer")}
-            />
-          );
+          return <HomeArchivePage darkMode={darkMode} />;
         case "free":
           return (
             <FreePlayersPage darkMode={darkMode} freeAgents={freeAgents} />
@@ -6771,9 +6738,6 @@ export default function App() {
                   const isActiveContext = activeContext === b.ctx;
                   const activeSubsectionLabel =
                     submenu.find((item) => item.id === activeSection)?.label ||
-                    (b.ctx === "home" && activeSection === "typer"
-                      ? "Typer MŚ 2026"
-                      : null) ||
                     (b.ctx === "info" ? "O nas" : "Główna");
 
                   return (
@@ -6852,11 +6816,7 @@ export default function App() {
                           {submenu.map((item) => (
                             (() => {
                               const isActiveSubsection =
-                                activeContext === b.ctx &&
-                                (activeSection === item.id ||
-                                  (b.ctx === "home" &&
-                                    activeSection === "typer" &&
-                                    item.id === "archive"));
+                                activeContext === b.ctx && activeSection === item.id;
                               return (
                             <button
                               key={`${b.ctx}-${item.id}`}
@@ -6915,9 +6875,6 @@ export default function App() {
                   {activeContext === "admin"
                     ? "Panel zarządzania"
                     : mobileContextMenus[activeContext]?.find((item) => item.id === activeSection)?.label ||
-                      (activeContext === "home" && activeSection === "typer"
-                        ? "Typer MŚ 2026"
-                        : null) ||
                       "Widok główny"}
                 </div>
               </div>
@@ -6995,10 +6952,7 @@ export default function App() {
                 onClick={() => navigateToSection(activeContext, item.id)}
                 className={classNames(
                   "w-full flex items-center gap-3 px-3 py-2 rounded mb-1 text-left e3d-item",
-                  activeSection === item.id ||
-                    (activeContext === "home" &&
-                      activeSection === "typer" &&
-                      item.id === "archive")
+                  activeSection === item.id
                     ? "bg-green-500/10 text-green-400"
                     : darkMode
                     ? "text-gray-400 hover:bg-white/5"
@@ -7417,7 +7371,7 @@ function Card({ darkMode, children, className = "" }) {
   );
 }
 
-function HomeArchivePage({ darkMode, openTyper }) {
+function HomeArchivePage({ darkMode }) {
   return (
     <div className="space-y-4">
       <div>
@@ -7433,59 +7387,27 @@ function HomeArchivePage({ darkMode, openTyper }) {
       </div>
 
       <Card darkMode={darkMode}>
-        <button
-          type="button"
-          onClick={openTyper}
-          className={classNames(
-            "group w-full rounded-xl p-1 text-left transition-colors",
-            darkMode ? "hover:bg-white/5" : "hover:bg-gray-50"
-          )}
-          aria-label="Otwórz archiwalny Typer MŚ 2026"
-        >
-          <div className="flex items-start gap-4">
-            <div
-              className={classNames(
-                "grid h-12 w-12 shrink-0 place-items-center rounded-2xl border",
-                darkMode
-                  ? "border-amber-300/20 bg-amber-400/10 text-amber-300"
-                  : "border-amber-200 bg-amber-50 text-amber-600"
-              )}
-            >
-              <Trophy size={24} strokeWidth={2.4} />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="text-lg font-extrabold">Typer MŚ 2026</div>
-                <span
-                  className={classNames(
-                    "rounded-full border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.12em]",
-                    darkMode
-                      ? "border-white/10 bg-white/5 text-gray-300"
-                      : "border-gray-200 bg-gray-100 text-gray-600"
-                  )}
-                >
-                  Zakończone
-                </span>
-              </div>
-              <p
-                className={classNames(
-                  "mt-1 text-sm leading-relaxed",
-                  darkMode ? "text-gray-300" : "text-gray-600"
-                )}
-              >
-                Końcowy ranking, typy i historia mundialowej zabawy kibiców MLPN.
-              </p>
-              <div className="mt-3 flex items-center gap-1 text-sm font-extrabold text-green-500">
-                Otwórz typera
-                <ChevronRight
-                  size={17}
-                  className="transition-transform group-hover:translate-x-0.5"
-                />
-              </div>
-            </div>
+        <div className="py-8 text-center">
+          <div
+            className={classNames(
+              "mx-auto grid h-12 w-12 place-items-center rounded-2xl border",
+              darkMode
+                ? "border-white/10 bg-white/5 text-gray-400"
+                : "border-gray-200 bg-gray-50 text-gray-500"
+            )}
+          >
+            <Archive size={23} />
           </div>
-        </button>
+          <div className="mt-3 font-extrabold">Archiwum jest na razie puste</div>
+          <div
+            className={classNames(
+              "mt-1 text-sm",
+              darkMode ? "text-gray-400" : "text-gray-600"
+            )}
+          >
+            W przyszłości trafią tutaj zakończone akcje i materiały MLPN.
+          </div>
+        </div>
       </Card>
     </div>
   );

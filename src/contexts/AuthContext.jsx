@@ -283,7 +283,7 @@ export function AuthProvider({ children }) {
     }
   }
 
-  async function signInWithProvider(provider, { next = '#/typer' } = {}) {
+  async function signInWithProvider(provider, { next = '/' } = {}) {
     setLoading(true);
     startLoadingGuard();
 
