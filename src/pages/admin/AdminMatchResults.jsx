@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import AdminFormField from "./components/AdminFormField";
 import AdminAlert from "./components/AdminAlert";
 import AdminMatchGalleryManager from "./components/AdminMatchGalleryManager";
+import { getWalkoverDirectionError } from "./utils/matchResultValidation";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Loader2, Plus, Save, Trash2, Users } from "lucide-react";
 
 const EMPTY_TEAM_SELECTION = { home: [], away: [] };
@@ -1942,6 +1943,9 @@ export default function AdminMatchResults({ darkMode }) {
         homeGoals = null;
         awayGoals = null;
       }
+
+      const walkoverDirectionError = getWalkoverDirectionError(resolvedStatus, homeGoals, awayGoals);
+      if (walkoverDirectionError) throw new Error(walkoverDirectionError);
 
       let lineupsPayload = [];
       let eventsPayload = [];
