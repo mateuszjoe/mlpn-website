@@ -7,6 +7,7 @@ import {
   isTableRowDimmed,
   resolveTableRange,
 } from "./utils/graphicsTableRange";
+import { formatWeekendRange, sortMatchesForGraphic } from "./utils/graphicsWeekend";
 
 // Full brand lockup (eagle + "MLPN SULEJÓWEK" + "isola RISTORANTE"), white version for dark art.
 export const BRAND_LOGO_SRC = "/logo2big.webp";
@@ -203,16 +204,6 @@ function isCompletedStatus(status) {
   return ["completed", "walkover_home", "walkover_away"].includes(String(status || ""));
 }
 
-// Sorted flat list: leagues in order I -> II -> III, then by kickoff time.
-function groupMatchesByLeagueFlat(matches) {
-  const order = { "1st": 0, "2nd": 1, "3rd": 2 };
-  return [...matches].sort(
-    (a, b) =>
-      (order[a.league_code] ?? 99) - (order[b.league_code] ?? 99) ||
-      String(a.match_time || "").localeCompare(String(b.match_time || ""))
-  );
-}
-
 function getPeriodLabel(form) {
   if (form.category === "table-summary") return "Sezon";
   if (form.periodLabel && form.periodLabel.trim()) return form.periodLabel.trim();
@@ -226,7 +217,11 @@ function titleForForm(form) {
   const roundText = form.round ? `${romanRound(form.round)} kolejka` : "Kolejka";
   if (form.category === "round-typer") return "Typer kolejki";
   if (form.category === "round-preview") return roundText;
-  if (form.category === "round-results") return roundText;
+  if (form.category === "round-results") {
+    return form.resultsScope === "weekend"
+      ? formatWeekendRange(form.weekendStart, { includeYear: false }) || "Weekend"
+      : roundText;
+  }
   if (form.category === "best-eight") return "Najlepsza 8";
   if (form.category === "player-award") return "Zawodnik okresu";
   if (form.category === "player-vote") return "Głosowanie kibiców";
@@ -239,7 +234,15 @@ function subtitleForForm(form) {
   const roundText = form.round ? `${romanRound(form.round)} kolejka` : "";
   if (form.category === "round-typer") return roundText || "Typuj wyniki";
   if (form.category === "round-preview") return "Zapowiedź";
-  if (form.category === "round-results") return "Wyniki";
+  if (form.category === "round-results") {
+    if (form.resultsScope === "weekend") {
+      const pageLabel = Number(form.resultsPageCount) > 1
+        ? ` · ${form.resultsPage}/${form.resultsPageCount}`
+        : "";
+      return `Wyniki weekendu${pageLabel}`;
+    }
+    return "Wyniki";
+  }
   if (["best-eight", "player-award", "player-vote", "table-summary"].includes(form.category)) {
     return `${getLeague(form.leagueCode).label} · ${getPeriodLabel(form)}`;
   }
@@ -1110,7 +1113,7 @@ function formatPlayerName(name) {
 }
 
 function drawMatchRow(ctx, match, images, x, y, w, h, opts, layout) {
-  const { center = "VS", hit = false, accent = null } = opts;
+  const { center = "VS", hit = false, accent = null, hitLabel = "HIT KOLEJKI" } = opts;
   const t = layout.t;
   const bg = hit ? "rgba(231,178,60,0.2)" : t.panel;
   const line = hit ? "rgba(231,178,60,0.7)" : t.panelLine;
@@ -1181,9 +1184,9 @@ function drawMatchRow(ctx, match, images, x, y, w, h, opts, layout) {
     });
   }
 
-  // "HIT KOLEJKI" ribbon on the top edge
+  // Optional "hit" ribbon on the top edge.
   if (hit) {
-    const tag = "HIT KOLEJKI";
+    const tag = hitLabel;
     const tagSize = Math.min(h * 0.24, 22);
     setFont(ctx, tagSize, 900);
     const starW = tagSize * 1.2;
@@ -1226,9 +1229,15 @@ function drawTyper(ctx, form, matches, images, layout, top, bottom) {
 }
 
 function drawRoundList(ctx, form, matches, images, layout, top, bottom, mode) {
-  const clean = groupMatchesByLeagueFlat(matches.filter(Boolean));
+  const clean = sortMatchesForGraphic(matches.filter(Boolean));
+  const isWeekendMode = mode === "results" && form.resultsScope === "weekend";
   if (!clean.length) {
-    drawEmpty(ctx, mode === "results" ? "Brak wyników w tej kolejce" : "Brak spotkań w tej kolejce", layout, top, bottom);
+    const emptyText = mode === "results"
+      ? isWeekendMode
+        ? "Brak wyników w wybranym weekendzie"
+        : "Brak wyników w tej kolejce"
+      : "Brak spotkań w tej kolejce";
+    drawEmpty(ctx, emptyText, layout, top, bottom);
     return;
   }
   const t = layout.t;
@@ -1262,7 +1271,8 @@ function drawRoundList(ctx, form, matches, images, layout, top, bottom, mode) {
       mode === "results"
         ? `${match.home_goals ?? 0} : ${match.away_goals ?? 0}`
         : [formatShortDate(match.match_date), time];
-    drawMatchRow(ctx, match, images, x, y, colW, rowH, { center, hit, accent }, layout);
+    const hitLabel = isWeekendMode ? "HIT WEEKENDU" : "HIT KOLEJKI";
+    drawMatchRow(ctx, match, images, x, y, colW, rowH, { center, hit, accent, hitLabel }, layout);
   });
 }
 

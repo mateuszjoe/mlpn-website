@@ -23,6 +23,11 @@ import {
   resolveTableRange,
 } from "./utils/graphicsTableRange";
 import {
+  buildWeekendOptions,
+  filterWeekendMatches,
+  sortMatchesForGraphic,
+} from "./utils/graphicsWeekend";
+import {
   drawGraphic,
   FORMATIONS,
   getFormation,
@@ -40,6 +45,7 @@ const FORMAT_OPTIONS = [
 ];
 
 const EXPORT_SCALE = 2;
+const WEEKEND_RESULTS_PAGE_SIZE = 14;
 
 function getRenderSize(format) {
   return {
@@ -137,6 +143,11 @@ const MONTH_OPTIONS = [
 const ROUND_PERIOD_OPTIONS = [
   { value: "Wiosna", label: "Wiosna" },
   { value: "Jesień", label: "Jesień" },
+];
+
+const RESULTS_SCOPE_OPTIONS = [
+  { value: "round", label: "Wybrana kolejka" },
+  { value: "weekend", label: "Wybrany weekend (pt–pon)" },
 ];
 
 const LEAGUE_OPTIONS = [
@@ -290,6 +301,9 @@ function defaultForm() {
     theme: "stadium",
     seasonYear: "",
     round: "",
+    resultsScope: "round",
+    weekendStart: "",
+    resultsPage: 1,
     leagueCode: "1st",
     periodType: "month",
     periodLabel: defaultPeriodLabel("month"),
@@ -373,6 +387,13 @@ function loadFormDraft() {
     formation: FORMATIONS.some((item) => item.id === draft.formation) ? draft.formation : base.formation,
     seasonYear: String(draft.seasonYear || ""),
     round: String(draft.round || ""),
+    resultsScope: RESULTS_SCOPE_OPTIONS.some((item) => item.value === draft.resultsScope)
+      ? draft.resultsScope
+      : base.resultsScope,
+    weekendStart: /^\d{4}-\d{2}-\d{2}$/.test(String(draft.weekendStart || ""))
+      ? String(draft.weekendStart)
+      : base.weekendStart,
+    resultsPage: Math.max(1, Number.parseInt(draft.resultsPage, 10) || 1),
     sponsorRows: SPONSOR_ROW_OPTIONS.some((item) => item.value === String(draft.sponsorRows))
       ? String(draft.sponsorRows)
       : base.sponsorRows,
@@ -526,6 +547,7 @@ function collectLogoUrls(form, matches) {
 
 export default function AdminGraphicsCreator({ darkMode }) {
   const canvasRef = useRef(null);
+  const matchesRequestIdRef = useRef(0);
   const [form, setForm] = useState(loadFormDraft);
   const [seasons, setSeasons] = useState([]);
   const [matches, setMatches] = useState([]);
@@ -534,8 +556,10 @@ export default function AdminGraphicsCreator({ darkMode }) {
   const [standings, setStandings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [matchesLoading, setMatchesLoading] = useState(false);
+  const [loadedMatchesSeasonYear, setLoadedMatchesSeasonYear] = useState("");
   const [standingsLoading, setStandingsLoading] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [renderedPreview, setRenderedPreview] = useState(null);
   const [alert, setAlert] = useState({ type: null, message: null });
   const [collapsedSections, setCollapsedSections] = useState(loadCollapsedDraft);
 
@@ -554,6 +578,9 @@ export default function AdminGraphicsCreator({ darkMode }) {
   const selectedLeague = useMemo(() => getLeague(form.leagueCode), [form.leagueCode]);
   const isLeagueCategory = selectedCategory.scope === "league";
   const isTableSummaryCategory = form.category === "table-summary";
+  const isWeekendResults = form.category === "round-results" && form.resultsScope === "weekend";
+  const matchesReady = Boolean(form.seasonYear) && loadedMatchesSeasonYear === String(form.seasonYear);
+  const isRoundCategory = form.category.startsWith("round-");
   const isSectionCollapsed = (sectionId) => collapsedSections[sectionId] === true;
   const toggleSection = (sectionId) => {
     setCollapsedSections((current) => ({ ...current, [sectionId]: !current[sectionId] }));
@@ -570,6 +597,11 @@ export default function AdminGraphicsCreator({ darkMode }) {
   const seasonMatches = useMemo(
     () => matches.filter((match) => !isPlaceholderTeam(match.home_team_name) && !isPlaceholderTeam(match.away_team_name)),
     [matches]
+  );
+
+  const weekendOptions = useMemo(
+    () => (matchesReady ? buildWeekendOptions(seasonMatches, isCompletedStatus) : []),
+    [matchesReady, seasonMatches]
   );
 
   const rounds = useMemo(
@@ -594,21 +626,43 @@ export default function AdminGraphicsCreator({ darkMode }) {
   const firstTablePosition = tablePositionOptions[0]?.value || "1";
   const lastTablePosition = tablePositionOptions[tablePositionOptions.length - 1]?.value || firstTablePosition;
 
-  const roundMatches = useMemo(() => {
+  const selectedMatches = useMemo(() => {
+    if (!matchesReady) return [];
+    if (isWeekendResults) {
+      return filterWeekendMatches(seasonMatches, form.weekendStart, isCompletedStatus);
+    }
     const rows = seasonMatches.filter((match) => String(match.round) === String(form.round));
-    if (form.category === "round-results") return rows.filter((match) => isCompletedStatus(match.status));
+    if (form.category === "round-results") {
+      return rows.filter((match) => isCompletedStatus(match.status));
+    }
     return rows;
-  }, [form.category, form.round, seasonMatches]);
+  }, [form.category, form.round, form.weekendStart, isWeekendResults, matchesReady, seasonMatches]);
+
+  const weekendResultsPageCount = Math.max(
+    1,
+    Math.ceil(selectedMatches.length / WEEKEND_RESULTS_PAGE_SIZE)
+  );
+  const currentResultsPage = Math.min(
+    weekendResultsPageCount,
+    Math.max(1, Number.parseInt(form.resultsPage, 10) || 1)
+  );
 
   const renderMatches = useMemo(() => {
     if (form.category === "round-typer") {
       const selected = form.selectedTyperMatchIds.length
-        ? roundMatches.filter((match) => form.selectedTyperMatchIds.includes(match.id))
-        : roundMatches;
+        ? selectedMatches.filter((match) => form.selectedTyperMatchIds.includes(match.id))
+        : selectedMatches;
       return selected.slice(0, 5);
     }
-    return roundMatches;
-  }, [form.category, form.selectedTyperMatchIds, roundMatches]);
+    if (isWeekendResults) {
+      const firstMatchIndex = (currentResultsPage - 1) * WEEKEND_RESULTS_PAGE_SIZE;
+      return sortMatchesForGraphic(selectedMatches).slice(
+        firstMatchIndex,
+        firstMatchIndex + WEEKEND_RESULTS_PAGE_SIZE
+      );
+    }
+    return selectedMatches;
+  }, [currentResultsPage, form.category, form.selectedTyperMatchIds, isWeekendResults, selectedMatches]);
 
   const seasonId = useMemo(() => {
     const found = seasons.find((season) => String(season.year) === String(form.seasonYear));
@@ -665,6 +719,14 @@ export default function AdminGraphicsCreator({ darkMode }) {
     [dbSponsors]
   );
 
+  const previewIsCurrent =
+    renderedPreview?.form === form &&
+    renderedPreview?.matches === renderMatches &&
+    renderedPreview?.standings === standings &&
+    renderedPreview?.sponsors === availableSponsorSources;
+  const downloadDisabled =
+    !previewIsCurrent || previewLoading || (isRoundCategory && (matchesLoading || !matchesReady));
+
   const loadReferenceData = useCallback(async () => {
     setLoading(true);
     try {
@@ -710,10 +772,15 @@ export default function AdminGraphicsCreator({ darkMode }) {
   }, []);
 
   const loadMatches = useCallback(async (seasonYear) => {
+    const requestId = matchesRequestIdRef.current + 1;
+    matchesRequestIdRef.current = requestId;
     if (!seasonYear) {
       setMatches([]);
+      setLoadedMatchesSeasonYear("");
+      setMatchesLoading(false);
       return;
     }
+    setLoadedMatchesSeasonYear("");
     setMatchesLoading(true);
     try {
       const { data, error } = await supabase
@@ -725,12 +792,15 @@ export default function AdminGraphicsCreator({ darkMode }) {
         .order("match_date", { ascending: true, nullsFirst: false })
         .order("match_time", { ascending: true, nullsFirst: false })
         .limit(700);
+      if (requestId !== matchesRequestIdRef.current) return;
       if (error) throw error;
       setMatches(data || []);
+      setLoadedMatchesSeasonYear(String(seasonYear));
     } catch (error) {
+      if (requestId !== matchesRequestIdRef.current) return;
       setAlert({ type: "error", message: error.message || "Nie udało się wczytać meczów." });
     } finally {
-      setMatchesLoading(false);
+      if (requestId === matchesRequestIdRef.current) setMatchesLoading(false);
     }
   }, []);
 
@@ -854,16 +924,44 @@ export default function AdminGraphicsCreator({ darkMode }) {
   }, [form.round, rounds, seasonMatches]);
 
   useEffect(() => {
-    if (form.category !== "round-typer") return;
+    if (!isWeekendResults || !matchesReady) return;
     setForm((current) => {
-      const validIds = new Set(roundMatches.map((match) => match.id));
+      const selectedWeekendExists = weekendOptions.some((option) => option.value === current.weekendStart);
+      if (selectedWeekendExists) return current;
+      const weekendStart = weekendOptions[0]?.value || "";
+      if (current.weekendStart === weekendStart && current.hitMatchId == null && Number(current.resultsPage) === 1) return current;
+      return { ...current, weekendStart, resultsPage: 1, hitMatchId: null };
+    });
+  }, [isWeekendResults, matchesReady, weekendOptions]);
+
+  useEffect(() => {
+    if (!isWeekendResults || !matchesReady) return;
+    setForm((current) => {
+      const resultsPage = Math.min(
+        weekendResultsPageCount,
+        Math.max(1, Number.parseInt(current.resultsPage, 10) || 1)
+      );
+      return resultsPage === Number(current.resultsPage) ? current : { ...current, resultsPage };
+    });
+  }, [isWeekendResults, matchesReady, weekendResultsPageCount]);
+
+  useEffect(() => {
+    if (form.category !== "round-typer" || !matchesReady) return;
+    setForm((current) => {
+      const validIds = new Set(selectedMatches.map((match) => match.id));
       const kept = current.selectedTyperMatchIds.filter((id) => validIds.has(id)).slice(0, 5);
-      const selected = kept.length ? kept : roundMatches.slice(0, 5).map((match) => match.id);
+      const selected = kept.length ? kept : selectedMatches.slice(0, 5).map((match) => match.id);
       // keep the "hit" valid — default it to the first selected match
       const hitMatchId = selected.includes(current.hitMatchId) ? current.hitMatchId : null;
       return { ...current, selectedTyperMatchIds: selected, hitMatchId };
     });
-  }, [form.category, form.round, roundMatches]);
+  }, [form.category, form.round, matchesReady, selectedMatches]);
+
+  useEffect(() => {
+    if (!matchesReady || !["round-preview", "round-results"].includes(form.category) || form.hitMatchId == null) return;
+    const hitExists = renderMatches.some((match) => String(match.id) === String(form.hitMatchId));
+    if (!hitExists) setForm((current) => ({ ...current, hitMatchId: null }));
+  }, [form.category, form.hitMatchId, matchesReady, renderMatches]);
 
   useEffect(() => {
     let cancelled = false;
@@ -917,7 +1015,11 @@ export default function AdminGraphicsCreator({ darkMode }) {
       ctx.setTransform(EXPORT_SCALE, 0, 0, EXPORT_SCALE, 0, 0);
       drawGraphic(
         ctx,
-        form,
+        {
+          ...form,
+          resultsPage: currentResultsPage,
+          resultsPageCount: weekendResultsPageCount,
+        },
         { matches: renderMatches, standings },
         {
           sponsors: new Map(sponsorImages),
@@ -928,6 +1030,12 @@ export default function AdminGraphicsCreator({ darkMode }) {
         format.width,
         format.height
       );
+      setRenderedPreview({
+        form,
+        matches: renderMatches,
+        standings,
+        sponsors: availableSponsorSources,
+      });
       setPreviewLoading(false);
     }
 
@@ -935,7 +1043,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
     return () => {
       cancelled = true;
     };
-  }, [form, renderMatches, standings, availableSponsorSources]);
+  }, [form, renderMatches, standings, availableSponsorSources, currentResultsPage, weekendResultsPageCount]);
 
   const updateForm = (patch) => {
     setForm((current) => ({ ...current, ...patch }));
@@ -943,6 +1051,14 @@ export default function AdminGraphicsCreator({ darkMode }) {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
+    if (name === "resultsScope" || name === "weekendStart") {
+      updateForm({ [name]: value, resultsPage: 1, hitMatchId: null });
+      return;
+    }
+    if (name === "resultsPage") {
+      updateForm({ resultsPage: value, hitMatchId: null });
+      return;
+    }
     if (name === "periodType") {
       updateForm({ periodType: value, periodLabel: defaultPeriodLabel(value, form.seasonYear) });
       return;
@@ -1117,7 +1233,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
 
   const downloadGraphic = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || downloadDisabled) return;
     try {
       canvas.toBlob((blob) => {
         if (!blob) {
@@ -1127,7 +1243,10 @@ export default function AdminGraphicsCreator({ darkMode }) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `${sanitizeFileName(["mlpn", form.category, form.format, form.round || form.leagueCode, form.seasonYear].filter(Boolean).join("-"))}.png`;
+        const selectedPeriod = isWeekendResults
+          ? `weekend-${form.weekendStart}${weekendResultsPageCount > 1 ? `-strona-${currentResultsPage}` : ""}`
+          : form.round || form.leagueCode;
+        link.download = `${sanitizeFileName(["mlpn", form.category, form.format, selectedPeriod, form.seasonYear].filter(Boolean).join("-"))}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -1169,7 +1288,8 @@ export default function AdminGraphicsCreator({ darkMode }) {
           <button
             type="button"
             onClick={downloadGraphic}
-            className="inline-flex items-center gap-2 rounded-xl bg-yellow-500 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-yellow-400"
+            disabled={downloadDisabled}
+            className="inline-flex items-center gap-2 rounded-xl bg-yellow-500 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download size={16} /> Pobierz PNG
           </button>
@@ -1363,7 +1483,19 @@ export default function AdminGraphicsCreator({ darkMode }) {
                   options={PERIOD_OPTIONS}
                 />
               )}
-              {!isLeagueCategory && (
+              {form.category === "round-results" && (
+                <AdminFormField
+                  label="Zakres wyników"
+                  name="resultsScope"
+                  type="select"
+                  value={form.resultsScope}
+                  onChange={handleInputChange}
+                  darkMode={darkMode}
+                  includeEmptyOption={false}
+                  options={RESULTS_SCOPE_OPTIONS}
+                />
+              )}
+              {!isLeagueCategory && !isWeekendResults && (
                 <AdminFormField
                   label="Kolejka"
                   name="round"
@@ -1373,6 +1505,41 @@ export default function AdminGraphicsCreator({ darkMode }) {
                   darkMode={darkMode}
                   includeEmptyOption={false}
                   options={roundOptions}
+                />
+              )}
+              {isWeekendResults && (
+                <AdminFormField
+                  label="Weekend (piątek–poniedziałek)"
+                  name="weekendStart"
+                  type="select"
+                  value={form.weekendStart}
+                  onChange={handleInputChange}
+                  darkMode={darkMode}
+                  includeEmptyOption={false}
+                  disabled={!weekendOptions.length}
+                  options={
+                    weekendOptions.length
+                      ? weekendOptions.map((option) => ({
+                          value: option.value,
+                          label: `${option.label} · ${option.count} spotkań`,
+                        }))
+                      : [{ value: "", label: "Brak zakończonych spotkań pt–pon" }]
+                  }
+                />
+              )}
+              {isWeekendResults && weekendResultsPageCount > 1 && (
+                <AdminFormField
+                  label="Strona grafiki"
+                  name="resultsPage"
+                  type="select"
+                  value={String(currentResultsPage)}
+                  onChange={handleInputChange}
+                  darkMode={darkMode}
+                  includeEmptyOption={false}
+                  options={Array.from({ length: weekendResultsPageCount }, (_, index) => ({
+                    value: String(index + 1),
+                    label: `Strona ${index + 1} z ${weekendResultsPageCount}`,
+                  }))}
                 />
               )}
             </div>
@@ -1470,13 +1637,29 @@ export default function AdminGraphicsCreator({ darkMode }) {
 
             {!isLeagueCategory && (
               <div className={`rounded-xl border px-3 py-2 text-xs ${softPanel} ${textMuted}`}>
-                W tej kolejce: {roundMatches.length} spotkań. Typer pokaże maksymalnie 5 zaznaczonych meczów.
+                {form.category === "round-typer" && (
+                  <>W tej kolejce: {selectedMatches.length} spotkań. Typer pokaże maksymalnie 5 zaznaczonych meczów.</>
+                )}
+                {form.category === "round-preview" && (
+                  <>W tej kolejce: {selectedMatches.length} spotkań.</>
+                )}
+                {form.category === "round-results" && !isWeekendResults && (
+                  <>W tej kolejce: {selectedMatches.length} zakończonych spotkań.</>
+                )}
+                {isWeekendResults && (
+                  <>
+                    W wybranym weekendzie (pt–pon): {selectedMatches.length} zakończonych spotkań ze wszystkich kolejek i lig.
+                    {weekendResultsPageCount > 1 && (
+                      <> Grafika {currentResultsPage}/{weekendResultsPageCount} pokazuje maksymalnie {WEEKEND_RESULTS_PAGE_SIZE} spotkań.</>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
             {(form.category === "round-preview" || form.category === "round-results") && (
               <AdminFormField
-                label="Mecz-hit kolejki (opcjonalnie)"
+                label={isWeekendResults ? "Mecz-hit weekendu (opcjonalnie)" : "Mecz-hit kolejki (opcjonalnie)"}
                 name="hitMatchId"
                 type="select"
                 value={form.hitMatchId ?? ""}
@@ -1485,7 +1668,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
                 includeEmptyOption={false}
                 options={[
                   { value: "", label: "Bez hitu" },
-                  ...roundMatches.map((match) => ({
+                  ...renderMatches.map((match) => ({
                     value: String(match.id),
                     label: `${match.home_team_name} – ${match.away_team_name}`,
                   })),
@@ -1506,7 +1689,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
             >
               <div className={`text-xs ${textMuted}`}>Kliknij kafelek, aby wybrać mecz. Gwiazdką ★ oznacz „hit kolejki".</div>
               <div className="grid max-h-96 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                {roundMatches.map((match) => {
+                {selectedMatches.map((match) => {
                   const checked = form.selectedTyperMatchIds.includes(match.id);
                   const isHit = String(form.hitMatchId) === String(match.id);
                   const locked = !checked && form.selectedTyperMatchIds.length >= 5;
@@ -1569,7 +1752,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
                     </div>
                   );
                 })}
-                {!roundMatches.length && (
+                {!selectedMatches.length && (
                   <div className={`rounded-xl border p-3 text-sm sm:col-span-2 ${softPanel} ${textMuted}`}>Brak meczów w tej kolejce.</div>
                 )}
               </div>
@@ -1778,7 +1961,8 @@ export default function AdminGraphicsCreator({ darkMode }) {
             <button
               type="button"
               onClick={downloadGraphic}
-              className="inline-flex items-center gap-2 rounded-xl bg-yellow-500 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-yellow-400"
+              disabled={downloadDisabled}
+              className="inline-flex items-center gap-2 rounded-xl bg-yellow-500 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download size={16} /> Pobierz
             </button>
