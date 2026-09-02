@@ -1,5 +1,6 @@
 import {
   buildWeekendOptions,
+  dedupeMatchesById,
   filterWeekendMatches,
   formatWeekendRange,
   getWeekendEndExclusive,
@@ -54,6 +55,29 @@ describe("graphics weekend matches", () => {
     { id: "next-weekend", round: 14, match_date: "2026-10-30", status: "completed" },
     { id: "invalid-date", round: 1, match_date: "2026-02-30", status: "completed" },
   ];
+
+  test("removes repeated view rows only when they have the same match id", () => {
+    const duplicate = {
+      id: "same-match",
+      match_date: "2026-10-23",
+      status: "completed",
+      home_team_id: "home",
+      away_team_id: "away",
+      home_goals: 1,
+      away_goals: 1,
+    };
+    const sameResultButDifferentMatch = { ...duplicate, id: "different-match" };
+    const rowsWithoutIds = [{ match_date: "2026-10-23" }, { match_date: "2026-10-23" }];
+
+    expect(
+      dedupeMatchesById([
+        duplicate,
+        { ...duplicate, mvp_team_id: "other-team" },
+        sameResultButDifferentMatch,
+        ...rowsWithoutIds,
+      ])
+    ).toEqual([duplicate, sameResultButDifferentMatch, ...rowsWithoutIds]);
+  });
 
   test("filters completed results from different rounds within Friday-Monday", () => {
     expect(filterWeekendMatches(matches, "2026-10-23", isCompletedStatus).map((match) => match.id)).toEqual([

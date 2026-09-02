@@ -24,6 +24,7 @@ import {
 } from "./utils/graphicsTableRange";
 import {
   buildWeekendOptions,
+  dedupeMatchesById,
   filterWeekendMatches,
   sortMatchesForGraphic,
 } from "./utils/graphicsWeekend";
@@ -595,7 +596,10 @@ export default function AdminGraphicsCreator({ darkMode }) {
   }, [collapsedSections]);
 
   const seasonMatches = useMemo(
-    () => matches.filter((match) => !isPlaceholderTeam(match.home_team_name) && !isPlaceholderTeam(match.away_team_name)),
+    () =>
+      dedupeMatchesById(matches).filter(
+        (match) => !isPlaceholderTeam(match.home_team_name) && !isPlaceholderTeam(match.away_team_name)
+      ),
     [matches]
   );
 

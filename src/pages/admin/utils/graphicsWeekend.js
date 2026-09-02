@@ -49,6 +49,20 @@ function compareNullableText(leftValue, rightValue) {
   return left.localeCompare(right);
 }
 
+export function dedupeMatchesById(matches = []) {
+  const seenIds = new Set();
+
+  return matches.filter((match) => {
+    const id = match?.id;
+    if (id == null || id === "") return true;
+
+    const key = String(id);
+    if (seenIds.has(key)) return false;
+    seenIds.add(key);
+    return true;
+  });
+}
+
 export function getWeekendStart(value) {
   const date = parseDateKey(value);
   if (!date) return "";
