@@ -993,6 +993,18 @@ button.mlpn-home-panel:hover {
     linear-gradient(135deg, #10203e 0%, #1b315c 48%, #1f3f7a 100%) !important;
 }
 
+/* Nested match details opt into the hero's dark surface even in light mode. */
+.mlpn-shell.mlpn-light .mlpn-home-hero .e3d-card {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.065),
+      rgba(255, 255, 255, 0.03)
+    ) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc;
+}
+
 @media (max-width: 1024px) {
   .mlpn-home-hero::after {
     width: 140px;

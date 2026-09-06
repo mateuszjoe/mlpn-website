@@ -530,13 +530,13 @@ function ParticipantSelector({
           {roster.length === 0 ? (
             <div className={`text-sm ${textMuted}`}>Brak zawodnikow w kadrze tej druzyny.</div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-2">
+            <div className="grid gap-2 2xl:grid-cols-2">
               {roster.map((player) => {
                 const checked = draftIds.includes(player.id);
                 return (
                   <label
                     key={player.id}
-                    className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
+                    className={`flex items-start gap-3 rounded-xl border px-3 py-2 ${
                       darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-white"
                     } ${disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
                   >
@@ -545,15 +545,15 @@ function ParticipantSelector({
                       checked={checked}
                       onChange={() => onTogglePlayer(teamKey, player.id)}
                       disabled={disabled}
-                      className="w-4 h-4"
+                      className="mt-1 h-4 w-4 shrink-0"
                     />
-                    <div className="min-w-0">
-                      <div className="font-medium truncate">
+                    <div className="min-w-0 flex-1">
+                      <div className="break-words font-medium leading-snug whitespace-normal">
                         {player.shirtNumber ? `${player.shirtNumber}. ` : ""}
                         {player.isCaptain ? "(C) " : ""}
                         {player.name}
                       </div>
-                      <div className={`text-xs ${textMuted}`}>{player.pos || "Bez pozycji"}</div>
+                      <div className={`mt-0.5 text-xs ${textMuted}`}>{player.pos || "Bez pozycji"}</div>
                     </div>
                   </label>
                 );
@@ -1008,7 +1008,7 @@ function MobileAttendanceStep({
                   className="h-5 w-5 shrink-0"
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold leading-tight">
+                  <div className="break-words font-semibold leading-tight whitespace-normal">
                     {player.shirtNumber ? `${player.shirtNumber}. ` : ""}
                     {player.isCaptain ? "(C) " : ""}
                     {player.name}

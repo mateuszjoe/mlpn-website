@@ -1058,7 +1058,7 @@ export default function AdminActiveMatch({ darkMode }) {
                           return (
                             <label
                               key={player.player_id}
-                              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
+                              className={`flex items-start gap-2 rounded-xl border px-3 py-2 text-sm ${
                                 checked
                                   ? darkMode
                                     ? "border-emerald-400/50 bg-emerald-500/15"
@@ -1073,9 +1073,11 @@ export default function AdminActiveMatch({ darkMode }) {
                                 checked={checked}
                                 onChange={() => toggleAttendancePlayer(player.player_id)}
                                 disabled={savingAttendance}
-                                className="h-4 w-4 shrink-0"
+                                className="mt-0.5 h-4 w-4 shrink-0"
                               />
-                              <span className="min-w-0 truncate font-semibold">{playerName(player)}</span>
+                              <span className="min-w-0 flex-1 break-words font-semibold leading-snug whitespace-normal">
+                                {playerName(player)}
+                              </span>
                             </label>
                           );
                         })}
