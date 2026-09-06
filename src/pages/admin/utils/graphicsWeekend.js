@@ -115,21 +115,50 @@ export function formatWeekendRange(friday, { includeYear = true } = {}) {
   return `${startDay}–${endDay}.${endMonth}${includeYear ? `.${endYear}` : ""}`;
 }
 
-export function filterWeekendMatches(matches = [], friday, isCompletedStatus) {
-  if (!getWeekendEndExclusive(friday)) return [];
-  const isCompleted = completedPredicate(isCompletedStatus);
+export function isTyperMatchStatus(status) {
+  return ["scheduled", "live", "completed", "walkover_home", "walkover_away"].includes(String(status || ""));
+}
 
-  return matches.filter(
-    (match) => isCompleted(match?.status) && isDateInWeekend(match?.match_date, friday)
+export function getDefaultTyperWeekend(options = [], today = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Warsaw",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).format(new Date())) {
+  const starts = options.map((option) => option.value).filter((value) => getWeekendEndExclusive(value)).sort();
+  const currentWeekend = getWeekendStart(today);
+  if (starts.includes(currentWeekend)) return currentWeekend;
+  return starts.find((value) => value >= today) || starts[starts.length - 1] || "";
+}
+
+export function sortMatchesChronologically(matches = []) {
+  return [...matches].sort(
+    (left, right) =>
+      compareNullableText(left?.match_date, right?.match_date) ||
+      compareNullableText(left?.match_time, right?.match_time) ||
+      compareNullableText(left?.id, right?.id)
   );
 }
 
-export function buildWeekendOptions(matches = [], isCompletedStatus) {
-  const isCompleted = completedPredicate(isCompletedStatus);
+export function filterWeekendMatches(matches = [], friday, isIncludedStatus) {
+  if (!getWeekendEndExclusive(friday)) return [];
+  const isIncluded = completedPredicate(isIncludedStatus);
+
+  return matches.filter(
+    (match) => isIncluded(match?.status) && isDateInWeekend(match?.match_date, friday)
+  );
+}
+
+export function getTyperWeekendMatches(matches = [], friday) {
+  return sortMatchesChronologically(filterWeekendMatches(matches, friday, isTyperMatchStatus));
+}
+
+export function buildWeekendOptions(matches = [], isIncludedStatus) {
+  const isIncluded = completedPredicate(isIncludedStatus);
   const counts = new Map();
 
   matches.forEach((match) => {
-    if (!isCompleted(match?.status)) return;
+    if (!isIncluded(match?.status)) return;
     const weekendStart = getWeekendStart(match?.match_date);
     if (!weekendStart) return;
     counts.set(weekendStart, (counts.get(weekendStart) || 0) + 1);

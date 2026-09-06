@@ -26,6 +26,10 @@ import {
   buildWeekendOptions,
   dedupeMatchesById,
   filterWeekendMatches,
+  getDefaultTyperWeekend,
+  getTyperWeekendMatches,
+  getWeekendStart,
+  isTyperMatchStatus,
   sortMatchesForGraphic,
 } from "./utils/graphicsWeekend";
 import {
@@ -65,9 +69,9 @@ const CATEGORY_OPTIONS = [
   {
     id: "round-typer",
     scope: "all",
-    label: "Typer kolejki",
+    label: "Typer weekendu",
     title: "TYPER",
-    subtitle: "Kolejka do typowania 1X2",
+    subtitle: "Weekend do typowania 1X2",
     icon: Vote,
   },
   {
@@ -304,6 +308,7 @@ function defaultForm() {
     round: "",
     resultsScope: "round",
     weekendStart: "",
+    typerWeekendStart: "",
     resultsPage: 1,
     leagueCode: "1st",
     periodType: "month",
@@ -395,6 +400,9 @@ function loadFormDraft() {
       ? String(draft.weekendStart)
       : base.weekendStart,
     resultsPage: Math.max(1, Number.parseInt(draft.resultsPage, 10) || 1),
+    typerWeekendStart: getWeekendStart(draft.typerWeekendStart) === draft.typerWeekendStart
+      ? draft.typerWeekendStart
+      : base.typerWeekendStart,
     sponsorRows: SPONSOR_ROW_OPTIONS.some((item) => item.value === String(draft.sponsorRows))
       ? String(draft.sponsorRows)
       : base.sponsorRows,
@@ -580,6 +588,8 @@ export default function AdminGraphicsCreator({ darkMode }) {
   const isLeagueCategory = selectedCategory.scope === "league";
   const isTableSummaryCategory = form.category === "table-summary";
   const isWeekendResults = form.category === "round-results" && form.resultsScope === "weekend";
+  const isWeekendTyper = form.category === "round-typer";
+  const isWeekendCategory = isWeekendResults || isWeekendTyper;
   const matchesReady = Boolean(form.seasonYear) && loadedMatchesSeasonYear === String(form.seasonYear);
   const isRoundCategory = form.category.startsWith("round-");
   const isSectionCollapsed = (sectionId) => collapsedSections[sectionId] === true;
@@ -604,8 +614,8 @@ export default function AdminGraphicsCreator({ darkMode }) {
   );
 
   const weekendOptions = useMemo(
-    () => (matchesReady ? buildWeekendOptions(seasonMatches, isCompletedStatus) : []),
-    [matchesReady, seasonMatches]
+    () => (matchesReady ? buildWeekendOptions(seasonMatches, isWeekendTyper ? isTyperMatchStatus : isCompletedStatus) : []),
+    [isWeekendTyper, matchesReady, seasonMatches]
   );
 
   const rounds = useMemo(
@@ -632,6 +642,9 @@ export default function AdminGraphicsCreator({ darkMode }) {
 
   const selectedMatches = useMemo(() => {
     if (!matchesReady) return [];
+    if (isWeekendTyper) {
+      return getTyperWeekendMatches(seasonMatches, form.typerWeekendStart);
+    }
     if (isWeekendResults) {
       return filterWeekendMatches(seasonMatches, form.weekendStart, isCompletedStatus);
     }
@@ -640,7 +653,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
       return rows.filter((match) => isCompletedStatus(match.status));
     }
     return rows;
-  }, [form.category, form.round, form.weekendStart, isWeekendResults, matchesReady, seasonMatches]);
+  }, [form.category, form.round, form.weekendStart, form.typerWeekendStart, isWeekendResults, isWeekendTyper, matchesReady, seasonMatches]);
 
   const weekendResultsPageCount = Math.max(
     1,
@@ -653,9 +666,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
 
   const renderMatches = useMemo(() => {
     if (form.category === "round-typer") {
-      const selected = form.selectedTyperMatchIds.length
-        ? selectedMatches.filter((match) => form.selectedTyperMatchIds.includes(match.id))
-        : selectedMatches;
+      const selected = selectedMatches.filter((match) => form.selectedTyperMatchIds.includes(match.id));
       return selected.slice(0, 5);
     }
     if (isWeekendResults) {
@@ -939,6 +950,17 @@ export default function AdminGraphicsCreator({ darkMode }) {
   }, [isWeekendResults, matchesReady, weekendOptions]);
 
   useEffect(() => {
+    if (!isWeekendTyper || !matchesReady) return;
+    setForm((current) => {
+      if (weekendOptions.some((option) => option.value === current.typerWeekendStart)) return current;
+      const typerWeekendStart = getDefaultTyperWeekend(weekendOptions);
+      if (current.typerWeekendStart === typerWeekendStart) return current;
+      const selectedTyperMatchIds = getTyperWeekendMatches(seasonMatches, typerWeekendStart).slice(0, 5).map((match) => match.id);
+      return { ...current, typerWeekendStart, selectedTyperMatchIds, hitMatchId: null };
+    });
+  }, [isWeekendTyper, matchesReady, seasonMatches, weekendOptions]);
+
+  useEffect(() => {
     if (!isWeekendResults || !matchesReady) return;
     setForm((current) => {
       const resultsPage = Math.min(
@@ -952,14 +974,16 @@ export default function AdminGraphicsCreator({ darkMode }) {
   useEffect(() => {
     if (form.category !== "round-typer" || !matchesReady) return;
     setForm((current) => {
+      if (current.typerWeekendStart !== form.typerWeekendStart) return current;
       const validIds = new Set(selectedMatches.map((match) => match.id));
-      const kept = current.selectedTyperMatchIds.filter((id) => validIds.has(id)).slice(0, 5);
-      const selected = kept.length ? kept : selectedMatches.slice(0, 5).map((match) => match.id);
-      // keep the "hit" valid — default it to the first selected match
+      const selected = current.selectedTyperMatchIds.filter((id) => validIds.has(id)).slice(0, 5);
+      // Keep the hit valid without restoring matches deliberately deselected by the user.
       const hitMatchId = selected.includes(current.hitMatchId) ? current.hitMatchId : null;
+      if (hitMatchId === current.hitMatchId && selected.length === current.selectedTyperMatchIds.length &&
+          selected.every((id, index) => id === current.selectedTyperMatchIds[index])) return current;
       return { ...current, selectedTyperMatchIds: selected, hitMatchId };
     });
-  }, [form.category, form.round, matchesReady, selectedMatches]);
+  }, [form.category, form.typerWeekendStart, matchesReady, selectedMatches]);
 
   useEffect(() => {
     if (!matchesReady || !["round-preview", "round-results"].includes(form.category) || form.hitMatchId == null) return;
@@ -1055,6 +1079,11 @@ export default function AdminGraphicsCreator({ darkMode }) {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
+    if (name === "typerWeekendStart") {
+      const selectedTyperMatchIds = getTyperWeekendMatches(seasonMatches, value).slice(0, 5).map((match) => match.id);
+      updateForm({ typerWeekendStart: value, selectedTyperMatchIds, hitMatchId: null });
+      return;
+    }
     if (name === "resultsScope" || name === "weekendStart") {
       updateForm({ [name]: value, resultsPage: 1, hitMatchId: null });
       return;
@@ -1070,6 +1099,9 @@ export default function AdminGraphicsCreator({ darkMode }) {
     if (name === "seasonYear") {
       updateForm({
         seasonYear: value,
+        typerWeekendStart: "",
+        selectedTyperMatchIds: [],
+        hitMatchId: null,
         periodLabel: form.periodType === "season" ? defaultPeriodLabel("season", value) : form.periodLabel,
       });
       return;
@@ -1247,7 +1279,9 @@ export default function AdminGraphicsCreator({ darkMode }) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        const selectedPeriod = isWeekendResults
+        const selectedPeriod = isWeekendTyper
+          ? `weekend-${form.typerWeekendStart}`
+          : isWeekendResults
           ? `weekend-${form.weekendStart}${weekendResultsPageCount > 1 ? `-strona-${currentResultsPage}` : ""}`
           : form.round || form.leagueCode;
         link.download = `${sanitizeFileName(["mlpn", form.category, form.format, selectedPeriod, form.seasonYear].filter(Boolean).join("-"))}.png`;
@@ -1499,7 +1533,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
                   options={RESULTS_SCOPE_OPTIONS}
                 />
               )}
-              {!isLeagueCategory && !isWeekendResults && (
+              {!isLeagueCategory && !isWeekendCategory && (
                 <AdminFormField
                   label="Kolejka"
                   name="round"
@@ -1511,12 +1545,12 @@ export default function AdminGraphicsCreator({ darkMode }) {
                   options={roundOptions}
                 />
               )}
-              {isWeekendResults && (
+              {isWeekendCategory && (
                 <AdminFormField
                   label="Weekend (piątek–poniedziałek)"
-                  name="weekendStart"
+                  name={isWeekendTyper ? "typerWeekendStart" : "weekendStart"}
                   type="select"
-                  value={form.weekendStart}
+                  value={isWeekendTyper ? form.typerWeekendStart : form.weekendStart}
                   onChange={handleInputChange}
                   darkMode={darkMode}
                   includeEmptyOption={false}
@@ -1527,7 +1561,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
                           value: option.value,
                           label: `${option.label} · ${option.count} spotkań`,
                         }))
-                      : [{ value: "", label: "Brak zakończonych spotkań pt–pon" }]
+                      : [{ value: "", label: isWeekendTyper ? "Brak spotkań pt–pon w tym sezonie" : "Brak zakończonych spotkań pt–pon" }]
                   }
                 />
               )}
@@ -1642,7 +1676,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
             {!isLeagueCategory && (
               <div className={`rounded-xl border px-3 py-2 text-xs ${softPanel} ${textMuted}`}>
                 {form.category === "round-typer" && (
-                  <>W tej kolejce: {selectedMatches.length} spotkań. Typer pokaże maksymalnie 5 zaznaczonych meczów.</>
+                  <>W wybranym weekendzie (pt–pon): {selectedMatches.length} spotkań ze wszystkich kolejek i lig. Typer pokaże maksymalnie 5 zaznaczonych meczów.</>
                 )}
                 {form.category === "round-preview" && (
                   <>W tej kolejce: {selectedMatches.length} spotkań.</>
@@ -1691,7 +1725,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
               onToggle={() => toggleSection("typer-matches")}
               actions={<span className={`text-xs ${textMuted}`}>{form.selectedTyperMatchIds.length}/5</span>}
             >
-              <div className={`text-xs ${textMuted}`}>Kliknij kafelek, aby wybrać mecz. Gwiazdką ★ oznacz „hit kolejki".</div>
+              <div className={`text-xs ${textMuted}`}>Kliknij kafelek, aby wybrać mecz. Gwiazdką ★ oznacz „hit weekendu".</div>
               <div className="grid max-h-96 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                 {selectedMatches.map((match) => {
                   const checked = form.selectedTyperMatchIds.includes(match.id);
@@ -1742,7 +1776,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
                           event.stopPropagation();
                           setHitMatch(match.id);
                         }}
-                        title="Oznacz jako hit kolejki"
+                        title="Oznacz jako hit weekendu"
                         className={`absolute -right-1.5 -top-1.5 rounded-full border px-1.5 py-0.5 text-[10px] font-bold leading-none shadow ${
                           isHit
                             ? "border-yellow-500 bg-yellow-400 text-black"
@@ -1757,7 +1791,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
                   );
                 })}
                 {!selectedMatches.length && (
-                  <div className={`rounded-xl border p-3 text-sm sm:col-span-2 ${softPanel} ${textMuted}`}>Brak meczów w tej kolejce.</div>
+                  <div className={`rounded-xl border p-3 text-sm sm:col-span-2 ${softPanel} ${textMuted}`}>Brak meczów w wybranym weekendzie.</div>
                 )}
               </div>
             </CollapsibleSection>

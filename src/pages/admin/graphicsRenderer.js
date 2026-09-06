@@ -215,7 +215,7 @@ function getPeriodLabel(form) {
 function titleForForm(form) {
   if (form.title && form.title.trim()) return form.title.trim();
   const roundText = form.round ? `${romanRound(form.round)} kolejka` : "Kolejka";
-  if (form.category === "round-typer") return "Typer kolejki";
+  if (form.category === "round-typer") return "Typer weekendu";
   if (form.category === "round-preview") return roundText;
   if (form.category === "round-results") {
     return form.resultsScope === "weekend"
@@ -231,8 +231,9 @@ function titleForForm(form) {
 
 function subtitleForForm(form) {
   if (form.subtitle && form.subtitle.trim()) return form.subtitle.trim();
-  const roundText = form.round ? `${romanRound(form.round)} kolejka` : "";
-  if (form.category === "round-typer") return roundText || "Typuj wyniki";
+  if (form.category === "round-typer") {
+    return formatWeekendRange(form.typerWeekendStart, { includeYear: false }) || "Wybierz weekend";
+  }
   if (form.category === "round-preview") return "Zapowiedź";
   if (form.category === "round-results") {
     if (form.resultsScope === "weekend") {
@@ -1223,7 +1224,7 @@ function drawTyper(ctx, form, matches, images, layout, top, bottom) {
   const w = layout.width - layout.M * 2;
   list.forEach((match) => {
     const hit = form.hitMatchId != null && String(match.id) === String(form.hitMatchId);
-    drawMatchRow(ctx, match, images, x, y, w, rowH, { center: "1 X 2", hit }, layout);
+    drawMatchRow(ctx, match, images, x, y, w, rowH, { center: "1 X 2", hit, hitLabel: "HIT WEEKENDU" }, layout);
     y += rowH + gap;
   });
 }

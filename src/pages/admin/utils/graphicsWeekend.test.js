@@ -3,9 +3,13 @@ import {
   dedupeMatchesById,
   filterWeekendMatches,
   formatWeekendRange,
+  getDefaultTyperWeekend,
+  getTyperWeekendMatches,
   getWeekendEndExclusive,
   getWeekendStart,
   isDateInWeekend,
+  isTyperMatchStatus,
+  sortMatchesChronologically,
   sortMatchesForGraphic,
 } from "./graphicsWeekend";
 
@@ -39,6 +43,88 @@ describe("graphics weekend date range", () => {
     expect(getWeekendStart("26-10-23")).toBe("");
     expect(getWeekendEndExclusive("2026-10-24")).toBe("");
     expect(isDateInWeekend("2026-10-23T18:00:00Z", "2026-10-23")).toBe(false);
+  });
+});
+
+describe("weekend typer", () => {
+  const matches = [
+    { id: "friday", round: 2, league_code: "3rd", match_date: "2026-09-04", status: "scheduled" },
+    { id: "saturday", round: 8, league_code: "1st", match_date: "2026-09-05", status: "live" },
+    { id: "sunday", round: 12, league_code: "2nd", match_date: "2026-09-06", status: "completed" },
+    { id: "monday", round: 19, match_date: "2026-09-07", status: "walkover_home" },
+    { id: "walkover-away", round: 19, match_date: "2026-09-07", status: "walkover_away" },
+    { id: "same-round-next-weekend", round: 2, match_date: "2026-09-11", status: "scheduled" },
+    { id: "thursday", round: 2, match_date: "2026-09-03", status: "scheduled" },
+    { id: "tuesday", round: 2, match_date: "2026-09-08", status: "scheduled" },
+    { id: "cancelled", match_date: "2026-09-04", status: "cancelled" },
+    { id: "postponed", match_date: "2026-09-05", status: "postponed" },
+    { id: "unplayed", match_date: "2026-09-06", status: "unplayed" },
+    { id: "undated", match_date: null, status: "scheduled" },
+    { id: "invalid-date", match_date: "2026-02-30", status: "scheduled" },
+  ];
+
+  test("selects Friday-Monday across rounds and leagues, including upcoming matches", () => {
+    expect(getTyperWeekendMatches(matches, "2026-09-04").map((match) => match.id)).toEqual([
+      "friday", "saturday", "sunday", "monday", "walkover-away",
+    ]);
+  });
+
+  test("counts upcoming weekends using the same eligibility rules and deduplicated matches", () => {
+    const uniqueMatches = dedupeMatchesById([...matches, { ...matches[0] }]);
+    const options = buildWeekendOptions(uniqueMatches, isTyperMatchStatus);
+    expect(options.map(({ value, count }) => ({ value, count }))).toEqual([
+      { value: "2026-09-11", count: 1 },
+      { value: "2026-09-04", count: 5 },
+    ]);
+    options.forEach((option) => {
+      expect(filterWeekendMatches(uniqueMatches, option.value, isTyperMatchStatus)).toHaveLength(option.count);
+    });
+    // Results still exclude scheduled and live matches by default.
+    expect(buildWeekendOptions(uniqueMatches).map((option) => option.count)).toEqual([3]);
+  });
+
+  test.each(["2026-09-04", "2026-09-05", "2026-09-06", "2026-09-07"])(
+    "defaults to the current weekend on %s regardless of option order",
+    (today) => {
+      const options = ["2026-09-18", "2026-08-28", "2026-09-11", "2026-09-04"].map((value) => ({ value }));
+      expect(getDefaultTyperWeekend(options, today)).toBe("2026-09-04");
+    }
+  );
+
+  test("defaults to the nearest upcoming weekend or the latest archive weekend", () => {
+    const options = ["2026-09-18", "2026-08-28", "2026-09-11"].map((value) => ({ value }));
+    expect(getDefaultTyperWeekend(options, "2026-09-06")).toBe("2026-09-11");
+    expect(getDefaultTyperWeekend(options, "2026-09-08")).toBe("2026-09-11");
+    expect(getDefaultTyperWeekend(options, "2026-09-10")).toBe("2026-09-11");
+    expect(getDefaultTyperWeekend(options, "2026-10-01")).toBe("2026-09-18");
+    expect(getDefaultTyperWeekend([], "2026-09-06")).toBe("");
+    expect(getDefaultTyperWeekend([{ value: "2026-02-30" }], "2026-09-06")).toBe("");
+  });
+
+  test("uses the Warsaw date when Monday UTC is already Tuesday in Poland", () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-09-07T22:30:00Z"));
+    try {
+      expect(getDefaultTyperWeekend([
+        { value: "2026-09-04" }, { value: "2026-09-11" },
+      ])).toBe("2026-09-11");
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test("orders matches by date, time and id rather than league or round, without mutating input", () => {
+    const rows = [
+      { id: "saturday", league_code: "1st", round: 1, match_date: "2026-09-05", match_time: "10:00" },
+      { id: "late-friday", league_code: "2nd", round: 2, match_date: "2026-09-04", match_time: "20:00" },
+      { id: "b-early-friday", league_code: "3rd", round: 3, match_date: "2026-09-04", match_time: "18:00" },
+      { id: "a-early-friday", league_code: "3rd", round: 4, match_date: "2026-09-04", match_time: "18:00" },
+      { id: "unknown-time", match_date: "2026-09-04", match_time: null },
+    ];
+    const original = [...rows];
+    expect(sortMatchesChronologically(rows).map((match) => match.id)).toEqual([
+      "a-early-friday", "b-early-friday", "late-friday", "unknown-time", "saturday",
+    ]);
+    expect(rows).toEqual(original);
   });
 });
 
