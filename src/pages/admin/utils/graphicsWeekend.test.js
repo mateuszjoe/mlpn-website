@@ -6,7 +6,7 @@ import {
   getDefaultTyperWeekend,
   getTyperWeekendMatches,
   getWeekendFixtures,
-  getWeekendMatchPage,
+  getSinglePageMatches,
   getWeekendEndExclusive,
   getWeekendStart,
   isDateInWeekend,
@@ -134,7 +134,7 @@ describe("weekend typer", () => {
   });
 });
 
-describe("weekend graphic pagination and saved dates", () => {
+describe("single-page weekend graphics and saved dates", () => {
   const chronologicalMatches = Array.from({ length: 29 }, (_, index) => ({
     id: `match-${index}`,
     match_date: `2026-09-0${4 + Math.floor(index / 8)}`,
@@ -144,31 +144,34 @@ describe("weekend graphic pagination and saved dates", () => {
     status: "scheduled",
   }));
 
-  test("sorts the full mixed-round weekend before splitting it into 14/14/1 matches", () => {
+  test("keeps all 29 mixed-round weekend matches on one graphic without duplicate IDs", () => {
     const rows = [...chronologicalMatches].reverse();
     const original = [...rows];
     const selected = getWeekendFixtures(dedupeMatchesById([...rows, rows[5]]), "2026-09-04");
-    const pages = [1, 2, 3].map((page) => getWeekendMatchPage(selected, page, { chronological: true }));
-    expect(pages.map((page) => page.matches.length)).toEqual([14, 14, 1]);
-    expect(pages.map(({ page, pageCount }) => [page, pageCount])).toEqual([[1, 3], [2, 3], [3, 3]]);
-    expect(pages.flatMap((page) => page.matches)).toEqual(chronologicalMatches);
-    expect(new Set(pages.flatMap((page) => page.matches.map((match) => match.id))).size).toBe(29);
+    const rendered = getSinglePageMatches([...selected, selected[5]], { chronological: true });
+    expect(rendered).toEqual(chronologicalMatches);
+    expect(new Set(rendered.map((match) => match.id)).size).toBe(29);
     expect(rows).toEqual(original);
   });
 
-  test.each([0, -1, "invalid", NaN, null, undefined])("clamps invalid page %s to page one", (page) => {
-    expect(getWeekendMatchPage(chronologicalMatches, page).page).toBe(1);
+  test.each([0, 1, 14, 15, 17, 24, 34, 50])("never caps a selection of %s matches", (count) => {
+    const rows = Array.from({ length: count }, (_, index) => ({
+      ...chronologicalMatches[index % chronologicalMatches.length],
+      id: `unique-${index}`,
+    }));
+    expect(getSinglePageMatches(rows)).toHaveLength(count);
+    expect(getSinglePageMatches(rows, { chronological: true })).toHaveLength(count);
   });
 
-  test("clamps a saved page after the match list shrinks and supports empty weekends", () => {
-    const smallerList = chronologicalMatches.slice(0, 2);
-    expect(getWeekendMatchPage(smallerList, 3).page).toBe(1);
-    expect(getWeekendMatchPage(smallerList, 3).matches).toHaveLength(2);
-    expect(getWeekendMatchPage([], 3)).toEqual({ page: 1, pageCount: 1, matches: [] });
+  test("supports empty selections and ignores empty view rows", () => {
+    expect(getSinglePageMatches()).toEqual([]);
+    expect(getSinglePageMatches([null, undefined])).toEqual([]);
+    expect(getSinglePageMatches([null, chronologicalMatches[0], chronologicalMatches[0]]))
+      .toEqual([chronologicalMatches[0]]);
   });
 
   test("preserves the existing league/date order for results", () => {
-    expect(getWeekendMatchPage(chronologicalMatches).matches).toEqual(sortMatchesForGraphic(chronologicalMatches).slice(0, 14));
+    expect(getSinglePageMatches(chronologicalMatches)).toEqual(sortMatchesForGraphic(chronologicalMatches));
   });
 
   test("restores only real Friday dates from saved drafts", () => {

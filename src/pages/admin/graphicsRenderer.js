@@ -8,6 +8,7 @@ import {
   resolveTableRange,
 } from "./utils/graphicsTableRange";
 import { formatWeekendRange, sortMatchesChronologically, sortMatchesForGraphic } from "./utils/graphicsWeekend";
+import { getGraphicTeamAbbreviation } from "./utils/graphicsTeamAbbreviations";
 
 // Full brand lockup (eagle + "MLPN SULEJÓWEK" + "isola RISTORANTE"), white version for dark art.
 export const BRAND_LOGO_SRC = "/logo2big.webp";
@@ -240,19 +241,13 @@ function subtitleForForm(form) {
   }
   if (form.category === "round-preview") {
     if (form.previewScope === "weekend") {
-      const pageLabel = Number(form.previewPageCount) > 1
-        ? ` · ${form.previewPage}/${form.previewPageCount}`
-        : "";
-      return `Zapowiedź weekendu${pageLabel}`;
+      return "Zapowiedź weekendu";
     }
     return "Zapowiedź";
   }
   if (form.category === "round-results") {
     if (form.resultsScope === "weekend") {
-      const pageLabel = Number(form.resultsPageCount) > 1
-        ? ` · ${form.resultsPage}/${form.resultsPageCount}`
-        : "";
-      return `Wyniki weekendu${pageLabel}`;
+      return "Wyniki weekendu";
     }
     return "Wyniki";
   }
@@ -1033,11 +1028,13 @@ function sponsorItemsForRow(list, rowIndex, rowsCount) {
   return list.slice(start, start + count);
 }
 
-function drawSponsorPanel(ctx, form, images, layout) {
+export function getSponsorPanelLayout(form, list, layout) {
   const { width, height, M } = layout;
-  const list = Array.isArray(images.sponsorList) ? images.sponsorList : fallbackSponsorList();
   const rowsCount = sponsorRowsForForm(form, list);
-  const rowH = layout.isStory ? 106 : 80;
+  const isRoundList = ["round-preview", "round-results"].includes(form.category);
+  // Four full-height sponsor rows otherwise consume almost half a square post.
+  // Keep all logos, but use a denser band for multi-row fixture graphics.
+  const rowH = layout.isStory ? 106 : isRoundList ? Math.min(80, Math.max(56, 160 / rowsCount)) : 80;
   const labelH = layout.isStory ? 34 : 28;
   const pad = layout.isStory ? 24 : 18;
   const gapLabel = layout.isStory ? 10 : 6;
@@ -1046,6 +1043,12 @@ function drawSponsorPanel(ctx, form, images, layout) {
   const panelY = height - panelH - footerSpace;
   const panelX = M * 0.5;
   const panelW = width - M;
+  return { rowsCount, rowH, labelH, pad, gapLabel, panelH, panelY, panelX, panelW };
+}
+
+function drawSponsorPanel(ctx, form, images, layout) {
+  const list = Array.isArray(images.sponsorList) ? images.sponsorList : fallbackSponsorList();
+  const { rowsCount, rowH, labelH, pad, gapLabel, panelH, panelY, panelX, panelW } = getSponsorPanelLayout(form, list, layout);
 
   // One uniform dark band. No tiles, no shadows — logos are framed to fill their cells.
   fillRoundRect(ctx, panelX, panelY, panelW, panelH, 24, "#f4f6f9", "rgba(10,30,55,0.10)", 1.5);
@@ -1126,6 +1129,10 @@ function formatPlayerName(name) {
 }
 
 function drawMatchRow(ctx, match, images, x, y, w, h, opts, layout) {
+  if (opts.compact) {
+    drawCompactMatchRow(ctx, match, images, x, y, w, h, opts, layout);
+    return;
+  }
   const { center = "VS", hit = false, accent = null, hitLabel = "HIT KOLEJKI" } = opts;
   const t = layout.t;
   const bg = hit ? "rgba(231,178,60,0.2)" : t.panel;
@@ -1219,6 +1226,71 @@ function drawMatchRow(ctx, match, images, x, y, w, h, opts, layout) {
   }
 }
 
+// Width-safe geometry for three-character labels. Crests, names and centre chip
+// each get their own space, even in a three-column square graphic.
+export function getCompactMatchRowLayout(w, h) {
+  const pad = Math.min(12, h * 0.2);
+  const gap = Math.min(8, h * 0.12);
+  const crest = Math.min(h * 0.72, w * 0.115);
+  const chipW = w * 0.24;
+  const chipH = h * 0.76;
+  const nameWidth = (w - chipW) / 2 - pad - crest - gap * 2;
+  // Reserve enough room even for three wide letters (e.g. WBP).
+  const nameSize = Math.min(30, h * 0.4, nameWidth / 2.9);
+  return { pad, gap, crest, chipW, chipH, nameWidth, nameSize };
+}
+
+function drawCompactMatchRow(ctx, match, images, x, y, w, h, opts, layout) {
+  const { center, hit, accent } = opts;
+  const t = layout.t;
+  const { pad, gap, crest, chipW, chipH, nameWidth, nameSize } = getCompactMatchRowLayout(w, h);
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const homeAbbr = getGraphicTeamAbbreviation(match.home_team_name, match.home_team_abbr);
+  const awayAbbr = getGraphicTeamAbbreviation(match.away_team_name, match.away_team_abbr);
+  fillRoundRect(ctx, x, y, w, h, h * 0.18, hit ? "rgba(231,178,60,0.2)" : t.panel,
+    hit ? BRAND.gold : t.panelLine, hit ? 2.5 : 1.25);
+  if (accent) {
+    fillRoundRect(ctx, x + 2, y + h * 0.25, Math.max(2, pad * 0.28), h * 0.5, 2, accent);
+  }
+  const homeCrestX = x + pad;
+  const awayCrestX = x + w - pad - crest;
+  drawCrest(ctx, getImage(images.teamLogos, match.home_team_logo), homeCrestX, cy - crest / 2, crest, homeAbbr, t.dark);
+  drawCrest(ctx, getImage(images.teamLogos, match.away_team_logo), awayCrestX, cy - crest / 2, crest, awayAbbr, t.dark);
+  const nameOptions = { size: nameSize, minSize: Math.min(8, nameSize), weight: 900, color: t.text, maxWidth: nameWidth };
+  drawText(ctx, homeAbbr, homeCrestX + crest + gap, cy, { ...nameOptions, align: "left" });
+  drawText(ctx, awayAbbr, awayCrestX - gap, cy, { ...nameOptions, align: "right" });
+
+  fillRoundRect(ctx, cx - chipW / 2, cy - chipH / 2, chipW, chipH, chipH * 0.22,
+    hit ? BRAND.gold : "rgba(8,16,28,0.7)", "rgba(255,255,255,0.14)", 1);
+  const lines = Array.isArray(center) ? center.filter(Boolean) : [center];
+  if (lines.length > 1) {
+    const size = Math.min(24, h * 0.34, chipW / 3.7);
+    lines.slice(0, 2).forEach((line, index) => {
+      drawText(ctx, line, cx, cy + (index === 0 ? -1 : 1) * h * 0.17, {
+        size, minSize: Math.min(8, size), weight: index === 0 ? 800 : 900,
+        color: hit ? BRAND.ink : BRAND.white, maxWidth: chipW * 0.9,
+      });
+    });
+  } else {
+    drawText(ctx, lines[0] || "VS", cx, cy, {
+      size: Math.min(34, h * 0.44, chipW / 3.7), minSize: 8, weight: 900,
+      color: hit ? BRAND.ink : BRAND.white, maxWidth: chipW * 0.9,
+    });
+  }
+  // Keep the highlight inside the card's own gap; a full ribbon would overlap
+  // the previous fixture when all weekend matches share one image.
+  if (hit) {
+    const tagSize = Math.min(13, h * 0.22);
+    const tagH = tagSize * 1.25;
+    const tagW = Math.min(w - pad * 2, tagSize * 10);
+    fillRoundRect(ctx, cx - tagW / 2, y - tagH * 0.3, tagW, tagH, tagH / 2, BRAND.gold);
+    drawText(ctx, opts.hitLabel, cx, y + tagH * 0.2, {
+      size: tagSize, minSize: 6, weight: 900, color: BRAND.ink, maxWidth: tagW * 0.9,
+    });
+  }
+}
+
 /* ============================== TEMPLATES ============================== */
 
 function drawTyper(ctx, form, matches, images, layout, top, bottom) {
@@ -1241,11 +1313,34 @@ function drawTyper(ctx, form, matches, images, layout, top, bottom) {
   });
 }
 
+export function getRoundListLayout(matchCount, layout, top, bottom) {
+  const legendH = layout.isStory ? 40 : 32;
+  const areaTop = top + legendH;
+  const areaH = Math.max(1, bottom - areaTop);
+  const width = layout.width - layout.M * 2;
+  const colGap = layout.isStory ? 20 : 16;
+  const maxCols = Math.min(layout.isStory ? 2 : 3, Math.max(1, matchCount));
+  const candidates = Array.from({ length: maxCols }, (_, index) => {
+    const cols = index + 1;
+    const rowsPerCol = Math.max(1, Math.ceil(matchCount / cols));
+    const colW = (width - colGap * (cols - 1)) / cols;
+    const rowGap = Math.min(layout.isStory ? 14 : 10, areaH / (rowsPerCol * 10));
+    const rowH = Math.min(layout.isStory ? 118 : 100, (areaH - rowGap * (rowsPerCol - 1)) / rowsPerCol);
+    const contentH = rowsPerCol * rowH + (rowsPerCol - 1) * rowGap;
+    const y0 = areaTop + Math.max(0, (areaH - contentH) / 2);
+    const readableSize = getCompactMatchRowLayout(colW, rowH).nameSize;
+    return { cols, rowsPerCol, colW, colGap, rowH, rowGap, y0, legendH, areaTop, readableSize };
+  });
+  // Choose columns by actual usable label size, not a fixed match-count limit.
+  // Ties favour fewer columns for easier reading in chronological order.
+  return candidates.reduce((best, candidate) => candidate.readableSize > best.readableSize + 0.5 ? candidate : best);
+}
+
 function drawRoundList(ctx, form, matches, images, layout, top, bottom, mode) {
   const isWeekendMode = mode === "results"
     ? form.resultsScope === "weekend"
     : form.previewScope === "weekend";
-  // Weekend preview pages already contain the selected date range across all
+  // Weekend previews already contain the selected date range across all
   // rounds and leagues. Keep their chronological order instead of regrouping by league.
   const sortMatches = mode === "preview" && isWeekendMode
     ? sortMatchesChronologically
@@ -1262,24 +1357,10 @@ function drawRoundList(ctx, form, matches, images, layout, top, bottom, mode) {
     drawEmpty(ctx, emptyText, layout, top, bottom);
     return;
   }
-  const t = layout.t;
-  const w = layout.width - layout.M * 2;
-
   // Legend of leagues present (small colour dots) so the accent stripes are readable.
   const present = [...new Set(clean.map((m) => m.league_code))];
-  const legendH = layout.isStory ? 40 : 32;
+  const { legendH, rowsPerCol, colW, colGap, rowGap, rowH, y0 } = getRoundListLayout(clean.length, layout, top, bottom);
   drawLeagueLegend(ctx, present, layout.width / 2, top + legendH * 0.4, layout);
-
-  const areaTop = top + legendH;
-  const areaH = bottom - areaTop;
-  const cols = layout.isStory ? 1 : clean.length > 8 ? 2 : 1;
-  const rowsPerCol = Math.ceil(clean.length / cols);
-  const colGap = layout.M * 0.6;
-  const colW = (w - colGap * (cols - 1)) / cols;
-  const rowGap = layout.isStory ? 14 : 12;
-  const rowH = Math.min(layout.isStory ? 118 : 100, (areaH - rowGap * (rowsPerCol - 1)) / rowsPerCol);
-  const contentH = rowsPerCol * rowH + (rowsPerCol - 1) * rowGap;
-  const y0 = areaTop + Math.max(0, (areaH - contentH) / 2);
 
   clean.forEach((match, i) => {
     const col = Math.floor(i / rowsPerCol);
@@ -1294,7 +1375,7 @@ function drawRoundList(ctx, form, matches, images, layout, top, bottom, mode) {
         ? `${match.home_goals ?? 0} : ${match.away_goals ?? 0}`
         : [formatShortDate(match.match_date), time];
     const hitLabel = isWeekendMode ? "HIT WEEKENDU" : "HIT KOLEJKI";
-    drawMatchRow(ctx, match, images, x, y, colW, rowH, { center, hit, accent, hitLabel }, layout);
+    drawMatchRow(ctx, match, images, x, y, colW, rowH, { center, hit, accent, hitLabel, compact: true }, layout);
   });
 }
 

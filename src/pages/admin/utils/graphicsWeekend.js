@@ -163,14 +163,11 @@ export function getWeekendFixtures(matches = [], friday) {
 
 export const getTyperWeekendMatches = getWeekendFixtures;
 
-export const WEEKEND_MATCHES_PAGE_SIZE = 14;
-
-export function getWeekendMatchPage(matches = [], requestedPage = 1, { chronological = false } = {}) {
-  const sorted = chronological ? sortMatchesChronologically(matches) : sortMatchesForGraphic(matches);
-  const pageCount = Math.max(1, Math.ceil(sorted.length / WEEKEND_MATCHES_PAGE_SIZE));
-  const page = Math.min(pageCount, Math.max(1, Number.parseInt(requestedPage, 10) || 1));
-  const start = (page - 1) * WEEKEND_MATCHES_PAGE_SIZE;
-  return { page, pageCount, matches: sorted.slice(start, start + WEEKEND_MATCHES_PAGE_SIZE) };
+// Preview/results always render the full selection. Only repeated view rows with
+// the same match ID are removed; distinct fixtures must never be lost to a cap.
+export function getSinglePageMatches(matches = [], { chronological = false } = {}) {
+  const unique = dedupeMatchesById(matches.filter(Boolean));
+  return chronological ? sortMatchesChronologically(unique) : sortMatchesForGraphic(unique);
 }
 
 export function buildWeekendOptions(matches = [], isIncludedStatus) {

@@ -30,11 +30,10 @@ import {
   getDefaultTyperWeekend,
   getTyperWeekendMatches,
   getWeekendFixtures,
-  getWeekendMatchPage,
+  getSinglePageMatches,
   isTyperMatchStatus,
   isWeekendFixtureStatus,
   normalizeWeekendStart,
-  WEEKEND_MATCHES_PAGE_SIZE,
 } from "./utils/graphicsWeekend";
 import {
   drawGraphic,
@@ -311,11 +310,9 @@ function defaultForm() {
     round: "",
     previewScope: "weekend",
     previewWeekendStart: "",
-    previewPage: 1,
     resultsScope: "round",
     weekendStart: "",
     typerWeekendStart: "",
-    resultsPage: 1,
     leagueCode: "1st",
     periodType: "month",
     periodLabel: defaultPeriodLabel("month"),
@@ -403,12 +400,10 @@ function loadFormDraft() {
       ? draft.previewScope
       : base.previewScope,
     previewWeekendStart: normalizeWeekendStart(draft.previewWeekendStart),
-    previewPage: Math.max(1, Number.parseInt(draft.previewPage, 10) || 1),
     resultsScope: MATCH_SCOPE_OPTIONS.some((item) => item.value === draft.resultsScope)
       ? draft.resultsScope
       : base.resultsScope,
     weekendStart: normalizeWeekendStart(draft.weekendStart),
-    resultsPage: Math.max(1, Number.parseInt(draft.resultsPage, 10) || 1),
     typerWeekendStart: normalizeWeekendStart(draft.typerWeekendStart),
     sponsorRows: SPONSOR_ROW_OPTIONS.some((item) => item.value === String(draft.sponsorRows))
       ? String(draft.sponsorRows)
@@ -600,7 +595,6 @@ export default function AdminGraphicsCreator({ darkMode }) {
   const isWeekendList = isWeekendPreview || isWeekendResults;
   const isWeekendCategory = isWeekendList || isWeekendTyper;
   const weekendField = isWeekendTyper ? "typerWeekendStart" : isWeekendPreview ? "previewWeekendStart" : "weekendStart";
-  const weekendPageField = isWeekendPreview ? "previewPage" : "resultsPage";
   const matchesReady = Boolean(form.seasonYear) && loadedMatchesSeasonYear === String(form.seasonYear);
   const isRoundCategory = form.category.startsWith("round-");
   const isSectionCollapsed = (sectionId) => collapsedSections[sectionId] === true;
@@ -671,20 +665,13 @@ export default function AdminGraphicsCreator({ darkMode }) {
     return rows;
   }, [form.category, form.round, form.weekendStart, form.previewWeekendStart, form.typerWeekendStart, isWeekendPreview, isWeekendResults, isWeekendTyper, matchesReady, seasonMatches]);
 
-  const weekendMatchPage = useMemo(
-    () => getWeekendMatchPage(selectedMatches, isWeekendPreview ? form.previewPage : form.resultsPage, { chronological: isWeekendPreview }),
-    [form.previewPage, form.resultsPage, isWeekendPreview, selectedMatches]
-  );
-  const { page: currentWeekendPage, pageCount: weekendPageCount } = weekendMatchPage;
-
   const renderMatches = useMemo(() => {
     if (form.category === "round-typer") {
       const selected = selectedMatches.filter((match) => form.selectedTyperMatchIds.includes(match.id));
       return selected.slice(0, 5);
     }
-    if (isWeekendList) return weekendMatchPage.matches;
-    return selectedMatches;
-  }, [form.category, form.selectedTyperMatchIds, isWeekendList, selectedMatches, weekendMatchPage]);
+    return getSinglePageMatches(selectedMatches, { chronological: isWeekendPreview });
+  }, [form.category, form.selectedTyperMatchIds, isWeekendPreview, selectedMatches]);
 
   const seasonId = useMemo(() => {
     const found = seasons.find((season) => String(season.year) === String(form.seasonYear));
@@ -951,8 +938,8 @@ export default function AdminGraphicsCreator({ darkMode }) {
       const selectedWeekendExists = weekendOptions.some((option) => option.value === current.weekendStart);
       if (selectedWeekendExists) return current;
       const weekendStart = weekendOptions[0]?.value || "";
-      if (current.weekendStart === weekendStart && current.hitMatchId == null && Number(current.resultsPage) === 1) return current;
-      return { ...current, weekendStart, resultsPage: 1, hitMatchId: null };
+      if (current.weekendStart === weekendStart && current.hitMatchId == null) return current;
+      return { ...current, weekendStart, hitMatchId: null };
     });
   }, [isWeekendResults, matchesReady, weekendOptions]);
 
@@ -961,8 +948,8 @@ export default function AdminGraphicsCreator({ darkMode }) {
     setForm((current) => {
       if (weekendOptions.some((option) => option.value === current.previewWeekendStart)) return current;
       const previewWeekendStart = getDefaultFixtureWeekend(weekendOptions);
-      if (current.previewWeekendStart === previewWeekendStart && current.hitMatchId == null && Number(current.previewPage) === 1) return current;
-      return { ...current, previewWeekendStart, previewPage: 1, hitMatchId: null };
+      if (current.previewWeekendStart === previewWeekendStart && current.hitMatchId == null) return current;
+      return { ...current, previewWeekendStart, hitMatchId: null };
     });
   }, [isWeekendPreview, matchesReady, weekendOptions]);
 
@@ -976,17 +963,6 @@ export default function AdminGraphicsCreator({ darkMode }) {
       return { ...current, typerWeekendStart, selectedTyperMatchIds, hitMatchId: null };
     });
   }, [isWeekendTyper, matchesReady, seasonMatches, weekendOptions]);
-
-  useEffect(() => {
-    if (!isWeekendList || !matchesReady) return;
-    setForm((current) => {
-      const page = Math.min(
-        weekendPageCount,
-        Math.max(1, Number.parseInt(current[weekendPageField], 10) || 1)
-      );
-      return page === Number(current[weekendPageField]) ? current : { ...current, [weekendPageField]: page };
-    });
-  }, [isWeekendList, matchesReady, weekendPageCount, weekendPageField]);
 
   useEffect(() => {
     if (form.category !== "round-typer" || !matchesReady) return;
@@ -1060,13 +1036,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
       ctx.setTransform(EXPORT_SCALE, 0, 0, EXPORT_SCALE, 0, 0);
       drawGraphic(
         ctx,
-        {
-          ...form,
-          resultsPage: currentWeekendPage,
-          resultsPageCount: weekendPageCount,
-          previewPage: currentWeekendPage,
-          previewPageCount: weekendPageCount,
-        },
+        form,
         { matches: renderMatches, standings },
         {
           sponsors: new Map(sponsorImages),
@@ -1090,7 +1060,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
     return () => {
       cancelled = true;
     };
-  }, [form, renderMatches, standings, availableSponsorSources, currentWeekendPage, weekendPageCount]);
+  }, [form, renderMatches, standings, availableSponsorSources]);
 
   const updateForm = (patch) => {
     setForm((current) => ({ ...current, ...patch }));
@@ -1104,14 +1074,10 @@ export default function AdminGraphicsCreator({ darkMode }) {
       return;
     }
     if (name === "resultsScope" || name === "weekendStart") {
-      updateForm({ [name]: value, resultsPage: 1, hitMatchId: null });
+      updateForm({ [name]: value, hitMatchId: null });
       return;
     }
     if (name === "previewScope" || name === "previewWeekendStart") {
-      updateForm({ [name]: value, previewPage: 1, hitMatchId: null });
-      return;
-    }
-    if (name === "resultsPage" || name === "previewPage") {
       updateForm({ [name]: value, hitMatchId: null });
       return;
     }
@@ -1125,8 +1091,6 @@ export default function AdminGraphicsCreator({ darkMode }) {
         typerWeekendStart: "",
         previewWeekendStart: "",
         weekendStart: "",
-        previewPage: 1,
-        resultsPage: 1,
         selectedTyperMatchIds: [],
         hitMatchId: null,
         periodLabel: form.periodType === "season" ? defaultPeriodLabel("season", value) : form.periodLabel,
@@ -1309,7 +1273,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
         const selectedPeriod = isWeekendTyper
           ? `weekend-${form.typerWeekendStart}`
           : isWeekendList
-          ? `weekend-${form[weekendField]}${weekendPageCount > 1 ? `-strona-${currentWeekendPage}` : ""}`
+          ? `weekend-${form[weekendField]}`
           : form.round || form.leagueCode;
         link.download = `${sanitizeFileName(["mlpn", form.category, form.format, selectedPeriod, form.seasonYear].filter(Boolean).join("-"))}.png`;
         document.body.appendChild(link);
@@ -1592,21 +1556,6 @@ export default function AdminGraphicsCreator({ darkMode }) {
                   }
                 />
               )}
-              {isWeekendList && weekendPageCount > 1 && (
-                <AdminFormField
-                  label="Strona grafiki"
-                  name={weekendPageField}
-                  type="select"
-                  value={String(currentWeekendPage)}
-                  onChange={handleInputChange}
-                  darkMode={darkMode}
-                  includeEmptyOption={false}
-                  options={Array.from({ length: weekendPageCount }, (_, index) => ({
-                    value: String(index + 1),
-                    label: `Strona ${index + 1} z ${weekendPageCount}`,
-                  }))}
-                />
-              )}
             </div>
 
             {isLeagueCategory && (
@@ -1714,10 +1663,10 @@ export default function AdminGraphicsCreator({ darkMode }) {
                 {isWeekendList && (
                   <>
                     W wybranym weekendzie (pt–pon): {selectedMatches.length} {isWeekendResults ? "zakończonych spotkań" : "spotkań"} ze wszystkich kolejek i lig.
-                    {weekendPageCount > 1 && (
-                      <> Grafika {currentWeekendPage}/{weekendPageCount} pokazuje maksymalnie {WEEKEND_MATCHES_PAGE_SIZE} spotkań.</>
-                    )}
                   </>
+                )}
+                {(form.category === "round-preview" || form.category === "round-results") && (
+                  <> Wszystkie spotkania na jednej grafice. Nazwy drużyn w zatwierdzonych skrótach 3-znakowych.</>
                 )}
               </div>
             )}
