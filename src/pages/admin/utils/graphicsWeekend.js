@@ -115,11 +115,13 @@ export function formatWeekendRange(friday, { includeYear = true } = {}) {
   return `${startDay}–${endDay}.${endMonth}${includeYear ? `.${endYear}` : ""}`;
 }
 
-export function isTyperMatchStatus(status) {
+export function isWeekendFixtureStatus(status) {
   return ["scheduled", "live", "completed", "walkover_home", "walkover_away"].includes(String(status || ""));
 }
 
-export function getDefaultTyperWeekend(options = [], today = new Intl.DateTimeFormat("en-CA", {
+export const isTyperMatchStatus = isWeekendFixtureStatus;
+
+export function getDefaultFixtureWeekend(options = [], today = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Warsaw",
   year: "numeric",
   month: "2-digit",
@@ -129,6 +131,12 @@ export function getDefaultTyperWeekend(options = [], today = new Intl.DateTimeFo
   const currentWeekend = getWeekendStart(today);
   if (starts.includes(currentWeekend)) return currentWeekend;
   return starts.find((value) => value >= today) || starts[starts.length - 1] || "";
+}
+
+export const getDefaultTyperWeekend = getDefaultFixtureWeekend;
+
+export function normalizeWeekendStart(value) {
+  return value && getWeekendStart(value) === value ? value : "";
 }
 
 export function sortMatchesChronologically(matches = []) {
@@ -149,8 +157,20 @@ export function filterWeekendMatches(matches = [], friday, isIncludedStatus) {
   );
 }
 
-export function getTyperWeekendMatches(matches = [], friday) {
-  return sortMatchesChronologically(filterWeekendMatches(matches, friday, isTyperMatchStatus));
+export function getWeekendFixtures(matches = [], friday) {
+  return sortMatchesChronologically(filterWeekendMatches(matches, friday, isWeekendFixtureStatus));
+}
+
+export const getTyperWeekendMatches = getWeekendFixtures;
+
+export const WEEKEND_MATCHES_PAGE_SIZE = 14;
+
+export function getWeekendMatchPage(matches = [], requestedPage = 1, { chronological = false } = {}) {
+  const sorted = chronological ? sortMatchesChronologically(matches) : sortMatchesForGraphic(matches);
+  const pageCount = Math.max(1, Math.ceil(sorted.length / WEEKEND_MATCHES_PAGE_SIZE));
+  const page = Math.min(pageCount, Math.max(1, Number.parseInt(requestedPage, 10) || 1));
+  const start = (page - 1) * WEEKEND_MATCHES_PAGE_SIZE;
+  return { page, pageCount, matches: sorted.slice(start, start + WEEKEND_MATCHES_PAGE_SIZE) };
 }
 
 export function buildWeekendOptions(matches = [], isIncludedStatus) {

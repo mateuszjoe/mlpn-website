@@ -5,10 +5,13 @@ import {
   formatWeekendRange,
   getDefaultTyperWeekend,
   getTyperWeekendMatches,
+  getWeekendFixtures,
+  getWeekendMatchPage,
   getWeekendEndExclusive,
   getWeekendStart,
   isDateInWeekend,
   isTyperMatchStatus,
+  normalizeWeekendStart,
   sortMatchesChronologically,
   sortMatchesForGraphic,
 } from "./graphicsWeekend";
@@ -65,6 +68,9 @@ describe("weekend typer", () => {
 
   test("selects Friday-Monday across rounds and leagues, including upcoming matches", () => {
     expect(getTyperWeekendMatches(matches, "2026-09-04").map((match) => match.id)).toEqual([
+      "friday", "saturday", "sunday", "monday", "walkover-away",
+    ]);
+    expect(getWeekendFixtures(matches, "2026-09-04").map((match) => match.id)).toEqual([
       "friday", "saturday", "sunday", "monday", "walkover-away",
     ]);
   });
@@ -125,6 +131,52 @@ describe("weekend typer", () => {
       "a-early-friday", "b-early-friday", "late-friday", "unknown-time", "saturday",
     ]);
     expect(rows).toEqual(original);
+  });
+});
+
+describe("weekend graphic pagination and saved dates", () => {
+  const chronologicalMatches = Array.from({ length: 29 }, (_, index) => ({
+    id: `match-${index}`,
+    match_date: `2026-09-0${4 + Math.floor(index / 8)}`,
+    match_time: `${10 + (index % 8)}:00`,
+    league_code: ["3rd", "2nd", "1st"][index % 3],
+    round: 1 + (index % 7),
+    status: "scheduled",
+  }));
+
+  test("sorts the full mixed-round weekend before splitting it into 14/14/1 matches", () => {
+    const rows = [...chronologicalMatches].reverse();
+    const original = [...rows];
+    const selected = getWeekendFixtures(dedupeMatchesById([...rows, rows[5]]), "2026-09-04");
+    const pages = [1, 2, 3].map((page) => getWeekendMatchPage(selected, page, { chronological: true }));
+    expect(pages.map((page) => page.matches.length)).toEqual([14, 14, 1]);
+    expect(pages.map(({ page, pageCount }) => [page, pageCount])).toEqual([[1, 3], [2, 3], [3, 3]]);
+    expect(pages.flatMap((page) => page.matches)).toEqual(chronologicalMatches);
+    expect(new Set(pages.flatMap((page) => page.matches.map((match) => match.id))).size).toBe(29);
+    expect(rows).toEqual(original);
+  });
+
+  test.each([0, -1, "invalid", NaN, null, undefined])("clamps invalid page %s to page one", (page) => {
+    expect(getWeekendMatchPage(chronologicalMatches, page).page).toBe(1);
+  });
+
+  test("clamps a saved page after the match list shrinks and supports empty weekends", () => {
+    const smallerList = chronologicalMatches.slice(0, 2);
+    expect(getWeekendMatchPage(smallerList, 3).page).toBe(1);
+    expect(getWeekendMatchPage(smallerList, 3).matches).toHaveLength(2);
+    expect(getWeekendMatchPage([], 3)).toEqual({ page: 1, pageCount: 1, matches: [] });
+  });
+
+  test("preserves the existing league/date order for results", () => {
+    expect(getWeekendMatchPage(chronologicalMatches).matches).toEqual(sortMatchesForGraphic(chronologicalMatches).slice(0, 14));
+  });
+
+  test("restores only real Friday dates from saved drafts", () => {
+    expect(normalizeWeekendStart("2026-09-04")).toBe("2026-09-04");
+    expect(normalizeWeekendStart("2027-12-31")).toBe("2027-12-31");
+    ["2026-09-05", "2026-02-30", "not-a-date", "", null, undefined, 42, {}].forEach((value) => {
+      expect(normalizeWeekendStart(value)).toBe("");
+    });
   });
 });
 

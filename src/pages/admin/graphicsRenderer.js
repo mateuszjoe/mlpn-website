@@ -7,7 +7,7 @@ import {
   isTableRowDimmed,
   resolveTableRange,
 } from "./utils/graphicsTableRange";
-import { formatWeekendRange, sortMatchesForGraphic } from "./utils/graphicsWeekend";
+import { formatWeekendRange, sortMatchesChronologically, sortMatchesForGraphic } from "./utils/graphicsWeekend";
 
 // Full brand lockup (eagle + "MLPN SULEJÓWEK" + "isola RISTORANTE"), white version for dark art.
 export const BRAND_LOGO_SRC = "/logo2big.webp";
@@ -216,7 +216,11 @@ function titleForForm(form) {
   if (form.title && form.title.trim()) return form.title.trim();
   const roundText = form.round ? `${romanRound(form.round)} kolejka` : "Kolejka";
   if (form.category === "round-typer") return "Typer weekendu";
-  if (form.category === "round-preview") return roundText;
+  if (form.category === "round-preview") {
+    return form.previewScope === "weekend"
+      ? formatWeekendRange(form.previewWeekendStart, { includeYear: false }) || "Weekend"
+      : roundText;
+  }
   if (form.category === "round-results") {
     return form.resultsScope === "weekend"
       ? formatWeekendRange(form.weekendStart, { includeYear: false }) || "Weekend"
@@ -234,7 +238,15 @@ function subtitleForForm(form) {
   if (form.category === "round-typer") {
     return formatWeekendRange(form.typerWeekendStart, { includeYear: false }) || "Wybierz weekend";
   }
-  if (form.category === "round-preview") return "Zapowiedź";
+  if (form.category === "round-preview") {
+    if (form.previewScope === "weekend") {
+      const pageLabel = Number(form.previewPageCount) > 1
+        ? ` · ${form.previewPage}/${form.previewPageCount}`
+        : "";
+      return `Zapowiedź weekendu${pageLabel}`;
+    }
+    return "Zapowiedź";
+  }
   if (form.category === "round-results") {
     if (form.resultsScope === "weekend") {
       const pageLabel = Number(form.resultsPageCount) > 1
@@ -1230,14 +1242,23 @@ function drawTyper(ctx, form, matches, images, layout, top, bottom) {
 }
 
 function drawRoundList(ctx, form, matches, images, layout, top, bottom, mode) {
-  const clean = sortMatchesForGraphic(matches.filter(Boolean));
-  const isWeekendMode = mode === "results" && form.resultsScope === "weekend";
+  const isWeekendMode = mode === "results"
+    ? form.resultsScope === "weekend"
+    : form.previewScope === "weekend";
+  // Weekend preview pages already contain the selected date range across all
+  // rounds and leagues. Keep their chronological order instead of regrouping by league.
+  const sortMatches = mode === "preview" && isWeekendMode
+    ? sortMatchesChronologically
+    : sortMatchesForGraphic;
+  const clean = sortMatches(matches.filter(Boolean));
   if (!clean.length) {
     const emptyText = mode === "results"
       ? isWeekendMode
         ? "Brak wyników w wybranym weekendzie"
         : "Brak wyników w tej kolejce"
-      : "Brak spotkań w tej kolejce";
+      : isWeekendMode
+        ? "Brak spotkań w wybranym weekendzie"
+        : "Brak spotkań w tej kolejce";
     drawEmpty(ctx, emptyText, layout, top, bottom);
     return;
   }
