@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, CheckCircle2, Loader2, Pencil, Plus, RefreshCw, Radio, Send } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { notifyMatchDataUpdated } from "../../lib/matchDataEvents";
@@ -16,8 +16,11 @@ const EMPTY_EVENT_FORM = {
 const EMPTY_ATTENDANCE_EDITOR = {
   matchId: "",
   teamId: "",
-  draftIds: [],
 };
+
+const MATCH_PAGE_SIZE = 10;
+const MATCH_STATUSES = { scheduled: "Nadchodzące", live: "W trakcie", completed: "Zakończone" };
+const MATCH_STATUS_LABELS = { scheduled: "Nadchodzący", live: "Rozpoczęty", completed: "Zakończony" };
 
 const ABSENT_SEPARATOR_VALUE = "__absent_separator__";
 
@@ -287,6 +290,14 @@ function isMissingActiveMatchDutyFeature(error) {
 export default function AdminActiveMatch({ darkMode }) {
   const { user, isAdmin } = useAuth();
   const [matches, setMatches] = useState([]);
+  const [seasons, setSeasons] = useState([]);
+  const [seasonId, setSeasonId] = useState("");
+  const [matchStatus, setMatchStatus] = useState("scheduled");
+  const [matchDate, setMatchDate] = useState("");
+  const [page, setPage] = useState(0);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [openingAttendance, setOpeningAttendance] = useState(false);
+  const attendanceBusy = useRef(false);
   const [assignmentsByMatchId, setAssignmentsByMatchId] = useState({});
   const [dutyUsers, setDutyUsers] = useState([]);
   const [lineupsByMatchId, setLineupsByMatchId] = useState({});
@@ -328,22 +339,29 @@ export default function AdminActiveMatch({ darkMode }) {
   }, [assignmentFeatureMissing]);
 
   const loadActiveMatches = useCallback(async () => {
+    if (!seasonId) return;
     setLoading(true);
     try {
-      const { data: matchRows, error: matchesError } = await supabase
+      let query = supabase
         .from("v_matches")
         .select(
           "id, season_id, league_id, league_code, league_name, season_year, round, match_date, match_time, home_team_id, away_team_id, home_team_name, home_team_abbr, away_team_name, away_team_abbr, home_goals, away_goals, status"
         )
-        .eq("status", "live")
-        .order("match_date", { ascending: true, nullsFirst: false })
-        .order("match_time", { ascending: true, nullsFirst: false });
+        .eq("season_id", seasonId)
+        .eq("status", matchStatus)
+        .order("match_date", { ascending: matchStatus !== "completed", nullsFirst: false })
+        .order("match_time", { ascending: true, nullsFirst: false })
+        .order("id")
+        .range(page * MATCH_PAGE_SIZE, (page + 1) * MATCH_PAGE_SIZE);
+      if (matchDate) query = query.eq("match_date", matchDate);
+      const { data: matchRows, error: matchesError } = await query;
 
       if (matchesError) throw matchesError;
 
-      let nextMatches = matchRows || [];
+      setHasNextPage((matchRows || []).length > MATCH_PAGE_SIZE);
+      const nextMatches = (matchRows || []).slice(0, MATCH_PAGE_SIZE);
       let nextAssignments = {};
-      let dutyFeatureMissing = assignmentFeatureMissing;
+
 
       if (nextMatches.length > 0 && !assignmentFeatureMissing) {
         const { data: assignmentRows, error: assignmentsError } = await supabase
@@ -353,7 +371,7 @@ export default function AdminActiveMatch({ darkMode }) {
 
         if (assignmentsError) {
           if (isMissingActiveMatchDutyFeature(assignmentsError)) {
-            dutyFeatureMissing = true;
+
             setAssignmentFeatureMissing(true);
           } else {
             throw assignmentsError;
@@ -361,10 +379,6 @@ export default function AdminActiveMatch({ darkMode }) {
         } else {
           nextAssignments = Object.fromEntries((assignmentRows || []).map((row) => [row.match_id, row]));
         }
-      }
-
-      if (!isAdmin && !dutyFeatureMissing) {
-        nextMatches = nextMatches.filter((match) => nextAssignments[match.id]?.assigned_to === user?.id);
       }
 
       const matchIds = nextMatches.map((match) => match.id);
@@ -410,7 +424,7 @@ export default function AdminActiveMatch({ darkMode }) {
           nextMatches.map((match) => [
             match.id,
             sortRosterRows((rostersResult.data || []).filter((row) =>
-              row.season_id === match.season_id &&
+              row.season_id === match.season_id && row.league_id === match.league_id &&
               (row.team_id === match.home_team_id || row.team_id === match.away_team_id)
             )),
           ])
@@ -441,7 +455,31 @@ export default function AdminActiveMatch({ darkMode }) {
     } finally {
       setLoading(false);
     }
-  }, [assignmentFeatureMissing, isAdmin, user?.id]);
+  }, [assignmentFeatureMissing, seasonId, matchStatus, matchDate, page]);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase.from("seasons").select("id, name, year, status").order("year", { ascending: false })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          setAlert({ type: "error", message: "Nie udało się pobrać sezonów. Odśwież stronę." });
+          setLoading(false);
+          return;
+        }
+        setSeasons(data || []);
+        setSeasonId((data || []).find((season) => season.status === "active")?.id || data?.[0]?.id || "");
+        if (!data?.length) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!savingAttendance) return undefined;
+    const warn = (event) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [savingAttendance]);
 
   useEffect(() => {
     loadActiveMatches();
@@ -468,6 +506,10 @@ export default function AdminActiveMatch({ darkMode }) {
     return assignmentsByMatchId[match.id]?.assigned_to === user?.id;
   }
 
+  function canOpenAttendance(match) {
+    return canManageMatch(match) || (!assignmentFeatureMissing && !assignmentsByMatchId[match.id]?.assigned_to);
+  }
+
   function openTransferPanel(match) {
     const assignment = assignmentsByMatchId[match.id] || {};
     setActiveTransferMatchId((current) => (current === match.id ? "" : match.id));
@@ -476,7 +518,7 @@ export default function AdminActiveMatch({ darkMode }) {
   }
 
   function openEventForm(match) {
-    if (!canManageMatch(match)) {
+    if (match.status !== "live" || !canManageMatch(match)) {
       setAlert({ type: "error", message: "Ten aktywny mecz jest przypisany do innego dyżurnego." });
       return;
     }
@@ -495,7 +537,7 @@ export default function AdminActiveMatch({ darkMode }) {
   }
 
   function openEditEventForm(match, event) {
-    if (!canManageMatch(match)) {
+    if (match.status !== "live" || !canManageMatch(match)) {
       setAlert({ type: "error", message: "Ten aktywny mecz jest przypisany do innego dyżurnego." });
       return;
     }
@@ -543,79 +585,84 @@ export default function AdminActiveMatch({ darkMode }) {
     });
   }
 
-  function openAttendanceEditor(match, teamId) {
-    if (!canManageMatch(match)) {
-      setAlert({ type: "error", message: "Ten aktywny mecz jest przypisany do innego dyżurnego." });
+  async function openAttendanceEditor(match, teamId) {
+    if (attendanceBusy.current || openingAttendance) return;
+    if (!canOpenAttendance(match)) {
+      setAlert({ type: "error", message: "Ten mecz jest przypisany do innego dyżurnego." });
       return;
     }
-
-    const players = getPlayersForMatchTeam(match, rostersByMatchId, lineupsByMatchId, teamId);
-    setAttendanceEditor({
-      matchId: match.id,
-      teamId,
-      draftIds: players.filter((row) => row.present).map((row) => row.player_id),
-    });
-  }
-
-  function toggleAttendancePlayer(playerId) {
-    setAttendanceEditor((prev) => {
-      const current = new Set(prev.draftIds || []);
-      if (current.has(playerId)) current.delete(playerId);
-      else current.add(playerId);
-      return { ...prev, draftIds: Array.from(current) };
-    });
-  }
-
-  async function saveAttendance(match, teamId) {
-    if (!match?.id || !teamId) return;
-    if (!canManageMatch(match)) {
-      setAlert({ type: "error", message: "Nie możesz modyfikować meczu przypisanego do innego dyżurnego." });
-      return;
-    }
-
-    setSavingAttendance(true);
+    setOpeningAttendance(true);
     try {
-      const allPlayers = getPlayersForMatchTeam(match, rostersByMatchId, lineupsByMatchId, teamId);
-      const playersById = new Map(allPlayers.map((row) => [row.player_id, row]));
-      const currentIds = new Set(getTeamLineups(match, lineupsByMatchId, teamId).map((row) => row.player_id));
-      const draftIds = new Set(attendanceEditor.draftIds || []);
-      const toInsert = Array.from(draftIds).filter((playerId) => !currentIds.has(playerId));
-      const toDelete = Array.from(currentIds).filter((playerId) => !draftIds.has(playerId));
-
-      if (toDelete.length > 0) {
-        const { error: deleteError } = await supabase
-          .from("match_lineups")
-          .delete()
-          .eq("match_id", match.id)
-          .eq("team_id", teamId)
-          .in("player_id", toDelete);
-        if (deleteError) throw deleteError;
+      // Claiming a duty never changes the match status. The server arbitrates races.
+      const { error: assignmentError } = await supabase.rpc("ensure_active_match_assignment", { p_match_id: match.id });
+      if (assignmentError) throw assignmentError;
+      const [assignmentResult, lineupResult] = await Promise.all([
+        supabase.from("active_match_assignments").select("*").eq("match_id", match.id).single(),
+        supabase.from("match_lineups")
+          .select("id, match_id, team_id, player_id, shirt_number, position_played, players(id, display_name, position)")
+          .eq("match_id", match.id),
+      ]);
+      if (assignmentResult.error) throw assignmentResult.error;
+      if (lineupResult.error) throw lineupResult.error;
+      setAssignmentsByMatchId((current) => ({ ...current, [match.id]: assignmentResult.data }));
+      if (!isAdmin && assignmentResult.data.assigned_to !== user?.id) {
+        throw new Error("Ten mecz przejął już inny dyżurny. Poproś go o przekazanie dyżuru.");
       }
-
-      if (toInsert.length > 0) {
-        const payload = toInsert
-          .map((playerId) => playersById.get(playerId))
-          .filter(Boolean)
-          .map((row) => buildLineupPayload(match, teamId, row));
-
-        if (payload.length > 0) {
-          const { error: insertError } = await supabase.from("match_lineups").insert(payload);
-          if (insertError) throw insertError;
-        }
-      }
-
-      const { error: auditError } = await supabase.rpc("touch_match_result_edit", { p_match_id: match.id });
-      if (auditError) {
-        console.warn("Match result audit update:", auditError.message);
-      }
-
-      setAlert({ type: "success", message: "Lista obecności została zapisana." });
-      setAttendanceEditor(EMPTY_ATTENDANCE_EDITOR);
-      await loadActiveMatches();
+      setLineupsByMatchId((current) => ({ ...current, [match.id]: sortLineups(lineupResult.data || []) }));
+      setAttendanceEditor({ matchId: match.id, teamId });
+      setAlert({ type: null, message: null });
     } catch (error) {
-      setAlert({ type: "error", message: error.message || "Nie udało się zapisać listy obecności." });
+      setAlert({ type: "error", message: error.message || "Nie udało się otworzyć listy obecności." });
     } finally {
+      setOpeningAttendance(false);
+    }
+  }
+
+  async function toggleAttendancePlayer(match, teamId, player) {
+    if (attendanceBusy.current || !canManageMatch(match)) return;
+    attendanceBusy.current = true;
+    setSavingAttendance(true);
+    setAlert({ type: null, message: null });
+    const present = !player.present;
+    try {
+      const { data, error } = await supabase.rpc("set_match_attendance", {
+        p_match_id: match.id, p_team_id: teamId, p_player_id: player.player_id, p_present: present,
+      });
+      if (error) throw error;
+      if (present && !data?.length) throw new Error("Serwer nie potwierdził zapisu obecności.");
+      // Update only this player after server confirmation, never replace the full list.
+      setLineupsByMatchId((current) => {
+        const rows = (current[match.id] || []).filter((row) => row.player_id !== player.player_id);
+        if (present) rows.push({ ...data[0], players: player.players });
+        return { ...current, [match.id]: sortLineups(rows) };
+      });
+      notifyMatchDataUpdated({ matchId: match.id, source: "match-attendance" });
+    } catch (error) {
+      setAlert({ type: "error", message: "Nie zapisano zmiany obecności. Poprzedni stan został zachowany. " + (error.message || "Spróbuj ponownie.") });
+    } finally {
+      attendanceBusy.current = false;
       setSavingAttendance(false);
+    }
+  }
+
+  async function startMatch(match) {
+    if (!canManageMatch(match) || attendanceBusy.current) return;
+    if (!window.confirm("Rozpocząć mecz " + match.home_team_name + " - " + match.away_team_name + "? Listę obecności możesz nadal uzupełniać.")) return;
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.from("matches")
+        .update({ status: "live", home_goals: 0, away_goals: 0 })
+        .eq("id", match.id).eq("status", "scheduled").select("id").single();
+      if (error || !data) throw error || new Error("Nie udało się rozpocząć meczu. Odśwież dane.");
+      setAttendanceEditor(EMPTY_ATTENDANCE_EDITOR);
+      setPage(0);
+      setMatchStatus("live");
+      notifyMatchDataUpdated({ matchId: match.id, source: "active-match-started" });
+      setAlert({ type: "success", message: "Mecz rozpoczęty. Lista obecności została zachowana." });
+    } catch (error) {
+      setAlert({ type: "error", message: error.message });
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -639,7 +686,7 @@ export default function AdminActiveMatch({ darkMode }) {
   }
 
   async function saveEvent() {
-    if (!activeMatch?.id) return;
+    if (!activeMatch?.id || activeMatch.status !== "live") return;
     if (!canManageMatch(activeMatch)) {
       setAlert({ type: "error", message: "Nie możesz dopisywać zdarzeń w meczu przypisanym do innego dyżurnego." });
       return;
@@ -751,7 +798,7 @@ export default function AdminActiveMatch({ darkMode }) {
   }
 
   async function finishMatch(match) {
-    if (!match?.id) return;
+    if (!match?.id || match.status !== "live") return;
     if (!canManageMatch(match)) {
       setAlert({ type: "error", message: "Nie możesz zakończyć meczu przypisanego do innego dyżurnego." });
       return;
@@ -773,7 +820,7 @@ export default function AdminActiveMatch({ darkMode }) {
           away_goals: score.away,
           status: "completed",
         })
-        .eq("id", match.id);
+        .eq("id", match.id).eq("status", "live").select("id").single();
       if (updateError) throw updateError;
 
       const { error: auditError } = await supabase.rpc("touch_match_result_edit", { p_match_id: match.id });
@@ -786,7 +833,8 @@ export default function AdminActiveMatch({ darkMode }) {
       setEditingEventId("");
       setAttendanceEditor((current) => (current.matchId === match.id ? EMPTY_ATTENDANCE_EDITOR : current));
       notifyMatchDataUpdated({ matchId: match.id, source: "active-match-finished" });
-      await loadActiveMatches();
+      setPage(0);
+      setMatchStatus("completed");
     } catch (error) {
       setAlert({ type: "error", message: error.message || "Nie udało się zakończyć meczu." });
     } finally {
@@ -851,12 +899,13 @@ export default function AdminActiveMatch({ darkMode }) {
         <div className="min-w-0">
           <h2 className="text-2xl font-bold">Aktywny mecz</h2>
           <p className={`mt-1 text-sm ${mutedText}`}>
-            Prosty panel do dopisywania zdarzeń w meczach ze statusem "Rozpoczęty".
+            Obecność przed meczem, w trakcie i po zakończeniu. Otwarcie listy nie rozpoczyna meczu.
           </p>
         </div>
         <button
           type="button"
           onClick={loadActiveMatches}
+          disabled={savingAttendance || openingAttendance || saving}
           className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold sm:w-auto ${
             darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-gray-200 bg-white hover:bg-gray-50"
           }`}
@@ -865,6 +914,25 @@ export default function AdminActiveMatch({ darkMode }) {
           Odśwież
         </button>
       </div>
+
+      <fieldset disabled={savingAttendance || openingAttendance || saving || !!finishingMatchId || !!transferringMatchId} className="space-y-3">
+        <div className="grid grid-cols-3 gap-2" aria-label="Status meczu">
+          {Object.entries(MATCH_STATUSES).map(([status, label]) => (
+            <button key={status} type="button" aria-pressed={matchStatus === status}
+              onClick={() => { setMatchStatus(status); setPage(0); setAttendanceEditor(EMPTY_ATTENDANCE_EDITOR); setActiveFormMatchId(""); }}
+              className={`min-h-[44px] rounded-xl border px-2 py-2 text-sm font-bold disabled:opacity-50 ${matchStatus === status ? "bg-yellow-500 border-yellow-500 text-black" : cardClass}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <AdminFormField label="Sezon" name="attendance_season" type="select" value={seasonId} darkMode={darkMode}
+            options={seasons.map((season) => ({ value: season.id, label: season.name }))}
+            onChange={(event) => { setSeasonId(event.target.value); setPage(0); setAttendanceEditor(EMPTY_ATTENDANCE_EDITOR); }} />
+          <AdminFormField label="Dzień (opcjonalnie)" name="attendance_date" type="date" value={matchDate} darkMode={darkMode}
+            onChange={(event) => { setMatchDate(event.target.value); setPage(0); setAttendanceEditor(EMPTY_ATTENDANCE_EDITOR); }} />
+        </div>
+      </fieldset>
 
       <AdminAlert
         type={alert.type}
@@ -876,12 +944,10 @@ export default function AdminActiveMatch({ darkMode }) {
         <div className={`rounded-2xl border p-8 text-center ${cardClass}`}>
           <Radio size={28} className="mx-auto mb-3 opacity-70" />
           <div className="text-lg font-bold">
-            {isAdmin || assignmentFeatureMissing ? "Brak rozpoczętego meczu" : "Brak meczu przypisanego do Ciebie"}
+            Brak meczów dla wybranych filtrów
           </div>
           <p className={`mt-1 text-sm ${mutedText}`}>
-            {isAdmin || assignmentFeatureMissing
-              ? "Najpierw ustaw status meczu na \"Rozpoczęty\" w zakładce Wyniki i zapisz listę obecności."
-              : "Jeśli przejmujesz dyżur, obecny dyżurny albo superadmin musi przekazać Ci uprawnienia do meczu."}
+            Wybierz inny status, sezon lub dzień.
           </p>
         </div>
       ) : (
@@ -890,7 +956,9 @@ export default function AdminActiveMatch({ darkMode }) {
             const events = eventsByMatchId[match.id] || [];
             const homePlayers = getPlayersForMatchTeam(match, rostersByMatchId, lineupsByMatchId, match.home_team_id);
             const awayPlayers = getPlayersForMatchTeam(match, rostersByMatchId, lineupsByMatchId, match.away_team_id);
-            const score = calculateScore(match, events);
+            const score = match.status === "completed"
+              ? { home: match.home_goals, away: match.away_goals }
+              : calculateScore(match, events);
             const isFormOpen = activeFormMatchId === match.id;
             const editedEvent = isFormOpen && editingEventId ? events.find((event) => event.id === editingEventId) : null;
             const homeCount = homePlayers.filter((row) => row.present).length;
@@ -930,17 +998,17 @@ export default function AdminActiveMatch({ darkMode }) {
                         <button
                           type="button"
                           onClick={() => openAttendanceEditor(match, match.home_team_id)}
-                          disabled={!canManage}
+                          disabled={!canOpenAttendance(match) || savingAttendance || openingAttendance || saving}
                           className={`mt-1 max-w-full text-[10px] font-bold uppercase tracking-normal sm:text-[11px] sm:tracking-[0.08em] ${
                             darkMode ? "text-emerald-300 hover:text-emerald-200" : "text-emerald-700 hover:text-emerald-800"
                           } disabled:opacity-40`}
                         >
-                          Popraw listę
+                          Lista obecności
                         </button>
                       </div>
                       <div className={`order-1 col-span-2 justify-self-center rounded-2xl border px-5 py-3 text-center sm:order-2 sm:col-span-1 ${darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50"}`}>
-                        <div className="text-3xl font-black leading-none">{score.home} - {score.away}</div>
-                        <div className={`mt-1 text-[11px] font-bold uppercase tracking-[0.12em] ${mutedText}`}>Rozpoczęty</div>
+                        <div className="text-3xl font-black leading-none">{match.status === "scheduled" ? "—" : score.home + " - " + score.away}</div>
+                        <div className={`mt-1 text-[11px] font-bold uppercase tracking-[0.12em] ${mutedText}`}>{MATCH_STATUS_LABELS[match.status]}</div>
                       </div>
                       <div className="order-3 min-w-0 text-center sm:text-left">
                         <div className="truncate text-lg font-black">{match.away_team_name}</div>
@@ -948,27 +1016,35 @@ export default function AdminActiveMatch({ darkMode }) {
                         <button
                           type="button"
                           onClick={() => openAttendanceEditor(match, match.away_team_id)}
-                          disabled={!canManage}
+                          disabled={!canOpenAttendance(match) || savingAttendance || openingAttendance || saving}
                           className={`mt-1 max-w-full text-[10px] font-bold uppercase tracking-normal sm:text-[11px] sm:tracking-[0.08em] ${
                             darkMode ? "text-emerald-300 hover:text-emerald-200" : "text-emerald-700 hover:text-emerald-800"
                           } disabled:opacity-40`}
                         >
-                          Popraw listę
+                          Lista obecności
                         </button>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex w-full flex-col gap-2 lg:w-auto">
+                    {match.status === "scheduled" && canManage && (
+                      <button type="button" onClick={() => startMatch(match)} disabled={saving || savingAttendance || openingAttendance}
+                        className="min-h-[46px] rounded-xl bg-green-500 px-4 py-3 text-sm font-bold text-black disabled:opacity-50">
+                        {saving ? "Rozpoczynanie…" : "Rozpocznij mecz"}
+                      </button>
+                    )}
+                    {match.status === "live" && (
                     <button
                       type="button"
                       onClick={() => openEventForm(match)}
-                      disabled={isFinishing || !canManage}
+                      disabled={isFinishing || savingAttendance || openingAttendance || !canManage}
                       className="inline-flex min-h-[46px] w-full max-w-full items-center justify-center gap-2 rounded-xl bg-green-500 px-4 py-3 text-sm font-bold text-black hover:bg-green-400 disabled:opacity-60"
                     >
                       <Plus size={16} />
                       Dodaj zdarzenie
                     </button>
+                    )}
                     {!assignmentFeatureMissing && canManage && (
                       <button
                         type="button"
@@ -984,7 +1060,7 @@ export default function AdminActiveMatch({ darkMode }) {
                         Przekaż uprawnienia
                       </button>
                     )}
-                    <button
+                    {match.status === "live" && <button
                       type="button"
                       onClick={() => finishMatch(match)}
                       disabled={isFinishing || saving || savingAttendance || !canManage}
@@ -996,7 +1072,7 @@ export default function AdminActiveMatch({ darkMode }) {
                     >
                       {isFinishing ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                       Zakończ mecz
-                    </button>
+                    </button>}
                   </div>
                 </div>
 
@@ -1037,13 +1113,13 @@ export default function AdminActiveMatch({ darkMode }) {
                   <div className={`mt-4 max-w-full overflow-hidden rounded-2xl border p-4 ${darkMode ? "border-emerald-400/20 bg-emerald-500/10" : "border-emerald-200 bg-emerald-50"}`}>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <div className="text-sm font-black">Popraw listę: {attendanceTeamName}</div>
+                        <div className="text-sm font-black">Lista obecności: {attendanceTeamName}</div>
                         <div className={`text-xs ${mutedText}`}>
-                          Zaznaczeni zawodnicy będą liczeni jako obecni w meczu.
+                          Każde zaznaczenie zapisuje się automatycznie. Możesz zamknąć listę i wrócić do niej później.
                         </div>
                       </div>
                       <div className={`text-xs font-bold ${mutedText}`}>
-                        Wybrano: {attendanceEditor.draftIds.length}/{attendancePlayers.length}
+                        Obecni: {attendancePlayers.filter((player) => player.present).length}/{attendancePlayers.length}
                       </div>
                     </div>
 
@@ -1054,7 +1130,7 @@ export default function AdminActiveMatch({ darkMode }) {
                     ) : (
                       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         {attendancePlayers.map((player) => {
-                          const checked = attendanceEditor.draftIds.includes(player.player_id);
+                          const checked = player.present;
                           return (
                             <label
                               key={player.player_id}
@@ -1071,8 +1147,8 @@ export default function AdminActiveMatch({ darkMode }) {
                               <input
                                 type="checkbox"
                                 checked={checked}
-                                onChange={() => toggleAttendancePlayer(player.player_id)}
-                                disabled={savingAttendance}
+                                onChange={() => toggleAttendancePlayer(match, attendanceEditor.teamId, player)}
+                                disabled={savingAttendance || !canManage || saving || isFinishing || isTransferring}
                                 className="mt-0.5 h-4 w-4 shrink-0"
                               />
                               <span className="min-w-0 flex-1 break-words font-semibold leading-snug whitespace-normal">
@@ -1085,6 +1161,9 @@ export default function AdminActiveMatch({ darkMode }) {
                     )}
 
                     <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                      <span role="status" className={`self-center text-xs ${mutedText}`}>
+                        {savingAttendance ? "Zapisywanie…" : "Wyświetlono zapisany stan listy"}
+                      </span>
                       <button
                         type="button"
                         onClick={() => setAttendanceEditor(EMPTY_ATTENDANCE_EDITOR)}
@@ -1093,16 +1172,7 @@ export default function AdminActiveMatch({ darkMode }) {
                           darkMode ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-gray-200 bg-white hover:bg-gray-50"
                         } disabled:opacity-60`}
                       >
-                        Anuluj
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => saveAttendance(match, attendanceEditor.teamId)}
-                        disabled={savingAttendance || attendancePlayers.length === 0 || !canManage}
-                        className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-green-500 px-4 py-2 text-sm font-bold text-black hover:bg-green-400 disabled:opacity-60"
-                      >
-                        {savingAttendance ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                        Zatwierdź listę
+                        Zamknij listę
                       </button>
                     </div>
                   </div>
@@ -1240,7 +1310,7 @@ export default function AdminActiveMatch({ darkMode }) {
                             <span className={`min-w-0 break-words text-xs leading-snug ${mutedText}`}>
                               {getEventTeamLabel(match, event)}
                             </span>
-                            {canManage && (
+                            {canManage && match.status === "live" && (
                               <button
                                 type="button"
                                 onClick={() => openEditEventForm(match, event)}
@@ -1266,6 +1336,15 @@ export default function AdminActiveMatch({ darkMode }) {
           })}
         </div>
       )}
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <button type="button" disabled={page === 0 || savingAttendance || openingAttendance || saving}
+          onClick={() => { setPage((current) => current - 1); setAttendanceEditor(EMPTY_ATTENDANCE_EDITOR); }}
+          className="min-h-[44px] rounded-xl border px-4 py-2 disabled:opacity-40">Poprzednie</button>
+        <span>Strona {page + 1}</span>
+        <button type="button" disabled={!hasNextPage || savingAttendance || openingAttendance || saving}
+          onClick={() => { setPage((current) => current + 1); setAttendanceEditor(EMPTY_ATTENDANCE_EDITOR); }}
+          className="min-h-[44px] rounded-xl border px-4 py-2 disabled:opacity-40">Następne</button>
+      </div>
     </div>
   );
 }
