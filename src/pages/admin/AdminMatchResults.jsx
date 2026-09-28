@@ -1951,6 +1951,10 @@ export default function AdminMatchResults({ darkMode }) {
       let eventsPayload = [];
       let nextMvpPlayerId = null;
 
+      if (resolvedStatus === "scheduled") {
+        lineupsPayload = buildLineupsPayload(match, participantSelection, homeRoster, awayRoster);
+      }
+
       if (resolvedStatus === "live") {
         if (participantSelection.home.length === 0 || participantSelection.away.length === 0) {
           throw new Error("Aby rozpoczac mecz, zaznacz obecnosc zawodnikow obu druzyn.");
@@ -2063,18 +2067,11 @@ export default function AdminMatchResults({ darkMode }) {
         if (deleteEventsError) throw deleteEventsError;
       }
 
-      const { error: deleteLineupsError } = await supabase
-        .from("match_lineups")
-        .delete()
-        .eq("match_id", match.id);
-      if (deleteLineupsError) throw deleteLineupsError;
-
-      if (lineupsPayload.length > 0) {
-        const { error: insertLineupsError } = await supabase
-          .from("match_lineups")
-          .insert(lineupsPayload);
-        if (insertLineupsError) throw insertLineupsError;
-      }
+      const { error: lineupsError } = await supabase.rpc("save_match_lineups", {
+        p_match_id: match.id,
+        p_lineups: lineupsPayload,
+      });
+      if (lineupsError) throw lineupsError;
 
       if (shouldReplaceEvents && eventsPayload.length > 0) {
         const { error: insertEventsError } = await supabase
@@ -2456,7 +2453,7 @@ export default function AdminMatchResults({ darkMode }) {
 
                           {scoreForm.status !== "completed" && (
                             <div className={`mt-3 rounded-xl border px-3 py-2 text-sm ${darkMode ? "border-blue-400/20 bg-blue-500/10 text-blue-200" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
-                              Statystyki zawodnikow sa zapisywane tylko dla meczu ze statusem "Zakonczony". Przy statusie "Rozpoczety" zapisujesz sama liste obecnosci, a zdarzenia dopisujesz w zakladce Aktywny mecz.
+                              Statystyki zawodników są zapisywane tylko dla meczu zakończonego. Obecność możesz zapisać już przed meczem. W zakładce Aktywny mecz lista zapisuje się na bieżąco, także po zakończeniu.
                             </div>
                           )}
 
