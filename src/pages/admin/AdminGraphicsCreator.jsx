@@ -95,8 +95,8 @@ const CATEGORY_OPTIONS = [
   {
     id: "best-eight",
     scope: "league",
-    label: "Najlepsza 8semka",
-    title: "Najlepsza 8semka",
+    label: "Najlepsza ósemka",
+    title: "Najlepsza ósemka",
     subtitle: "Drużyna okresu",
     icon: Users,
   },
@@ -327,6 +327,7 @@ function defaultForm() {
     selectedSponsorIds: [],
     sponsorSelectionTouched: false,
     sponsorRows: "2",
+    bestEightSponsorRows: "auto",
     hitMatchId: null,
     formation: "3-3-1",
     playerName: "",
@@ -408,6 +409,9 @@ function loadFormDraft() {
     sponsorRows: SPONSOR_ROW_OPTIONS.some((item) => item.value === String(draft.sponsorRows))
       ? String(draft.sponsorRows)
       : base.sponsorRows,
+    bestEightSponsorRows: SPONSOR_ROW_OPTIONS.some((item) => item.value === String(draft.bestEightSponsorRows))
+      ? String(draft.bestEightSponsorRows)
+      : base.bestEightSponsorRows,
     selectedTyperMatchIds: Array.isArray(draft.selectedTyperMatchIds) ? draft.selectedTyperMatchIds : base.selectedTyperMatchIds,
     selectedSponsorIds: Array.isArray(draft.selectedSponsorIds) ? draft.selectedSponsorIds : base.selectedSponsorIds,
     sponsorSelectionTouched: Boolean(draft.sponsorSelectionTouched),
@@ -1007,6 +1011,9 @@ export default function AdminGraphicsCreator({ darkMode }) {
         Promise.all(partnerSources.map(async (partner) => [partner.id, await loadCanvasImage(partner.url)])),
         Promise.all([...new Set(logoUrls)].map(async (url) => [url, await loadCanvasImage(url)])),
         loadCanvasImage(resolvePublicPath(BRAND_LOGO_SRC)),
+        // Canvas does not redraw itself after a web font arrives. Measure and
+        // export with the loaded font; failed font requests use the fitted fallback.
+        document.fonts?.load('800 25px Montserrat', 'Ósemka Łąka ŚŻŹĆŃ').catch(() => []),
       ]);
 
       const sponsorList = partnerSources.map((partner) => ({
@@ -1442,13 +1449,15 @@ export default function AdminGraphicsCreator({ darkMode }) {
             </div>
             <AdminFormField
               label="Wiersze sponsorów"
-              name="sponsorRows"
+              name={form.category === "best-eight" ? "bestEightSponsorRows" : "sponsorRows"}
               type="select"
-              value={String(form.sponsorRows)}
+              value={String(form.category === "best-eight" ? form.bestEightSponsorRows : form.sponsorRows)}
               onChange={handleInputChange}
               darkMode={darkMode}
               includeEmptyOption={false}
-              options={SPONSOR_ROW_OPTIONS}
+              options={form.category === "best-eight"
+                ? [{ value: "auto", label: "Automatycznie" }, ...SPONSOR_ROW_OPTIONS]
+                : SPONSOR_ROW_OPTIONS}
             />
             <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
               {availableSponsorSources.map((sponsor) => {

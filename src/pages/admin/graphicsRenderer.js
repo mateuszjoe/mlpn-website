@@ -227,7 +227,7 @@ function titleForForm(form) {
       ? formatWeekendRange(form.weekendStart, { includeYear: false }) || "Weekend"
       : roundText;
   }
-  if (form.category === "best-eight") return "Najlepsza 8";
+  if (form.category === "best-eight") return `Ósemka ${form.periodType === "season" ? "sezonu" : form.periodType === "round" ? "rundy" : "miesiąca"}`;
   if (form.category === "player-award") return "Zawodnik okresu";
   if (form.category === "player-vote") return "Głosowanie kibiców";
   if (form.category === "table-summary") return "Tabela ligi";
@@ -680,7 +680,55 @@ function drawBackground(ctx, width, height, form, layout) {
 
 /* ============================== HEADER ============================== */
 
+export function getBestEightHeaderLayout(layout) {
+  const { width, isStory } = layout;
+  const y = isStory ? 64 : 28;
+  const h = isStory ? 166 : 126;
+  return {
+    logo: { x: width * 0.055, y, w: width * 0.15, h },
+    title: { x: width * 0.23, y, w: width * 0.51, h },
+    context: { x: width * 0.77, y, w: width * 0.18, h },
+    contentTop: isStory ? 280 : 178,
+  };
+}
+
+function drawBestEightHeader(ctx, form, images, layout) {
+  const { logo, title, context, contentTop } = getBestEightHeaderLayout(layout);
+  const dark = layout.t.dark;
+  if (!dark) fillRoundRect(ctx, logo.x, logo.y, logo.w, logo.h, 12, BRAND.navy);
+  drawImageContain(ctx, images.brand, logo.x + 8, logo.y + 4, logo.w - 16, logo.h - 8);
+  const cx = title.x + title.w / 2;
+  if (form.title?.trim()) {
+    const plan = getBestEightNameLayout(ctx, form.title.trim().toUpperCase(), title, layout.isStory ? 64 : 52);
+    drawBestEightName(ctx, plan, title, layout.t.text);
+  } else {
+    drawText(ctx, "ÓSEMKA", cx, title.y + title.h * 0.36, {
+      size: layout.isStory ? 96 : 82, weight: 900, color: layout.t.text, maxWidth: title.w,
+    });
+    const period = form.periodType === "season" ? "SEZONU" : form.periodType === "round" ? "RUNDY" : "MIESIĄCA";
+    drawText(ctx, period, cx, title.y + title.h * 0.81, {
+      size: layout.isStory ? 54 : 43, weight: 800, color: dark ? BRAND.goldSoft : BRAND.navy,
+      maxWidth: title.w, tracking: 3,
+    });
+  }
+  const accent = LEAGUE_ACCENTS[form.leagueCode] || BRAND.gold;
+  const badgeH = layout.isStory ? 54 : 42;
+  const badgeY = context.y + context.h * 0.16;
+  fillRoundRect(ctx, context.x, badgeY, context.w, badgeH, 6, accent);
+  drawText(ctx, getLeague(form.leagueCode).label.toUpperCase(), context.x + context.w / 2, badgeY + badgeH / 2, {
+    size: layout.isStory ? 32 : 27, weight: 900,
+    color: form.leagueCode === "2nd" ? BRAND.ink : BRAND.white, maxWidth: context.w - 16,
+  });
+  const period = getPeriodLabel(form);
+  const year = String(form.seasonYear || "").trim();
+  const date = form.subtitle?.trim() || [period, year && !period.includes(year) ? year : ""].filter(Boolean).join(" ");
+  const dateBox = { x: context.x, y: badgeY + badgeH + 12, w: context.w, h: context.h * 0.36 };
+  drawBestEightName(ctx, getBestEightNameLayout(ctx, date.toUpperCase(), dateBox, layout.isStory ? 25 : 21), dateBox, layout.t.textSoft);
+  return contentTop;
+}
+
 function drawHeader(ctx, form, images, layout) {
+  if (form.category === "best-eight") return drawBestEightHeader(ctx, form, images, layout);
   const { width, M, t } = layout;
   const top = layout.headerTop;
   const isStory = layout.isStory;
@@ -723,19 +771,15 @@ function drawHeader(ctx, form, images, layout) {
   if (sub) {
     const titleY = cy - (isStory ? 16 : 13);
     const subY = titleY + (isStory ? 33 : 27);
-    if (form.category === "best-eight") {
-      drawBestEightTitle(ctx, titleX, titleY, layout, { align: "left", scale: isStory ? 0.62 : 0.56 });
-    } else {
-      drawText(ctx, titleForForm(form), titleX, titleY, {
-        size: titleSize,
-        minSize: 18,
-        weight: 900,
-        color: t.text,
-        align: "left",
-        maxWidth: titleMaxW,
-        shadow: t.dark ? { color: "rgba(0,0,0,0.35)", blur: 8, offsetY: 3 } : null,
-      });
-    }
+    drawText(ctx, titleForForm(form), titleX, titleY, {
+      size: titleSize,
+      minSize: 18,
+      weight: 900,
+      color: t.text,
+      align: "left",
+      maxWidth: titleMaxW,
+      shadow: t.dark ? { color: "rgba(0,0,0,0.35)", blur: 8, offsetY: 3 } : null,
+    });
     drawText(ctx, sub, titleX, subY, {
       size: subSize,
       minSize: 12,
@@ -746,8 +790,6 @@ function drawHeader(ctx, form, images, layout) {
       upper: true,
       tracking: 1.5,
     });
-  } else if (form.category === "best-eight") {
-    drawBestEightTitle(ctx, titleX, cy, layout, { align: "left", scale: isStory ? 0.74 : 0.66 });
   } else {
     drawText(ctx, titleForForm(form), titleX, cy, {
       size: titleSize,
@@ -761,51 +803,6 @@ function drawHeader(ctx, form, images, layout) {
   }
 
   return logoY + logoH + (isStory ? 26 : 20);
-}
-
-// "NAJLEPSZA" + an ornate gold "8" (ring + sparkles).
-function drawBestEightTitle(ctx, x, cy, layout, opts = {}) {
-  const { align = "center", scale = 1 } = opts;
-  const labelSize = (layout.isStory ? 52 : 40) * scale;
-  const eightSize = (layout.isStory ? 88 : 68) * scale;
-  setFont(ctx, labelSize, 900);
-  const label = "NAJLEPSZA";
-  const gap = (layout.isStory ? 26 : 20) * scale;
-  const labelW = ctx.measureText(label).width + labelSize * 0.4; // include tracking allowance
-  setFont(ctx, eightSize, 900);
-  const eightW = ctx.measureText("8").width;
-  const totalW = labelW + gap + eightW;
-  const startX = align === "left" ? x : x - totalW / 2;
-
-  drawText(ctx, label, startX, cy, {
-    size: labelSize,
-    weight: 900,
-    color: BRAND.white,
-    align: "left",
-    tracking: 2,
-    shadow: { color: "rgba(0,0,0,0.35)", blur: 10, offsetY: 4 },
-  });
-
-  const eightCx = startX + labelW + gap + eightW / 2;
-  // gold ring behind the 8
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(eightCx, cy, eightSize * 0.62, 0, Math.PI * 2);
-  ctx.strokeStyle = BRAND.gold;
-  ctx.lineWidth = Math.max(2, (layout.isStory ? 6 : 5) * scale);
-  ctx.stroke();
-  ctx.restore();
-  drawText(ctx, "8", eightCx, cy + 2, {
-    size: eightSize,
-    weight: 900,
-    color: BRAND.gold,
-    align: "center",
-    shadow: { color: "rgba(0,0,0,0.4)", blur: 8, offsetY: 3 },
-  });
-  // sparkles
-  [[-0.72, -0.55, 0.16], [0.7, -0.62, 0.12], [0.78, 0.5, 0.14]].forEach(([dx, dy, s]) => {
-    drawSparkle(ctx, eightCx + eightSize * dx, cy + eightSize * dy, eightSize * s, BRAND.goldSoft);
-  });
 }
 
 function drawSparkle(ctx, cx, cy, r, color) {
@@ -936,7 +933,7 @@ function drawImageFramed(ctx, image, x, y, w, h, frame, pad, cellBg = "dark") {
   const dy = y + pad + (bh - dh) / 2 - (overflowY / 2) * panY;
 
   try {
-    if (f.glow) {
+    if (f.glow && frame?.glow !== false) {
       const glowColor = f.glowAutoColor ? (cellBg === "light" ? "#000000" : "#ffffff") : f.glowColor;
       const outline = Math.max(0.5, Math.min(8, Math.min(w, h) * f.glowSize));
       const density = Math.round(f.glowDensity);
@@ -1014,6 +1011,11 @@ function fallbackSponsorList() {
 }
 
 function sponsorRowsForForm(form, list) {
+  if (form.category === "best-eight") {
+    const automatic = Math.ceil(list.length / 6) || 1;
+    const requested = Number(form.bestEightSponsorRows);
+    return clamp(Math.round(requested > 0 ? requested : automatic), 1, Math.min(4, Math.max(1, list.length)));
+  }
   const fallback = list.length > 6 ? 2 : 1;
   const requested = Number(form?.sponsorRows || fallback);
   const maxRows = Math.min(4, Math.max(1, list.length || 1));
@@ -1031,6 +1033,15 @@ function sponsorItemsForRow(list, rowIndex, rowsCount) {
 export function getSponsorPanelLayout(form, list, layout) {
   const { width, height, M } = layout;
   const rowsCount = sponsorRowsForForm(form, list);
+  if (form.category === "best-eight") {
+    const pad = layout.isStory ? 20 : 12;
+    const labelH = layout.isStory ? 28 : 22;
+    const gapLabel = 4;
+    const rowH = Math.min(layout.isStory ? 88 : 60, (height * (layout.isStory ? 0.20 : 0.22) - pad * 2 - labelH - gapLabel) / rowsCount);
+    const panelH = pad * 2 + labelH + gapLabel + rowH * rowsCount;
+    return { rowsCount, rowH, labelH, pad, gapLabel, panelH,
+      panelY: height - panelH - (layout.isStory ? 58 : 36), panelX: M * 0.5, panelW: width - M };
+  }
   const isRoundList = ["round-preview", "round-results"].includes(form.category);
   // Four full-height sponsor rows otherwise consume almost half a square post.
   // Keep all logos, but use a denser band for multi-row fixture graphics.
@@ -1098,7 +1109,7 @@ function drawSponsorRow(ctx, items, sponsorImages, x, y, w, h) {
         size: cellH * 0.22,
         minSize: 9,
         weight: 800,
-        color: "#ffffff",
+        color: BRAND.ink,
         maxWidth: cellW * 0.9,
       });
     }
@@ -1122,11 +1133,7 @@ function drawFooter(ctx, form, layout) {
 /* ============================== MATCH ROW (typer/preview/results) ============================== */
 
 // "Jan Kowalski" -> "J. Kowalski"
-function formatPlayerName(name) {
-  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length <= 1) return parts[0] || "";
-  return `${parts[0][0].toUpperCase()}. ${parts.slice(1).join(" ")}`;
-}
+
 
 function drawMatchRow(ctx, match, images, x, y, w, h, opts, layout) {
   if (opts.compact) {
@@ -1405,98 +1412,144 @@ function drawLeagueLegend(ctx, codes, cx, cy, layout) {
   });
 }
 
-// Horizontal (landscape) pitch — goals left & right, halfway line vertical.
-function drawPitchHorizontal(ctx, x, y, w, h) {
-  ctx.save();
-  roundRect(ctx, x, y, w, h, 20);
-  ctx.clip();
-  const grass = ctx.createLinearGradient(x, 0, x + w, 0);
-  grass.addColorStop(0, "#2f8a3f");
-  grass.addColorStop(1, "#256f33");
-  ctx.fillStyle = grass;
-  ctx.fillRect(x, y, w, h);
-  ctx.globalAlpha = 0.12;
-  ctx.fillStyle = "#ffffff";
-  const bands = 8;
-  for (let i = 0; i < bands; i += 2) ctx.fillRect(x + (w / bands) * i, y, w / bands, h);
-  ctx.globalAlpha = 1;
-  ctx.restore();
+// Each formation row gets the same vertical budget. Text and crests have disjoint
+// rectangles, independent of the selected formation and the entered name length.
+export function getBestEightLayout(form, layout, top, bottom) {
+  const pitch = { x: layout.width * 0.045, y: top, w: layout.width * 0.91, h: bottom - top };
+  const formation = getFormation(form.formation);
+  const rows = [...new Set(formation.slots.map((slot) => slot.y))].sort((a, b) => a - b);
+  const inset = layout.isStory ? 24 : 8;
+  const rowH = (pitch.h - inset * 2) / rows.length;
+  const positionH = layout.isStory ? 28 : 20;
+  const nameH = layout.isStory ? 76 : 46;
+  const gap = layout.isStory ? 12 : 5;
+  const logoSize = Math.min(layout.isStory ? 150 : 82, rowH - positionH - nameH - gap * 3 - 4);
+  const groupH = positionH + logoSize + nameH + gap * 2;
+  const players = [];
+  rows.forEach((row, rowIndex) => {
+    const slots = formation.slots.map((slot, index) => ({ ...slot, index }))
+      .filter((slot) => slot.y === row).sort((a, b) => a.x - b.x);
+    const usableW = pitch.w - 24;
+    const cellW = usableW / Math.max(3, slots.length);
+    const rowW = cellW * slots.length;
+    slots.forEach((slot, column) => {
+      const cx = pitch.x + pitch.w / 2 - rowW / 2 + cellW * (column + 0.5);
+      const y = pitch.y + inset + rowIndex * rowH + (rowH - groupH) / 2;
+      const nameW = Math.min(layout.isStory ? 310 : 292, cellW - 14);
+      players.push({
+        index: slot.index, label: slot.label,
+        position: { x: cx - 36, y, w: 72, h: positionH },
+        logo: { x: cx - logoSize / 2, y: y + positionH + gap, w: logoSize, h: logoSize },
+        name: { x: cx - nameW / 2, y: y + positionH + gap + logoSize + gap, w: nameW, h: nameH },
+        nameSize: layout.isStory ? 33 : 25,
+      });
+    });
+  });
+  return { pitch, players };
+}
 
-  ctx.strokeStyle = "rgba(255,255,255,0.7)";
-  ctx.lineWidth = Math.max(2, h * 0.006);
-  roundRect(ctx, x + w * 0.02, y + h * 0.04, w * 0.96, h * 0.92, 12);
+// Measure the actual canvas font before choosing one or two lines. Keep the full
+// supplied name, including initials and hyphens; arbitrary long tokens can wrap.
+export function getBestEightNameLayout(ctx, name, box, maxSize) {
+  const text = String(name || "Zawodnik").replace(/\s+/gu, " ").trim() || "Zawodnik";
+  const chars = Array.from(text);
+  const candidates = [[text]];
+  chars.forEach((char, index) => {
+    if ((char === " " || char === "-") && index > 0 && index < chars.length - 1) {
+      const cut = char === "-" ? index + 1 : index;
+      candidates.push([chars.slice(0, cut).join("").trim(), chars.slice(cut).join("").trim()]);
+    }
+  });
+  setFont(ctx, maxSize, 800);
+  const fit = (lines) => {
+    const widest = Math.max(...lines.map((line) => ctx.measureText(line).width), 1);
+    const fontSize = Math.max(0.01, Math.floor(maxSize * Math.min(1, box.w / widest, box.h / (lines.length * maxSize * 1.12)) * 100) / 100);
+    return { lines, fontSize, lineHeight: fontSize * 1.12 };
+  };
+  let best = fit(candidates[0]);
+  candidates.slice(1).forEach((lines) => {
+    const candidate = fit(lines);
+    if (candidate.fontSize > best.fontSize * (best.lines.length === 1 ? 1.12 : 1)) best = candidate;
+  });
+  if (best.fontSize < Math.min(14, maxSize * 0.6) && chars.length > 1) {
+    // Emergency wrapping is preferable to truncating or overflowing the card.
+    for (let cut = 1; cut < chars.length; cut += 1) {
+      const candidate = fit([chars.slice(0, cut).join("").trim(), chars.slice(cut).join("").trim()]);
+      if (candidate.fontSize > best.fontSize) best = candidate;
+    }
+  }
+  return best;
+}
+
+function drawBestEightName(ctx, plan, box, color) {
+  ctx.save();
+  setFont(ctx, plan.fontSize, 800);
+  ctx.fillStyle = color;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const firstY = box.y + box.h / 2 - (plan.lines.length - 1) * plan.lineHeight / 2;
+  plan.lines.forEach((line, index) => ctx.fillText(line, box.x + box.w / 2, firstY + index * plan.lineHeight));
+  ctx.restore();
+}
+
+function drawBestEightPitch(ctx, pitch, layout) {
+  const { x, y, w, h } = pitch;
+  const inset = w * 0.085;
+  const line = layout.t.dark ? "rgba(156,188,218,0.25)" : "rgba(15,42,74,0.25)";
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x + inset, y);
+  ctx.lineTo(x + w - inset, y);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.closePath();
+  ctx.fillStyle = layout.t.dark ? "rgba(38,75,111,0.15)" : "rgba(255,255,255,0.15)";
+  ctx.fill();
+  ctx.strokeStyle = line;
+  ctx.lineWidth = 2;
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(x + w / 2, y + h * 0.04);
-  ctx.lineTo(x + w / 2, y + h * 0.96);
+  ctx.moveTo(x + inset / 2, y + h / 2);
+  ctx.lineTo(x + w - inset / 2, y + h / 2);
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(x + w / 2, y + h / 2, h * 0.13, 0, Math.PI * 2);
+  ctx.ellipse(x + w / 2, y + h / 2, w * 0.105, h * 0.095, 0, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.strokeRect(x + w * 0.02, y + h * 0.28, w * 0.09, h * 0.44);
-  ctx.strokeRect(x + w * 0.89, y + h * 0.28, w * 0.09, h * 0.44);
+  [0, 1].forEach((end) => {
+    const edgeY = end ? y + h : y;
+    const depth = (end ? -1 : 1) * h * 0.13;
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.3, edgeY);
+    ctx.lineTo(x + w * 0.3, edgeY + depth);
+    ctx.lineTo(x + w * 0.7, edgeY + depth);
+    ctx.lineTo(x + w * 0.7, edgeY);
+    ctx.stroke();
+  });
+  ctx.restore();
 }
 
 function drawBestEight(ctx, form, images, layout, top, bottom) {
-  const areaH = bottom - top;
-  // Landscape pitch — fills the width; formation reads left (GK) to right (attack).
-  const pitchW = layout.width - layout.M * 2;
-  const pitchH = Math.min(areaH, pitchW * (layout.isStory ? 0.92 : 0.66));
-  const pitchX = layout.M;
-  const pitchY = top + (areaH - pitchH) / 2;
-  drawPitchHorizontal(ctx, pitchX, pitchY, pitchW, pitchH);
-
-  const formation = getFormation(form.formation);
-  // Denser lines (a 4-across midfield) need slightly smaller crests to avoid collisions.
-  const maxLine = Math.max(...Object.values(formation.slots.reduce((acc, s) => {
-    const key = s.x.toFixed(2) === "0.50" ? s.y.toFixed(2) : s.y.toFixed(2);
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {})));
-  const size = clamp(pitchH * (maxLine >= 4 ? 0.14 : 0.165), 44, layout.isStory ? 90 : 82);
-  form.lineup.forEach((slot, index) => {
-    const meta = formation.slots[index] || formation.slots[0];
-    // transpose the vertical formation grid onto the horizontal pitch
-    const px = 0.08 + (1 - meta.y) * 0.84 + (maxLine >= 4 ? (meta.x - 0.5) * 0.06 : 0);
-    const py = 0.075 + meta.x * 0.85;
-    let cx = pitchX + pitchW * px;
-    const cy = pitchY + pitchH * py;
-
-    const posSize = layout.isStory ? 23 : 20;
-    setFont(ctx, posSize, 950);
-    const posTextW = ctx.measureText(meta.label).width;
-    const name = formatPlayerName(slot.name) || "Zawodnik";
-    const nameSize = layout.isStory ? 24 : 21;
-    setFont(ctx, nameSize, 800);
-    const nameTextW = ctx.measureText(name).width;
-    const plateH = nameSize + 14;
-    const plateW = clamp(nameTextW + nameSize * 0.95, size * 1.25, size * (maxLine >= 4 ? 1.8 : 2.05));
-    cx = clamp(cx, pitchX + plateW / 2 + 8, pitchX + pitchW - plateW / 2 - 8);
-
-    drawOutlinedLogo(ctx, getImage(images.teamLogos, slot.logoUrl), cx - size / 2, cy - size / 2, size, size, "", size * 0.08);
-
-    const posW = Math.max(posTextW + posSize * 0.9, size * 0.58);
-    const posH = posSize + 9;
-    const posY = cy - size * 0.34;
-    fillRoundRect(ctx, cx - posW / 2, posY - posH / 2, posW, posH, posH / 2, "rgba(6,14,26,0.96)", "rgba(255,255,255,0.14)", 1);
-    drawText(ctx, meta.label, cx, posY, {
-      size: posSize,
-      minSize: 12,
-      weight: 950,
-      color: BRAND.gold,
-      maxWidth: posW - 8,
+  const { pitch, players } = getBestEightLayout(form, layout, top, bottom);
+  drawBestEightPitch(ctx, pitch, layout);
+  players.forEach((player) => {
+    const slot = form.lineup?.[player.index] || {};
+    const { position, logo, name } = player;
+    drawText(ctx, player.label, position.x + position.w / 2, position.y + position.h / 2, {
+      size: position.h * 0.9, minSize: 12, weight: 800,
+      color: layout.t.dark ? BRAND.goldSoft : BRAND.navy, maxWidth: position.w,
     });
-
-    const nameY = cy + size * 0.54;
-    const plateX = cx - plateW / 2;
-    fillRoundRect(ctx, plateX, nameY, plateW, plateH, plateH / 2, "rgba(6,14,26,0.94)");
-    drawText(ctx, name, cx, nameY + plateH / 2, {
-      size: nameSize,
-      minSize: 14,
-      weight: 800,
-      color: "#fff",
-      maxWidth: plateW - nameSize * 0.7,
-    });
+    const image = getImage(images.teamLogos, slot.logoUrl);
+    const drawn = drawImageFramed(ctx, image, logo.x, logo.y, logo.w, logo.h, { mode: "fit", glow: false }, 0);
+    if (!drawn) {
+      fillRoundRect(ctx, logo.x + logo.w * 0.15, logo.y, logo.w * 0.7, logo.h, 8, layout.t.panel, layout.t.panelLine);
+      drawText(ctx, "MLPN", logo.x + logo.w / 2, logo.y + logo.h / 2, {
+        size: logo.w * 0.2, color: layout.t.textSoft, maxWidth: logo.w * 0.6,
+      });
+    }
+    fillRoundRect(ctx, name.x, name.y, name.w, name.h, 5,
+      layout.t.dark ? "rgba(5,18,33,0.94)" : "rgba(255,255,255,0.96)", layout.t.panelLine);
+    const textBox = { x: name.x + 8, y: name.y + 3, w: name.w - 16, h: name.h - 6 };
+    drawBestEightName(ctx, getBestEightNameLayout(ctx, slot.name, textBox, player.nameSize), textBox, layout.t.text);
   });
 }
 
