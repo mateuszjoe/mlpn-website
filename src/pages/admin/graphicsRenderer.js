@@ -1011,15 +1011,10 @@ function fallbackSponsorList() {
 }
 
 function sponsorRowsForForm(form, list) {
-  if (form.category === "best-eight") {
-    const automatic = Math.ceil(list.length / 6) || 1;
-    const requested = Number(form.bestEightSponsorRows);
-    return clamp(Math.round(requested > 0 ? requested : automatic), 1, Math.min(4, Math.max(1, list.length)));
-  }
-  const fallback = list.length > 6 ? 2 : 1;
-  const requested = Number(form?.sponsorRows || fallback);
-  const maxRows = Math.min(4, Math.max(1, list.length || 1));
-  return clamp(Math.round(Number.isFinite(requested) ? requested : fallback), 1, maxRows);
+  const automatic = Math.ceil(list.length / 6) || 1;
+  const requested = Number(form.category === "best-eight" ? form.bestEightSponsorRows : form.sponsorRows);
+  const rows = Number.isFinite(requested) && requested > 0 ? requested : automatic;
+  return clamp(Math.round(rows), 1, Math.min(4, Math.max(1, list.length)));
 }
 
 function sponsorItemsForRow(list, rowIndex, rowsCount) {
@@ -1033,35 +1028,22 @@ function sponsorItemsForRow(list, rowIndex, rowsCount) {
 export function getSponsorPanelLayout(form, list, layout) {
   const { width, height, M } = layout;
   const rowsCount = sponsorRowsForForm(form, list);
-  if (form.category === "best-eight") {
-    const pad = layout.isStory ? 20 : 12;
-    const labelH = layout.isStory ? 28 : 22;
-    const gapLabel = 4;
-    const rowH = Math.min(layout.isStory ? 88 : 60, (height * (layout.isStory ? 0.20 : 0.22) - pad * 2 - labelH - gapLabel) / rowsCount);
-    const panelH = pad * 2 + labelH + gapLabel + rowH * rowsCount;
-    return { rowsCount, rowH, labelH, pad, gapLabel, panelH,
-      panelY: height - panelH - (layout.isStory ? 58 : 36), panelX: M * 0.5, panelW: width - M };
-  }
-  const isRoundList = ["round-preview", "round-results"].includes(form.category);
-  // Four full-height sponsor rows otherwise consume almost half a square post.
-  // Keep all logos, but use a denser band for multi-row fixture graphics.
-  const rowH = layout.isStory ? 106 : isRoundList ? Math.min(80, Math.max(56, 160 / rowsCount)) : 80;
-  const labelH = layout.isStory ? 34 : 28;
-  const pad = layout.isStory ? 24 : 18;
-  const gapLabel = layout.isStory ? 10 : 6;
-  const footerSpace = layout.isStory ? 58 : 40;
+  // Share the compact best-eight band across every template, reserving at least
+  // 78% of a post / 80% of a story for the graphic and its surrounding content.
+  const pad = layout.isStory ? 20 : 12;
+  const labelH = layout.isStory ? 28 : 22;
+  const gapLabel = 4;
+  const rowH = Math.min(layout.isStory ? 88 : 60, (height * (layout.isStory ? 0.20 : 0.22) - pad * 2 - labelH - gapLabel) / rowsCount);
   const panelH = pad * 2 + labelH + gapLabel + rowH * rowsCount;
-  const panelY = height - panelH - footerSpace;
-  const panelX = M * 0.5;
-  const panelW = width - M;
-  return { rowsCount, rowH, labelH, pad, gapLabel, panelH, panelY, panelX, panelW };
+  return { rowsCount, rowH, labelH, pad, gapLabel, panelH,
+    panelY: height - panelH - (layout.isStory ? 58 : 36), panelX: M * 0.5, panelW: width - M };
 }
 
 function drawSponsorPanel(ctx, form, images, layout) {
   const list = Array.isArray(images.sponsorList) ? images.sponsorList : fallbackSponsorList();
   const { rowsCount, rowH, labelH, pad, gapLabel, panelH, panelY, panelX, panelW } = getSponsorPanelLayout(form, list, layout);
 
-  // One uniform dark band. No tiles, no shadows — logos are framed to fill their cells.
+  // One light sponsor band with the same spacing in every graphic category.
   fillRoundRect(ctx, panelX, panelY, panelW, panelH, 24, "#f4f6f9", "rgba(10,30,55,0.10)", 1.5);
   ctx.save();
   ctx.globalAlpha = 0.5;
