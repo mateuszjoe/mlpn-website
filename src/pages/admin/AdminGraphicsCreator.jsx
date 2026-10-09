@@ -62,10 +62,10 @@ function getRenderSize(format) {
   };
 }
 
-const SPONSOR_ROW_OPTIONS = [1, 2, 3, 4].map((rows) => ({
-  value: String(rows),
-  label: `${rows}`,
-}));
+const SPONSOR_ROW_OPTIONS = [
+  { value: "auto", label: "Automatycznie" },
+  ...[1, 2, 3, 4].map((rows) => ({ value: String(rows), label: `${rows}` })),
+];
 
 const CATEGORY_OPTIONS = [
   {
@@ -326,7 +326,7 @@ function defaultForm() {
     selectedTyperMatchIds: [],
     selectedSponsorIds: [],
     sponsorSelectionTouched: false,
-    sponsorRows: "2",
+    sponsorRows: "auto",
     bestEightSponsorRows: "auto",
     hitMatchId: null,
     formation: "3-3-1",
@@ -1455,9 +1455,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
               onChange={handleInputChange}
               darkMode={darkMode}
               includeEmptyOption={false}
-              options={form.category === "best-eight"
-                ? [{ value: "auto", label: "Automatycznie" }, ...SPONSOR_ROW_OPTIONS]
-                : SPONSOR_ROW_OPTIONS}
+              options={SPONSOR_ROW_OPTIONS}
             />
             <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
               {availableSponsorSources.map((sponsor) => {

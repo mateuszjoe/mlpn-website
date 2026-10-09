@@ -112,13 +112,14 @@ describe("single-page fixture geometry", () => {
     });
   });
 
-  test("keeps the existing sponsor dimensions for other graphic categories", () => {
-    const normal = getSponsorPanelLayout({ category: "round-typer", sponsorRows: 4 }, SPONSORS, FORMATS[0]);
-    const compact = getSponsorPanelLayout({ category: "round-results", sponsorRows: 4 }, SPONSORS, FORMATS[0]);
-    expect(normal.rowH).toBe(80);
-    expect(compact.rowsCount).toBe(4);
-    expect(compact.rowH).toBe(56);
-    expect(compact.panelY).toBeGreaterThan(normal.panelY);
+  test("uses the same compact sponsor band for fixtures, results and the best eight", () => {
+    const typer = getSponsorPanelLayout({ category: "round-typer", sponsorRows: 4 }, SPONSORS, FORMATS[0]);
+    const results = getSponsorPanelLayout({ category: "round-results", sponsorRows: 4 }, SPONSORS, FORMATS[0]);
+    const bestEight = getSponsorPanelLayout({ category: "best-eight", bestEightSponsorRows: 4 }, SPONSORS, FORMATS[0]);
+    expect(typer).toEqual(results);
+    expect(results).toEqual(bestEight);
+    expect(results.rowsCount).toBe(4);
+    expect(results.panelH).toBeLessThanOrEqual(FORMATS[0].height * 0.22);
   });
 });
 
