@@ -1,5 +1,6 @@
 import {
   drawGraphic,
+  formatBestEightPlayerName,
   FORMATIONS,
   getBestEightHeaderLayout,
   getBestEightLayout,
@@ -22,6 +23,17 @@ const NAME_SETS = {
   mixed: [
     "Jan Lis", "D. Pszczółkowski", "Marek Błoński", "Cezary Kostrzewa",
     "Wojciech Kowalski-Wiśniewski", "Aleksander Banaszek", "Łukasz Żółkiewski", "Wawrzyniec Brzęczyszczykiewicz",
+  ],
+};
+const DISPLAY_NAMES = {
+  short: ["J. Lis", "A. Kot", "E. Gil", "I. Wilk", "I. Król", "L. Wójcik", "O. Nowak", "F. Mazur"],
+  long: [
+    "D. Pszczółkowski", "A. Konstantynopolski", "W. Brzęczyszczykiewicz", "M. Kowalski-Wiśniewski",
+    "B. Grzegorzewski", "P. Szczęsnowicz", "S. Brzeziński-Szymański", "K. Wierzchołowski",
+  ],
+  mixed: [
+    "J. Lis", "D. Pszczółkowski", "M. Błoński", "C. Kostrzewa", "W. Kowalski-Wiśniewski",
+    "A. Banaszek", "Ł. Żółkiewski", "W. Brzęczyszczykiewicz",
   ],
 };
 const CASES = FORMATS.flatMap((layout) => FORMATIONS.flatMap((formation) =>
@@ -102,6 +114,25 @@ function recordingContext() {
     .forEach((method) => { ctx[method] = jest.fn(); });
   return ctx;
 }
+
+describe("best-eight player name format", () => {
+  test.each([
+    ["Jan Lis", "J. Lis"],
+    ["D. Pszczółkowski", "D. Pszczółkowski"],
+    ["Łukasz Żółkiewski", "Ł. Żółkiewski"],
+    ["Maksymilian Kowalski-Wiśniewski", "M. Kowalski-Wiśniewski"],
+    ["Jan van der Meer", "J. van der Meer"],
+    ["Jan Adam Kowalski", "J. Adam Kowalski"],
+    ["  Jan   Lis  ", "J. Lis"],
+    ["Kowalski", "Kowalski"],
+    ["", ""],
+    ["   ", ""],
+    [undefined, ""],
+    [null, ""],
+  ])("preserves the surname and abbreviates only the first name: %s", (input, expected) => {
+    expect(formatBestEightPlayerName(input)).toBe(expected);
+  });
+});
 
 describe("best-eight formation geometry", () => {
   test.each(CASES)("keeps every player clear of crests and neighbours: %s %s, %i sponsor rows", (format, formation, rows, layout) => {
@@ -197,8 +228,8 @@ describe("complete best-eight rendering", () => {
   });
   afterEach(() => canvasContext.mockRestore());
 
-  test.each(CASES)("renders all eight full names and crests without text collisions: %s %s, %i sponsor rows", (format, formation, rows, layout) => {
-    [NAME_SETS.short, NAME_SETS.long].forEach((names) => {
+  test.each(CASES)("renders all eight initials, full surnames and crests without text collisions: %s %s, %i sponsor rows", (format, formation, rows, layout) => {
+    Object.entries(NAME_SETS).forEach(([nameSet, names]) => {
       const form = makeForm(formation, rows, names);
       const ctx = recordingContext();
       const crests = names.map((_, index) => ({
@@ -217,14 +248,17 @@ describe("complete best-eight rendering", () => {
       crests.forEach((crest) => expect(actualCrests.filter(({ image }) => image === crest)).toHaveLength(1));
       sponsorImages.forEach((sponsor) => expect(ctx.images.filter(({ image }) => image === sponsor)).toHaveLength(1));
 
+      const { top, bottom, panel } = boundsFor(form, layout);
+      const { players } = getBestEightLayout(form, layout, top, bottom);
       const renderedNames = [];
-      names.forEach((name) => {
-        const normalized = normalizeName(name);
-        const lines = ctx.text.filter(({ value }) => {
-          const token = normalizeName(value);
-          return token.length >= 3 && normalized.includes(token);
+      DISPLAY_NAMES[nameSet].forEach((name, index) => {
+        const box = players.find((player) => player.index === index).name;
+        const lines = ctx.text.filter((text) => {
+          const center = text.x + text.w / 2;
+          return center >= box.x && center <= box.x + box.w
+            && text.y >= box.y - EPSILON && text.y + text.h <= box.y + box.h + EPSILON;
         }).sort((a, b) => a.y - b.y || a.x - b.x);
-        expect(normalizeName(lines.map(({ value }) => value).join(" "))).toBe(normalized);
+        expect(normalizeName(lines.map(({ value }) => value).join(" "))).toBe(normalizeName(name));
         expect(lines.some(({ value }) => value.includes("...") || value.includes("…"))).toBe(false);
         renderedNames.push(...lines);
       });
@@ -240,7 +274,6 @@ describe("complete best-eight rendering", () => {
         actualCrests.forEach((crest) => expect(separated(text, crest, 2)).toBe(true));
         renderedNames.forEach((name) => expect(separated(text, name, 2)).toBe(true));
       });
-      const panel = getSponsorPanelLayout(form, SPONSORS, layout);
       // A glow mask can cross the reserved gap even when the source crest fits.
       expect(ctx.images.filter(({ image, y }) => image instanceof HTMLCanvasElement && y < panel.panelY)).toHaveLength(0);
       [...actualCrests, ...renderedNames, ...positionTexts].forEach((box) => {
