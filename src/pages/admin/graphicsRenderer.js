@@ -1448,8 +1448,14 @@ export function getBestEightLayout(form, layout, top, bottom) {
   return { pitch, players };
 }
 
+export function formatBestEightPlayerName(name) {
+  const parts = String(name || "").trim().split(/\s+/u).filter(Boolean);
+  if (parts.length <= 1) return parts[0] || "";
+  return `${Array.from(parts[0])[0].toLocaleUpperCase("pl-PL")}. ${parts.slice(1).join(" ")}`;
+}
+
 // Measure the actual canvas font before choosing one or two lines. Keep the full
-// supplied name, including initials and hyphens; arbitrary long tokens can wrap.
+// supplied text, including initials and hyphens; arbitrary long tokens can wrap.
 export function getBestEightNameLayout(ctx, name, box, maxSize) {
   const text = String(name || "Zawodnik").replace(/\s+/gu, " ").trim() || "Zawodnik";
   const chars = Array.from(text);
@@ -1549,7 +1555,8 @@ function drawBestEight(ctx, form, images, layout, top, bottom) {
     fillRoundRect(ctx, name.x, name.y, name.w, name.h, 5,
       layout.t.dark ? "rgba(5,18,33,0.94)" : "rgba(255,255,255,0.96)", layout.t.panelLine);
     const textBox = { x: name.x + 8, y: name.y + 3, w: name.w - 16, h: name.h - 6 };
-    drawBestEightName(ctx, getBestEightNameLayout(ctx, slot.name, textBox, player.nameSize), textBox, layout.t.text);
+    const displayName = formatBestEightPlayerName(slot.name);
+    drawBestEightName(ctx, getBestEightNameLayout(ctx, displayName, textBox, player.nameSize), textBox, layout.t.text);
   });
 }
 
