@@ -126,21 +126,27 @@ describe("single-page fixture geometry", () => {
 function recordingContext() {
   const text = [];
   const images = [];
+  const fills = [];
+  let pathY = null;
   const gradient = { addColorStop: jest.fn() };
   const ctx = {
     font: "800 20px Arial",
     text,
     images,
+    fills,
     measureText(value) {
       const size = Number(this.font.match(/([\d.]+)px/)[1]);
       return { width: Array.from(String(value)).reduce((sum, char) => sum + (/[MW]/.test(char) ? 0.95 : 0.62) * size, 0) };
     },
     fillText(value, x, y) { text.push({ value: String(value), x, y, font: this.font }); },
+    beginPath() { pathY = null; },
+    moveTo(x, y) { if (pathY === null) pathY = y; },
+    fill() { fills.push({ color: this.fillStyle, y: pathY }); },
     drawImage(image, ...bounds) { images.push({ image, bounds }); },
     createLinearGradient: () => gradient,
     createRadialGradient: () => gradient,
   };
-  ["save", "restore", "beginPath", "closePath", "moveTo", "arcTo", "arc", "fill", "stroke",
+  ["save", "restore", "closePath", "arcTo", "arc", "stroke",
     "fillRect", "strokeRect", "lineTo", "clip", "translate", "rect", "quadraticCurveTo"]
     .forEach((method) => { ctx[method] = jest.fn(); });
   return ctx;
@@ -198,5 +204,32 @@ describe("complete weekend rendering", () => {
       expect(strings.filter((value) => value === "18:30")).toHaveLength(34);
       expect(strings.filter((value) => /^1[1-4]\.09$/.test(value))).toHaveLength(34);
     }
+  });
+});
+
+describe("table promotion and relegation highlights", () => {
+  const standings = Array.from({ length: 10 }, (_, index) => ({
+    position: index + 1, team_name: `Drużyna ${index + 1}`, played: 9, points: 27 - index,
+  }));
+  const images = { brand: null, teamLogos: new Map(), sponsors: new Map(), sponsorList: SPONSORS };
+  const cases = FORMATS.flatMap((layout) => [
+    [layout.format, "1st", [1], [10], layout],
+    [layout.format, "2nd", [1, 2], [9, 10], layout],
+    [layout.format, "3rd", [1, 2, 3], [], layout],
+  ]);
+
+  test.each(cases)("colors the correct positions in %s for league %s", (format, leagueCode, promoted, relegated, layout) => {
+    const ctx = recordingContext();
+    drawGraphic(ctx, { category: "table-summary", leagueCode, theme: "stadium", seasonYear: 2026 },
+      { standings }, images, layout.width, layout.height);
+    const rowLabels = standings.map(({ position, team_name }) => {
+      const label = ctx.text.find(({ value }) => value === team_name);
+      expect(label).toBeDefined();
+      return { position, y: label.y };
+    });
+    const highlightedPositions = (color) => ctx.fills.filter((fill) => fill.color === color)
+      .map((fill) => rowLabels.find((row) => row.y > fill.y)?.position);
+    expect(highlightedPositions("rgba(34,197,94,0.24)")).toEqual(promoted);
+    expect(highlightedPositions("rgba(239,68,68,0.24)")).toEqual(relegated);
   });
 });
