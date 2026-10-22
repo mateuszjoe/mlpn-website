@@ -1631,8 +1631,10 @@ function tableRowStatus(leagueCode, position, totalRows) {
   const total = Number(totalRows || 0);
   if (!pos || !total) return null;
   if (leagueCode === "1st" && pos === 1) return "promoted";
-  if ((leagueCode === "2nd" || leagueCode === "3rd") && pos <= 2) return "promoted";
-  if ((leagueCode === "1st" || leagueCode === "2nd") && pos > total - 2) return "relegated";
+  if (leagueCode === "2nd" && pos <= 2) return "promoted";
+  if (leagueCode === "3rd" && pos <= 3) return "promoted";
+  if (leagueCode === "1st" && pos === total) return "relegated";
+  if (leagueCode === "2nd" && pos > total - 2) return "relegated";
   return null;
 }
 
