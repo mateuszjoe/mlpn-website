@@ -9,6 +9,7 @@ import {
 } from "./utils/graphicsTableRange";
 import { formatWeekendRange, sortMatchesChronologically, sortMatchesForGraphic } from "./utils/graphicsWeekend";
 import { getGraphicTeamAbbreviation } from "./utils/graphicsTeamAbbreviations";
+import { getLeagueRules } from "../../lib/leagueRules";
 
 // Full brand lockup (eagle + "MLPN SULEJÓWEK" + "isola RISTORANTE"), white version for dark art.
 export const BRAND_LOGO_SRC = "/logo2big.webp";
@@ -1626,15 +1627,14 @@ function drawPlayerVote(ctx, form, images, layout, top, bottom) {
   });
 }
 
-function tableRowStatus(leagueCode, position, totalRows) {
+function tableRowStatus(leagueCode, position, totalRows, seasonYear) {
   const pos = Number(position || 0);
   const total = Number(totalRows || 0);
   if (!pos || !total) return null;
+  const { promotionPlaces, relegationPlaces } = getLeagueRules(leagueCode, seasonYear);
   if (leagueCode === "1st" && pos === 1) return "promoted";
-  if (leagueCode === "2nd" && pos <= 2) return "promoted";
-  if (leagueCode === "3rd" && pos <= 3) return "promoted";
-  if (leagueCode === "1st" && pos === total) return "relegated";
-  if (leagueCode === "2nd" && pos > total - 2) return "relegated";
+  if (pos <= promotionPlaces) return "promoted";
+  if (pos > total - relegationPlaces) return "relegated";
   return null;
 }
 
@@ -1689,7 +1689,9 @@ function drawTable(ctx, form, standings, images, layout, top, bottom) {
   rows.forEach((row, i) => {
     const position = row.position || i + 1;
     const dimmed = isTableRowDimmed(tableRange, position);
-    const status = dimmed ? null : tableRowStatus(form.leagueCode, position, standings.length);
+    // Rank the remaining active teams, even when removing a withdrawn team left
+    // gaps in the original position numbers displayed on the graphic.
+    const status = dimmed ? null : tableRowStatus(form.leagueCode, i + 1, standings.length, form.seasonYear);
     const rowFill = status === "promoted"
       ? (t.dark ? "rgba(34,197,94,0.24)" : "rgba(187,247,208,0.82)")
       : status === "relegated"

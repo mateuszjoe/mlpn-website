@@ -31,7 +31,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "./contexts/AuthContext";
 import AdminPanel from "./pages/admin/AdminPanel";
+import ContactForm from "./components/ContactForm";
 import { useMLPNData } from "./hooks/useMLPNData";
+import { getLeagueRules, getPromotionRowsForLeague, getRelegationRowsForLeague } from "./lib/leagueRules";
+import { compareFixturesChronologically, compareMatchesNewestFirst, fixtureDateSortValue, fixtureTimeSortValue } from "./lib/fixtureChronology";
 import {
   fetchMatchDetails,
   fetchMatchGallery,
@@ -596,6 +599,7 @@ const ADMIN_SECTION_TO_SLUG = {
   schedule: "terminarz",
   results: "wyniki",
   "active-match": "aktywny-mecz",
+  contact: "wiadomosci",
   news: "aktualnosci",
   graphics: "grafiki",
   sponsors: "sponsorzy",
@@ -2906,22 +2910,8 @@ function hasLeagueTableResults(rows) {
   );
 }
 
-function getActiveStandingsRows(rows = []) {
-  return (rows || []).filter((row) => row && !row.withdrawn);
-}
-
 function teamSetFromRows(rows = []) {
   return new Set((rows || []).map((row) => row?.team).filter(Boolean));
-}
-
-function getPromotionRowsForLeague(rows = [], leagueId = "") {
-  if (leagueId !== "2nd" && leagueId !== "3rd") return [];
-  return getActiveStandingsRows(rows).slice(0, 2);
-}
-
-function getRelegationRowsForLeague(rows = [], leagueId = "") {
-  if (leagueId !== "1st" && leagueId !== "2nd") return [];
-  return getActiveStandingsRows(rows).slice(-2);
 }
 
 function liveGoalValue(value) {
@@ -3029,54 +3019,6 @@ function fixtureDashboardMetaLine(fixture, roundLabel, leagueLabel = "") {
   parts.push(roundLabel);
   if (leagueLabel) parts.push(leagueLabel);
   return parts.filter(Boolean).join(" • ");
-}
-
-function fixtureDateSortValue(item, fallback = "9999-12-31") {
-  return item?.date || item?.scheduleDate || fallback;
-}
-
-function fixtureTimeSortValue(item, fallback = "23:59") {
-  return item?.time || item?.scheduleTime || fallback;
-}
-
-function fixtureSortSignature(item, dateFallback = "9999-12-31", timeFallback = "23:59") {
-  return {
-    date: fixtureDateSortValue(item, dateFallback),
-    time: fixtureTimeSortValue(item, timeFallback),
-    round: Number(item?.round || 0),
-    league: String(item?.league || ""),
-    home: String(item?.home || ""),
-    away: String(item?.away || ""),
-    id: String(item?.id || ""),
-  };
-}
-
-function compareFixturesChronologically(a, b) {
-  const left = fixtureSortSignature(a);
-  const right = fixtureSortSignature(b);
-  return (
-    left.date.localeCompare(right.date) ||
-    left.time.localeCompare(right.time) ||
-    left.round - right.round ||
-    left.league.localeCompare(right.league) ||
-    left.home.localeCompare(right.home, "pl") ||
-    left.away.localeCompare(right.away, "pl") ||
-    left.id.localeCompare(right.id)
-  );
-}
-
-function compareMatchesNewestFirst(a, b) {
-  const left = fixtureSortSignature(a, "0000-00-00", "00:00");
-  const right = fixtureSortSignature(b, "0000-00-00", "00:00");
-  return (
-    right.date.localeCompare(left.date) ||
-    right.time.localeCompare(left.time) ||
-    right.round - left.round ||
-    right.league.localeCompare(left.league) ||
-    right.home.localeCompare(left.home, "pl") ||
-    right.away.localeCompare(left.away, "pl") ||
-    right.id.localeCompare(left.id)
-  );
 }
 
 function localDateKey(date = new Date()) {
@@ -3685,6 +3627,10 @@ function AboutPage({ darkMode }) {
 
 /* Regulations Page */
 function RegulationsPage({ darkMode }) {
+  const rulesYear = 2026;
+  const firstLeagueRules = getLeagueRules("1st", rulesYear);
+  const secondLeagueRules = getLeagueRules("2nd", rulesYear);
+  const thirdLeagueRules = getLeagueRules("3rd", rulesYear);
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
@@ -3739,7 +3685,7 @@ function RegulationsPage({ darkMode }) {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold mb-3">§3 Awanse i spadki</h2>
+          <h2 className="text-xl font-bold mb-3">§3 Awanse i spadki — sezon {rulesYear}</h2>
           <ol
             className={classNames(
               "list-decimal list-inside space-y-2",
@@ -3747,14 +3693,14 @@ function RegulationsPage({ darkMode }) {
             )}
           >
             <li>
-              <strong>III Liga:</strong> 2 najlepsze drużyny awansują do II Ligi
+              <strong>III Liga:</strong> {thirdLeagueRules.promotionPlaces} najlepsze drużyny awansują do II Ligi
             </li>
             <li>
-              <strong>II Liga:</strong> 2 najlepsze drużyny awansują do I Ligi,
-              2 najsłabsze spadają do III Ligi
+              <strong>II Liga:</strong> {secondLeagueRules.promotionPlaces} najlepsze drużyny awansują do I Ligi,
+              {" "}{secondLeagueRules.relegationPlaces} najsłabsze spadają do III Ligi
             </li>
             <li>
-              <strong>I Liga:</strong> 2 najsłabsze drużyny spadają do II Ligi
+              <strong>I Liga:</strong> do II Ligi spada {firstLeagueRules.relegationPlaces} drużyna z ostatniego miejsca, z pominięciem drużyn wycofanych
             </li>
             <li>W przypadku równej liczby punktów decyduje bilans bramkowy</li>
           </ol>
@@ -4677,31 +4623,6 @@ function DataDeletionPage({ darkMode }) {
 
 /* Contact Page */
 function ContactPage({ darkMode }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-  });
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // W prawdziwej implementacji wysłałbyś dane do backendu
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({ name: "", email: "", subject: "", message: "" });
-    }, 3000);
-  };
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
@@ -4840,125 +4761,7 @@ function ContactPage({ darkMode }) {
           </div>
         </div>
 
-        {/* Contact Form */}
-        <div>
-          <div
-            className={classNames(
-              "p-6 rounded-2xl",
-              darkMode ? "bg-white/5" : "bg-white border border-gray-200"
-            )}
-          >
-            <h3 className="font-bold text-xl mb-4">Formularz kontaktowy</h3>
-
-            {submitted ? (
-              <div className="py-8 text-center">
-                <div className="text-5xl mb-3">✉️</div>
-                <p
-                  className={classNames(
-                    "font-bold",
-                    darkMode ? "text-green-400" : "text-green-600"
-                  )}
-                >
-                  Wiadomość wysłana!
-                </p>
-                <p
-                  className={classNames(
-                    "text-sm mt-2",
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  )}
-                >
-                  Odpowiemy najszybciej jak to możliwe.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold mb-2">
-                    Imię i nazwisko
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className={classNames(
-                      "w-full px-4 py-2 rounded-lg border",
-                      darkMode
-                        ? "bg-white/5 border-white/10 focus:border-green-500"
-                        : "bg-white border-gray-300 focus:border-green-500"
-                    )}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold mb-2">E-mail</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className={classNames(
-                      "w-full px-4 py-2 rounded-lg border",
-                      darkMode
-                        ? "bg-white/5 border-white/10 focus:border-green-500"
-                        : "bg-white border-gray-300 focus:border-green-500"
-                    )}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold mb-2">Temat</label>
-                  <input
-                    type="text"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    required
-                    className={classNames(
-                      "w-full px-4 py-2 rounded-lg border",
-                      darkMode
-                        ? "bg-white/5 border-white/10 focus:border-green-500"
-                        : "bg-white border-gray-300 focus:border-green-500"
-                    )}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold mb-2">
-                    Wiadomość
-                  </label>
-                  <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    required
-                    rows={6}
-                    className={classNames(
-                      "w-full px-4 py-2 rounded-lg border resize-none",
-                      darkMode
-                        ? "bg-white/5 border-white/10 focus:border-green-500"
-                        : "bg-white border-gray-300 focus:border-green-500"
-                    )}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className={classNames(
-                    "w-full px-6 py-3 rounded-lg font-bold",
-                    darkMode
-                      ? "bg-green-500 hover:bg-green-600 text-white"
-                      : "bg-green-600 hover:bg-green-700 text-white"
-                  )}
-                >
-                  Wyślij wiadomość
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
+        <ContactForm darkMode={darkMode} />
       </div>
     </div>
   );
@@ -5050,6 +4853,7 @@ export default function App() {
   const {
     loading: dataLoading,
     error: dataError,
+    refreshError: dataRefreshError,
     availableSeasons,
     currentSeason,
     setCurrentSeason,
@@ -6225,6 +6029,7 @@ export default function App() {
               news={news}
               openTeam={openTeam}
               openMatch={openMatchPage}
+              openPlayer={openPlayer}
             />
           );
         case "polls":
@@ -6453,7 +6258,7 @@ export default function App() {
     );
   }
 
-  if (dataError && !currentSeason) {
+  if (dataError) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
@@ -6461,7 +6266,7 @@ export default function App() {
           <div className="text-white text-lg mb-2">Błąd połączenia</div>
           <div className="text-gray-400 text-sm mb-4">{dataError}</div>
           <button
-            onClick={() => window.location.reload()}
+            onClick={refreshData}
             className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-500 transition"
           >
             Spróbuj ponownie
@@ -7002,6 +6807,12 @@ export default function App() {
 
         {/* CONTENT */}
         <main className="flex-1 w-full min-w-0 max-w-full overflow-x-hidden p-3 sm:p-4 md:p-6 md:ml-56 md:max-w-[1600px] mx-auto">
+          {dataRefreshError && (
+            <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+              <span>Nie udało się odświeżyć danych. Wyświetlamy ostatnio pobrane wyniki.</span>
+              <button type="button" onClick={refreshData} className="font-bold underline">Spróbuj ponownie</button>
+            </div>
+          )}
           {/* round jump only on calendar and league context */}
           {activeContext !== "home" &&
             activeSection === "calendar" &&
@@ -7475,12 +7286,7 @@ function LeagueHomePage({
     const upcoming = fixtures
       .filter((f) => f.league === leagueId && !matchById[f.id])
       .filter((f) => !isExcludedFromUpcoming(f.status))
-      .sort((a, b) => {
-        // null daty na koniec (sortuj jako 'zzzz')
-        const dateCompare = (a.date || 'zzzz').localeCompare(b.date || 'zzzz');
-        if (dateCompare !== 0) return dateCompare;
-        return a.round - b.round;
-      });
+      .sort(compareFixturesChronologically);
     return upcoming[0] || null;
   }, [fixtures, leagueId, isArchived, matchById, leaguePlayedRounds, leagueTotalRounds]);
 
@@ -7514,12 +7320,12 @@ function LeagueHomePage({
   );
   const leagueHasResults = hasLeagueTableResults(simpleTable);
   const promotedRows = useMemo(
-    () => getPromotionRowsForLeague(simpleTable, leagueId),
-    [simpleTable, leagueId]
+    () => getPromotionRowsForLeague(simpleTable, leagueId, currentSeason),
+    [simpleTable, leagueId, currentSeason]
   );
   const relegatedRows = useMemo(
-    () => getRelegationRowsForLeague(simpleTable, leagueId),
-    [simpleTable, leagueId]
+    () => getRelegationRowsForLeague(simpleTable, leagueId, currentSeason),
+    [simpleTable, leagueId, currentSeason]
   );
   const promotedTeams = useMemo(() => teamSetFromRows(promotedRows), [promotedRows]);
   const relegatedTeams = useMemo(() => teamSetFromRows(relegatedRows), [relegatedRows]);
@@ -7689,7 +7495,7 @@ function LeagueHomePage({
 
           {/* PRAWA STRONA: Kafle wyróżnień */}
           <div className="space-y-3">
-            {/* DRUŻYNY - 4 kafle w siatce 2x2 */}
+            {/* Mistrz oraz pozostałe awanse i spadki według zasad sezonu. */}
             <div className="grid grid-cols-2 gap-3">
               {/* MISTRZ (1 miejsce) */}
               {table[0] && (
@@ -7730,9 +7536,9 @@ function LeagueHomePage({
                 </Card>
               )}
 
-              {/* 2 MIEJSCE (awans) */}
-              {table[1] && leagueId !== "1st" && (
-                <Card 
+              {promotedRows.slice(1).map((promotedRow) => (
+                <Card
+                  key={promotedRow.team}
                   darkMode={darkMode}
                   className={classNames(
                     "p-4 text-center relative overflow-hidden",
@@ -7748,23 +7554,23 @@ function LeagueHomePage({
                   </div>
                   <div className="relative">
                     <TeamLogo
-                      team={table[1].team}
+                      team={promotedRow.team}
                       darkMode={darkMode}
                       size={80}
-                      onClick={() => openTeam(table[1].team)}
+                      onClick={() => openTeam(promotedRow.team)}
                       className="mx-auto mb-3 drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)] hover:scale-110 transition-transform cursor-pointer"
                     />
                   </div>
                   <button
-                    onClick={() => openTeam(table[1].team)}
+                    onClick={() => openTeam(promotedRow.team)}
                     className="font-bold text-sm hover:underline"
                   >
-                    {displayTeamName(table[1].team)}
+                    {displayTeamName(promotedRow.team)}
                   </button>
                 </Card>
-              )}
+              ))}
 
-              {/* PRZEDOSTATNIE MIEJSCE (spadek) */}
+              {/* Pierwsza drużyna w strefie spadkowej. */}
               {relegatedRows[0] && leagueId !== "3rd" && (
                 <Card 
                   darkMode={darkMode}
@@ -8657,12 +8463,12 @@ function LeagueTablePage({
     return copy.map((r, idx) => ({ ...r, displayPos: idx + 1 }));
   }, [liveTable, sortBy, sortOrder]);
   const promotedRows = useMemo(
-    () => getPromotionRowsForLeague(liveTable, leagueId),
-    [liveTable, leagueId]
+    () => getPromotionRowsForLeague(liveTable, leagueId, currentSeason),
+    [liveTable, leagueId, currentSeason]
   );
   const relegatedRows = useMemo(
-    () => getRelegationRowsForLeague(liveTable, leagueId),
-    [liveTable, leagueId]
+    () => getRelegationRowsForLeague(liveTable, leagueId, currentSeason),
+    [liveTable, leagueId, currentSeason]
   );
   const promotedTeams = useMemo(() => teamSetFromRows(promotedRows), [promotedRows]);
   const relegatedTeams = useMemo(() => teamSetFromRows(relegatedRows), [relegatedRows]);
@@ -15177,11 +14983,7 @@ function HomeDashboard({
       const nextMatch = leagueFixturesAll
         .filter((f) => !matchById[f.id])
         .filter((f) => !isExcludedFromUpcoming(f.status))
-        .sort((a, b) => (
-          (a.round || 0) - (b.round || 0) ||
-          fixtureDateSortValue(a).localeCompare(fixtureDateSortValue(b)) ||
-          fixtureTimeSortValue(a).localeCompare(fixtureTimeSortValue(b))
-        ))[0] || null;
+        .sort(compareFixturesChronologically)[0] || null;
       const playedPct = leagueFixtures.length
         ? Math.min(100, Math.max(0, Math.round((leagueMatches.length / leagueFixtures.length) * 100)))
         : 0;

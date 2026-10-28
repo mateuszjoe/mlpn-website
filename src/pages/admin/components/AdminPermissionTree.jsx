@@ -33,6 +33,7 @@ export default function AdminPermissionTree({
   onTogglePermission,
   onToggleGroup,
   disabled,
+  canTogglePermission = () => true,
 }) {
   const [openGroups, setOpenGroups] = useState(() =>
     ADMIN_PERMISSION_GROUPS.reduce((acc, group) => {
@@ -78,7 +79,9 @@ export default function AdminPermissionTree({
                 checked={state.allChecked}
                 partiallyChecked={state.partiallyChecked}
                 onChange={(event) => onToggleGroup(group.key, event.target.checked)}
-                disabled={disabled}
+                disabled={disabled || !group.permissions.every((permission) =>
+                  !!getPermissionValue(permissions, permission.key) === !state.allChecked ||
+                  canTogglePermission(permission.key, !state.allChecked))}
               />
 
               <div className="min-w-0 flex-1">
@@ -103,7 +106,7 @@ export default function AdminPermissionTree({
                       type="checkbox"
                       checked={!!getPermissionValue(permissions, permission.key)}
                       onChange={(event) => onTogglePermission(permission.key, event.target.checked)}
-                      disabled={disabled}
+                      disabled={disabled || !canTogglePermission(permission.key, !getPermissionValue(permissions, permission.key))}
                       className="w-4 h-4 rounded border-gray-300"
                     />
                     <span className={darkMode ? "text-gray-200" : "text-gray-700"}>

@@ -5,8 +5,11 @@
  *
  * WYMAGANE:
  * 1. Funkcja exec_sql w bazie (jednorazowo w SQL Editor):
- *    CREATE OR REPLACE FUNCTION exec_sql(query text) RETURNS void
- *    LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN EXECUTE query; END; $$;
+ *    CREATE OR REPLACE FUNCTION public.exec_sql(query text) RETURNS void
+ *    LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp
+ *    AS $$ BEGIN EXECUTE query; END; $$;
+ *    REVOKE ALL ON FUNCTION public.exec_sql(text) FROM PUBLIC, anon, authenticated;
+ *    GRANT EXECUTE ON FUNCTION public.exec_sql(text) TO service_role;
  *
  * 2. W .env.local: SUPABASE_SERVICE_KEY=sb_secret_...
  */
@@ -153,8 +156,10 @@ async function main() {
     if (testErr.message.includes("exec_sql")) {
       console.error("\nFunkcja exec_sql nie istnieje w bazie.");
       console.error("Wklej w Supabase SQL Editor:");
-      console.error("  CREATE OR REPLACE FUNCTION exec_sql(query text) RETURNS void");
-      console.error("  LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN EXECUTE query; END; $$;");
+      console.error("  CREATE OR REPLACE FUNCTION public.exec_sql(query text) RETURNS void");
+      console.error("  LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$ BEGIN EXECUTE query; END; $$;");
+      console.error("  REVOKE ALL ON FUNCTION public.exec_sql(text) FROM PUBLIC, anon, authenticated;");
+      console.error("  GRANT EXECUTE ON FUNCTION public.exec_sql(text) TO service_role;");
     }
     process.exit(1);
   }

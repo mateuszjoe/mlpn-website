@@ -1,5 +1,13 @@
 export const ADMIN_PERMISSION_GROUPS = [
   {
+    key: "contact",
+    label: "Wiadomości kontaktowe",
+    permissions: [
+      { key: "contact.read", label: "Odczyt wiadomości" },
+      { key: "contact.manage", label: "Oznaczanie i archiwizacja wiadomości" },
+    ],
+  },
+  {
     key: "seasons",
     label: "Sezony",
     permissions: [
@@ -109,6 +117,7 @@ export const ADMIN_PERMISSION_GROUPS = [
 ];
 
 export const ADMIN_SECTION_PERMISSIONS = {
+  contact: ["contact.read", "contact.manage"],
   dashboard: [],
   wizard: ["seasons.generate"],
   seasons: ["seasons.generate", "seasons.edit", "seasons.delete"],
@@ -213,7 +222,7 @@ export function normalizePermissions(rawPermissions) {
   ADMIN_PERMISSION_GROUPS.forEach((group) => {
     group.permissions.forEach((permission) => {
       const value = getPermissionValue(rawPermissions, permission.key);
-      if (value) {
+      if (value === true || value === "true") {
         setPermissionValue(normalized, permission.key, true);
       }
     });
@@ -254,14 +263,15 @@ export function clonePermissions(permissions) {
 
 export function hasGrantedPermissions(permissions) {
   return ADMIN_PERMISSION_GROUPS.some((group) =>
-    group.permissions.some((permission) => !!getPermissionValue(permissions, permission.key))
+    group.permissions.some((permission) => hasPermission(permissions, permission.key))
   );
 }
 
 export function hasPermission(permissions, permissionKey, role = "viewer") {
   if (role === "admin") return true;
   if (role === "editor" && LEGACY_EDITOR_PERMISSION_KEYS.has(permissionKey)) return true;
-  return !!getPermissionValue(permissions, permissionKey);
+  const value = getPermissionValue(permissions, permissionKey);
+  return value === true || value === "true";
 }
 
 export function hasAnyPermission(permissions, permissionKeys, role = "viewer") {

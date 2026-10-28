@@ -213,14 +213,17 @@ describe("table promotion and relegation highlights", () => {
   }));
   const images = { brand: null, teamLogos: new Map(), sponsors: new Map(), sponsorList: SPONSORS };
   const cases = FORMATS.flatMap((layout) => [
-    [layout.format, "1st", [1], [10], layout],
-    [layout.format, "2nd", [1, 2], [9, 10], layout],
-    [layout.format, "3rd", [1, 2, 3], [], layout],
+    [layout.format, "1st", 2026, [1], [10], layout],
+    [layout.format, "2nd", 2026, [1, 2], [9, 10], layout],
+    [layout.format, "3rd", 2026, [1, 2, 3], [], layout],
+    [layout.format, "1st", 2025, [1], [9, 10], layout],
+    [layout.format, "2nd", 2025, [1, 2], [9, 10], layout],
+    [layout.format, "3rd", 2025, [1, 2], [], layout],
   ]);
 
-  test.each(cases)("colors the correct positions in %s for league %s", (format, leagueCode, promoted, relegated, layout) => {
+  test.each(cases)("colors the correct positions in %s for league %s, season %i", (format, leagueCode, seasonYear, promoted, relegated, layout) => {
     const ctx = recordingContext();
-    drawGraphic(ctx, { category: "table-summary", leagueCode, theme: "stadium", seasonYear: 2026 },
+    drawGraphic(ctx, { category: "table-summary", leagueCode, theme: "stadium", seasonYear },
       { standings }, images, layout.width, layout.height);
     const rowLabels = standings.map(({ position, team_name }) => {
       const label = ctx.text.find(({ value }) => value === team_name);
@@ -231,5 +234,18 @@ describe("table promotion and relegation highlights", () => {
       .map((fill) => rowLabels.find((row) => row.y > fill.y)?.position);
     expect(highlightedPositions("rgba(34,197,94,0.24)")).toEqual(promoted);
     expect(highlightedPositions("rgba(239,68,68,0.24)")).toEqual(relegated);
+  });
+
+  test("marks the last active club after withdrawal even if stored position numbers have a gap", () => {
+    const activeStandings = standings.filter(({ position }) => position !== 4);
+    const ctx = recordingContext();
+    const layout = FORMATS[0];
+    drawGraphic(ctx, { category: "table-summary", leagueCode: "1st", theme: "stadium", seasonYear: 2026 },
+      { standings: activeStandings }, images, layout.width, layout.height);
+    const redFills = ctx.fills.filter(({ color }) => color === "rgba(239,68,68,0.24)");
+    expect(redFills).toHaveLength(1);
+    const rowNames = new Set(activeStandings.map(({ team_name }) => team_name));
+    const highlightedRow = ctx.text.find(({ value, y }) => rowNames.has(value) && y > redFills[0].y);
+    expect(highlightedRow.value).toBe("Drużyna 10");
   });
 });

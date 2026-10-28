@@ -103,13 +103,16 @@ export async function fetchSeasonConfig(seasonYear) {
     .eq('year', seasonYear)
     .single();
 
-  if (sErr || !season) return { currentRound: 1, playedRounds: 0, totalRounds: 18 };
+  if (sErr) throw sErr;
+  if (!season) throw new Error(`Nie znaleziono sezonu ${seasonYear}.`);
 
   // Zawsze obliczaj z rzeczywistych meczów (season_leagues bywa nieaktualne)
-  const { data: matchStats } = await publicSupabase
+  const { data: matchStats, error: matchStatsError } = await publicSupabase
     .from('v_matches')
     .select('round, status, match_date, league_code')
     .eq('season_year', seasonYear);
+
+  if (matchStatsError) throw matchStatsError;
 
   if (!matchStats?.length) {
     return { currentRound: 1, playedRounds: 0, totalRounds: 0, totalRoundsByLeague: {}, playedRoundsByLeague: {} };
@@ -487,7 +490,7 @@ export async function fetchTopYellow(seasonYear) {
 }
 
 export async function fetchTopRed(seasonYear) {
-  // Próbuj widok v_top_red_cards, fallback na puste
+  // Starsza baza może jeszcze nie mieć widoku — odczytaj wtedy statystyki bezpośrednio.
   const { data, error } = await publicSupabase
     .from('v_top_red_cards')
     .select('player_id, display_name, team_name, league_code, red_cards, yellow_cards')
@@ -495,7 +498,6 @@ export async function fetchTopRed(seasonYear) {
     .order('red_cards', { ascending: false });
 
   if (error) {
-    // Widok może nie istnieć jeszcze - zwróć puste
     console.warn('v_top_red_cards niedostępny:', error.message);
     const { data: fallbackData, error: fallbackError } = await publicSupabase
       .from('player_season_stats')
@@ -515,7 +517,7 @@ export async function fetchTopRed(seasonYear) {
 
     if (fallbackError) {
       console.warn('Fallback top red cards failed:', fallbackError.message);
-      return [];
+      throw fallbackError;
     }
 
     return (fallbackData || []).map(row => ({

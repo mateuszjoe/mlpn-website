@@ -4,14 +4,24 @@ import { Ban, Edit3, KeyRound, PauseCircle, Shield, Trash2, Undo2, UserPlus } fr
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import {
+  ADMIN_PERMISSION_GROUPS,
   createEmptyPermissions,
   getDefaultDisplayName,
+  getPermissionValue,
   normalizePermissions,
   setPermissionValue,
 } from "../../lib/adminPermissions";
 import AdminAlert from "./components/AdminAlert";
 import AdminFormField from "./components/AdminFormField";
 import AdminPermissionTree from "./components/AdminPermissionTree";
+import {
+  canChangeProfilePermission,
+  canChangeProfileStatus,
+  canEditProfileDetails,
+  canManageProfileTarget,
+  getProfileRoleForSave,
+  isActiveProfileAdmin,
+} from "./utils/profileManagementAccess";
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || "";
@@ -67,7 +77,8 @@ function getStatusBadge(status) {
 }
 
 export default function AdminUsers({ darkMode }) {
-  const { profile, can, canAny, isAdmin } = useAuth();
+  const { profile, can, canAny } = useAuth();
+  const isAdmin = isActiveProfileAdmin(profile);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -92,6 +103,10 @@ export default function AdminUsers({ darkMode }) {
     canSuspendUsers ||
     canEditUsers ||
     canManagePermissions;
+  const editingUser = users.find((user) => user.id === editId) || null;
+  const canEditDetails = canEditProfileDetails(profile, editingUser);
+  const canEditSensitiveFields = isAdmin || (editingUser?.id !== profile?.id && canManageProfileTarget(profile, editingUser));
+  const canTogglePermission = (key, value) => canChangeProfilePermission(profile, editingUser, key, value);
 
   const card = darkMode ? "bg-white/5 border-white/10" : "bg-white border-gray-200";
   const textMain = darkMode ? "text-white" : "text-gray-900";
@@ -156,6 +171,7 @@ export default function AdminUsers({ darkMode }) {
   };
 
   const handleTogglePermission = (permissionKey, nextValue) => {
+    if (!canTogglePermission(permissionKey, nextValue)) return;
     setForm((current) => {
       const nextPermissions = normalizePermissions(current.permissions);
       setPermissionValue(nextPermissions, permissionKey, nextValue);
@@ -166,21 +182,16 @@ export default function AdminUsers({ darkMode }) {
   const handleToggleGroup = (groupKey, nextValue) => {
     setForm((current) => {
       const nextPermissions = normalizePermissions(current.permissions);
-      Object.keys(nextPermissions[groupKey] || {}).forEach((key) => {
-        if (typeof nextPermissions[groupKey][key] === "object" && nextPermissions[groupKey][key] !== null) {
-          Object.keys(nextPermissions[groupKey][key]).forEach((nestedKey) => {
-            nextPermissions[groupKey][key][nestedKey] = nextValue;
-          });
-          return;
-        }
-        nextPermissions[groupKey][key] = nextValue;
-      });
+      const group = ADMIN_PERMISSION_GROUPS.find((item) => item.key === groupKey);
+      const changes = (group?.permissions || []).filter(({ key }) => !!getPermissionValue(nextPermissions, key) !== nextValue);
+      if (!changes.every(({ key }) => canTogglePermission(key, nextValue))) return current;
+      changes.forEach(({ key }) => setPermissionValue(nextPermissions, key, nextValue));
       return { ...current, permissions: nextPermissions };
     });
   };
 
   const validateForm = (isEditing) => {
-    if (!form.email || !form.first_name || !form.last_name || !form.display_name) {
+    if ((!isEditing || canEditDetails) && (!form.email || !form.first_name || !form.last_name || !form.display_name)) {
       return "Uzupelnij mail, imie, nazwisko i nazwe wyswietlana.";
     }
 
@@ -220,12 +231,13 @@ export default function AdminUsers({ darkMode }) {
     first_name: form.first_name.trim(),
     last_name: form.last_name.trim(),
     display_name: form.display_name.trim() || getDefaultDisplayName(form.first_name, form.last_name, form.email),
-    role: form.access_mode === "admin" ? "admin" : "viewer",
+    role: getProfileRoleForSave(profile, editingUser, form.access_mode),
     account_status: form.account_status,
     permissions: normalizePermissions(form.permissions),
   });
 
   const syncAuthCredentials = async () => {
+    if (!canEditDetails) return null;
     const shouldChangeEmail = form.email.trim() !== originalEmail.trim();
     const shouldChangePassword = !!form.new_password;
 
@@ -300,6 +312,13 @@ export default function AdminUsers({ darkMode }) {
     }
 
     const profilePayload = buildProfilePayload();
+    const basicFields = ["email", "first_name", "last_name", "display_name"];
+    const changes = isEditing && editingUser
+      ? Object.fromEntries(Object.entries(profilePayload).filter(([key]) => canEditDetails || !basicFields.includes(key)).filter(([key, value]) =>
+        key === "permissions"
+          ? JSON.stringify(value) !== JSON.stringify(editingUser.permissions)
+          : value !== (editingUser[key] || "")))
+      : {};
 
     if (!isEditing && !canCreateUsers) {
       setAlert({ type: "error", message: "Brak uprawnien do tworzenia kont." });
@@ -308,6 +327,25 @@ export default function AdminUsers({ darkMode }) {
 
     if (isEditing && !canAny(["users.edit", "users.permissions.grant", "users.permissions.revoke", "users.ban", "users.suspend"])) {
       setAlert({ type: "error", message: "Brak uprawnien do edycji tego konta." });
+      return;
+    }
+
+    if (isEditing && (!editingUser || (!canManageProfileTarget(profile, editingUser) && editingUser.id !== profile?.id))) {
+      setAlert({ type: "error", message: "Tym kontem moze zarzadzac tylko administrator." });
+      return;
+    }
+
+    if (isEditing && !canEditDetails && (basicFields.some((key) => key in changes) || form.new_password)) {
+      setAlert({ type: "error", message: "Brak uprawnien do zmiany danych konta." });
+      return;
+    }
+
+    const permissionsAllowed = ADMIN_PERMISSION_GROUPS.every((group) => group.permissions.every(({ key }) => {
+      const nextValue = !!getPermissionValue(profilePayload.permissions, key);
+      return nextValue === !!getPermissionValue(editingUser?.permissions, key) || canTogglePermission(key, nextValue);
+    }));
+    if (!permissionsAllowed || !canChangeProfileStatus(profile, editingUser, profilePayload.account_status)) {
+      setAlert({ type: "error", message: "Brak uprawnien do wybranej zmiany statusu lub uprawnien." });
       return;
     }
 
@@ -322,13 +360,14 @@ export default function AdminUsers({ darkMode }) {
       if (isEditing) {
         await syncAuthCredentials();
 
-        const { error } = await supabase
-          .from("profiles")
-          .update(profilePayload)
-          .eq("id", editId);
-
-        if (error) {
-          throw error;
+        if (Object.keys(changes).length) {
+          const { error } = await supabase
+            .from("profiles")
+            .update(changes)
+            .eq("id", editId)
+            .select("id")
+            .single();
+          if (error) throw error;
         }
 
         setAlert({ type: "success", message: "Konto zostalo zaktualizowane." });
@@ -355,20 +394,26 @@ export default function AdminUsers({ darkMode }) {
           throw new Error("Supabase nie zwrocilo identyfikatora nowego konta.");
         }
 
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .upsert(
-            {
-              id: signUpData.user.id,
-              ...profilePayload,
-            },
-            { onConflict: "id" }
-          );
-
-        await authClient.auth.signOut();
-
-        if (profileError) {
-          throw profileError;
+        // Auth creates the viewer profile and copies names from signup metadata.
+        // A creator with no editing permissions needs no additional profile write.
+        const accessChanges = {};
+        if (profilePayload.role !== "viewer") accessChanges.role = profilePayload.role;
+        if (profilePayload.account_status !== "active") accessChanges.account_status = profilePayload.account_status;
+        if (ADMIN_PERMISSION_GROUPS.some((group) => group.permissions.some(({ key }) => getPermissionValue(profilePayload.permissions, key)))) {
+          accessChanges.permissions = profilePayload.permissions;
+        }
+        try {
+          if (Object.keys(accessChanges).length) {
+            const { error: profileError } = await supabase
+              .from("profiles")
+              .update(accessChanges)
+              .eq("id", signUpData.user.id)
+              .select("id")
+              .single();
+            if (profileError) throw profileError;
+          }
+        } finally {
+          await authClient.auth.signOut();
         }
 
         const requiresEmailConfirmation = !signUpData?.session;
@@ -401,6 +446,7 @@ export default function AdminUsers({ darkMode }) {
   };
 
   const handleEditUser = (user) => {
+    if (!canManageProfileTarget(profile, user) && user.id !== profile?.id) return;
     setEditId(user.id);
     setOriginalEmail(user.email || "");
     setForm({
@@ -413,7 +459,7 @@ export default function AdminUsers({ darkMode }) {
       current_password: "",
       new_password: "",
       new_password_confirm: "",
-      access_mode: user.role === "admin" ? "admin" : "custom",
+      access_mode: ["admin", "editor"].includes(user.role) ? user.role : "custom",
       account_status: user.account_status || "active",
       permissions: normalizePermissions(user.permissions),
     });
@@ -429,7 +475,7 @@ export default function AdminUsers({ darkMode }) {
       return;
     }
 
-    if (!canDeleteUsers) {
+    if (!canDeleteUsers || !canManageProfileTarget(profile, user)) {
       setAlert({ type: "error", message: "Brak uprawnien do usuwania kont." });
       return;
     }
@@ -462,18 +508,8 @@ export default function AdminUsers({ darkMode }) {
       return;
     }
 
-    if (nextStatus === "banned" && !canBanUsers) {
-      setAlert({ type: "error", message: "Brak uprawnien do banowania kont." });
-      return;
-    }
-
-    if (nextStatus === "suspended" && !canSuspendUsers) {
-      setAlert({ type: "error", message: "Brak uprawnien do zawieszania kont." });
-      return;
-    }
-
-    if (nextStatus === "active" && !(canBanUsers || canSuspendUsers || canEditUsers)) {
-      setAlert({ type: "error", message: "Brak uprawnien do przywracania kont." });
+    if (!canChangeProfileStatus(profile, user, nextStatus)) {
+      setAlert({ type: "error", message: "Brak uprawnien do tej zmiany statusu konta." });
       return;
     }
 
@@ -498,15 +534,12 @@ export default function AdminUsers({ darkMode }) {
 
   const accessModeOptions = [
     { value: "custom", label: "Wlasne uprawnienia" },
+    ...(editingUser?.role === "editor" ? [{ value: "editor", label: "Redaktor" }] : []),
     { value: "admin", label: "Pelny administrator" },
   ];
 
-  const statusOptions = STATUS_OPTIONS.filter((option) => {
-    if (option.value === form.account_status) return true;
-    if (option.value === "banned") return canBanUsers || isAdmin || !showForm;
-    if (option.value === "suspended") return canSuspendUsers || isAdmin || !showForm;
-    return true;
-  });
+  const statusOptions = STATUS_OPTIONS.filter((option) => option.value === form.account_status ||
+    canChangeProfileStatus(profile, editingUser, option.value));
 
   return (
     <div className="space-y-4">
@@ -560,6 +593,7 @@ export default function AdminUsers({ darkMode }) {
               <AdminFormField
                 label="Mail"
                 name="email"
+                disabled={!canEditDetails}
                 type="email"
                 value={form.email}
                 onChange={updateField}
@@ -570,6 +604,7 @@ export default function AdminUsers({ darkMode }) {
               <AdminFormField
                 label="Nazwa wyswietlana"
                 name="display_name"
+                disabled={!canEditDetails}
                 value={form.display_name}
                 onChange={updateField}
                 required
@@ -579,6 +614,7 @@ export default function AdminUsers({ darkMode }) {
               <AdminFormField
                 label="Imie"
                 name="first_name"
+                disabled={!canEditDetails}
                 value={form.first_name}
                 onChange={updateField}
                 required
@@ -588,6 +624,7 @@ export default function AdminUsers({ darkMode }) {
               <AdminFormField
                 label="Nazwisko"
                 name="last_name"
+                disabled={!canEditDetails}
                 value={form.last_name}
                 onChange={updateField}
                 required
@@ -602,11 +639,12 @@ export default function AdminUsers({ darkMode }) {
                 onChange={updateField}
                 options={accessModeOptions}
                 darkMode={darkMode}
-                disabled={!isAdmin && !canManagePermissions}
+                disabled={!isAdmin}
               />
               <AdminFormField
                 label="Status konta"
                 name="account_status"
+                disabled={!canEditSensitiveFields || statusOptions.length < 2}
                 type="select"
                 value={form.account_status}
                 onChange={updateField}
@@ -648,6 +686,7 @@ export default function AdminUsers({ darkMode }) {
                   <AdminFormField
                     label="Aktualne haslo"
                     name="current_password"
+                    disabled={!canEditDetails}
                     type="password"
                     value={form.current_password}
                     onChange={updateField}
@@ -657,6 +696,7 @@ export default function AdminUsers({ darkMode }) {
                   <AdminFormField
                     label="Nowe haslo"
                     name="new_password"
+                    disabled={!canEditDetails}
                     type="password"
                     value={form.new_password}
                     onChange={updateField}
@@ -666,6 +706,7 @@ export default function AdminUsers({ darkMode }) {
                   <AdminFormField
                     label="Powtorz nowe haslo"
                     name="new_password_confirm"
+                    disabled={!canEditDetails}
                     type="password"
                     value={form.new_password_confirm}
                     onChange={updateField}
@@ -691,7 +732,8 @@ export default function AdminUsers({ darkMode }) {
                 permissions={form.permissions}
                 onTogglePermission={handleTogglePermission}
                 onToggleGroup={handleToggleGroup}
-                disabled={form.access_mode === "admin" || !canManagePermissions}
+                canTogglePermission={canTogglePermission}
+                disabled={form.access_mode === "admin" || !canManagePermissions || !canEditSensitiveFields}
               />
               {form.access_mode === "admin" && (
                 <p className={`text-xs ${textMuted}`}>
@@ -767,10 +809,10 @@ export default function AdminUsers({ darkMode }) {
                         ? "bg-red-500/20 text-red-400 border-red-500/30"
                         : "bg-slate-500/15 text-slate-500 border-slate-400/30"
                     }`}>
-                      {user.role === "admin" ? "Pelny admin" : "Wlasne uprawnienia"}
+                      {user.role === "admin" ? "Pelny admin" : user.role === "editor" ? "Redaktor" : "Wlasne uprawnienia"}
                     </span>
 
-                    {canSuspendUsers && status === "active" && user.id !== profile?.id && (
+                    {status === "active" && canChangeProfileStatus(profile, user, "suspended") && (
                       <button
                         onClick={() => handleQuickStatusChange(user, "suspended")}
                         className={`p-1.5 rounded-lg transition-colors ${darkMode ? "hover:bg-yellow-500/10 text-yellow-400" : "hover:bg-yellow-50 text-yellow-700"}`}
@@ -780,7 +822,7 @@ export default function AdminUsers({ darkMode }) {
                       </button>
                     )}
 
-                    {canBanUsers && status !== "banned" && user.id !== profile?.id && (
+                    {status !== "banned" && canChangeProfileStatus(profile, user, "banned") && (
                       <button
                         onClick={() => handleQuickStatusChange(user, "banned")}
                         className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-400 transition-colors"
@@ -790,7 +832,7 @@ export default function AdminUsers({ darkMode }) {
                       </button>
                     )}
 
-                    {(canBanUsers || canSuspendUsers || canEditUsers) && status !== "active" && (
+                    {status !== "active" && canChangeProfileStatus(profile, user, "active") && (
                       <button
                         onClick={() => handleQuickStatusChange(user, "active")}
                         className={`p-1.5 rounded-lg transition-colors ${darkMode ? "hover:bg-green-500/10 text-green-400" : "hover:bg-green-50 text-green-700"}`}
@@ -800,7 +842,7 @@ export default function AdminUsers({ darkMode }) {
                       </button>
                     )}
 
-                    {(canEditUsers || canManagePermissions) && (
+                    {(canEditUsers || canManagePermissions) && (canManageProfileTarget(profile, user) || user.id === profile?.id) && (
                       <button
                         onClick={() => handleEditUser(user)}
                         className={`p-1.5 rounded-lg transition-colors ${darkMode ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
@@ -810,7 +852,7 @@ export default function AdminUsers({ darkMode }) {
                       </button>
                     )}
 
-                    {canDeleteUsers && user.id !== profile?.id && (
+                    {canDeleteUsers && canManageProfileTarget(profile, user) && user.id !== profile?.id && (
                       <button
                         onClick={() => handleDeleteUser(user)}
                         className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-400 transition-colors"

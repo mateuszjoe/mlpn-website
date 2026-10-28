@@ -8,12 +8,14 @@ const sb = createClient(
 );
 
 const sql = `
-CREATE OR REPLACE FUNCTION exec_sql(query text) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER AS $body$
+CREATE OR REPLACE FUNCTION public.exec_sql(query text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $body$
 BEGIN
   SET LOCAL statement_timeout = '300s';
   EXECUTE query;
 END; $body$;
+REVOKE ALL ON FUNCTION public.exec_sql(text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.exec_sql(text) TO service_role;
 `;
 
 sb.rpc("exec_sql", { query: sql }).then(({ error }) => {
