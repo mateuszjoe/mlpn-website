@@ -16,6 +16,7 @@ import AdminControlCenter from "./AdminControlCenter";
 import AdminUsers from "./AdminUsers";
 import AdminReferees from "./AdminReferees";
 import AdminSponsors from "./AdminSponsors";
+import AdminContactMessages from "./AdminContactMessages";
 import AdminGraphicsCreator from "./AdminGraphicsCreator";
 import {
   LayoutDashboard,
@@ -37,6 +38,7 @@ import {
   Handshake,
   Radio,
   Image as ImageIcon,
+  Mail,
 } from "lucide-react";
 
 const ADMIN_MENU_ITEMS = [
@@ -52,6 +54,7 @@ const ADMIN_MENU_ITEMS = [
   { id: "news", label: "Aktualności", icon: <Newspaper size={18} /> },
   { id: "graphics", label: "Grafiki", icon: <ImageIcon size={18} /> },
   { id: "sponsors", label: "Sponsorzy", icon: <Handshake size={18} /> },
+  { id: "contact", label: "Wiadomości", icon: <Mail size={18} /> },
   { id: "referees", label: "Sedziowie", icon: <Scale size={18} /> },
   { id: "control-center", label: "Ustawienia", icon: <SlidersHorizontal size={18} /> },
   { id: "users", label: "Konta", icon: <UserPlus size={18} /> },
@@ -152,6 +155,8 @@ export default function AdminPanel({ darkMode, goHome, activeSection = "dashboar
         return <AdminGraphicsCreator darkMode={darkMode} />;
       case "sponsors":
         return <AdminSponsors darkMode={darkMode} />;
+      case "contact":
+        return <AdminContactMessages darkMode={darkMode} />;
       case "referees":
         return <AdminReferees darkMode={darkMode} />;
       case "control-center":
