@@ -1,0 +1,75 @@
+/* Header and rows share one width, including when the sidebar leaves less
+   room than the full table needs. Names must never size the numeric tracks. */
+.mlpn-league-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.mlpn-league-table-scroll:focus-visible {
+  outline: 2px solid #e4c482;
+  outline-offset: -2px;
+}
+
+.mlpn-league-table-content {
+  width: 100%;
+  min-width: 920px;
+}
+
+.mlpn-league-table-grid {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) repeat(4, 40px) repeat(2, 48px) 52px 52px 184px;
+  gap: 8px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.mlpn-league-table-grid > * {
+  min-width: 0;
+}
+
+.mlpn-league-table-grid .e3d-dot,
+.mlpn-league-summary-grid .e3d-dot,
+.mlpn-league-table-mobile .e3d-dot {
+  flex-shrink: 0;
+}
+
+.mlpn-league-table-grid > :not(:nth-child(2)):not(:last-child) {
+  text-align: center;
+}
+
+.mlpn-league-summary-content {
+  width: 100%;
+  min-width: 420px;
+}
+
+.mlpn-league-summary-header {
+  padding-inline: 9px; /* Match each row's 8px padding and 1px border. */
+}
+
+.mlpn-league-summary-grid {
+  display: grid;
+  grid-template-columns: 32px 36px minmax(0, 1fr) 44px 116px;
+  gap: 8px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.mlpn-league-archive-content {
+  width: 100%;
+  min-width: 540px;
+}
+
+.mlpn-league-archive-header {
+  padding-inline: 7px; /* Match each row's 6px padding and 1px border. */
+}
+
+.mlpn-league-archive-grid {
+  display: grid;
+  grid-template-columns: 30px 30px minmax(0, 1fr) repeat(4, 35px) 45px 45px 40px;
+  gap: 4px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}

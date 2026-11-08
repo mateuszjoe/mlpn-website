@@ -35,6 +35,7 @@ import ContactForm from "./components/ContactForm";
 import { useMLPNData } from "./hooks/useMLPNData";
 import { getLeagueRules, getPromotionRowsForLeague, getRelegationRowsForLeague } from "./lib/leagueRules";
 import { applyLiveFixturesToTable, sortStandingsForDisplay } from "./lib/standingsRanking";
+import "./components/LeagueTableLayout.css";
 import { compareFixturesChronologically, compareMatchesNewestFirst, fixtureDateSortValue, fixtureTimeSortValue } from "./lib/fixtureChronology";
 import {
   fetchMatchDetails,
@@ -2599,7 +2600,7 @@ function MobileLeagueScrollableTable({
   ];
 
   if (showForm) {
-    statColumns.push({ key: "form", label: "FORMA", width: "w-[92px]" });
+    statColumns.push({ key: "form", label: "FORMA", width: "w-[124px]" });
   }
 
   const renderStatCell = (row, column) => {
@@ -2639,7 +2640,7 @@ function MobileLeagueScrollableTable({
   };
 
   return (
-    <div className="md:hidden w-full max-w-full overflow-hidden rounded-xl border border-white/10">
+    <div className="mlpn-league-table-mobile md:hidden w-full max-w-full overflow-hidden rounded-xl border border-white/10">
       <div className="flex w-full">
         <div
           className={classNames(
@@ -7348,7 +7349,7 @@ function LeagueHomePage({
       {isArchived && (
         <div className="grid lg:grid-cols-2 gap-4">
           {/* LEWA STRONA: Tabela ze szczegółowymi statystykami */}
-          <Card darkMode={darkMode}>
+          <Card darkMode={darkMode} className="min-w-0">
             <div className="font-extrabold mb-3 text-lg">Tabela końcowa sezonu {currentSeason}</div>
 
             <MobileLeagueScrollableTable
@@ -7360,13 +7361,15 @@ function LeagueHomePage({
             />
 
             {/* Nagłówki kolumn - bez Formy */}
+            <div className="hidden md:block mlpn-league-table-scroll" role="region" aria-label="Tabela końcowa — przewijaj w poziomie, aby zobaczyć wszystkie kolumny" tabIndex={0}>
+            <div className="mlpn-league-archive-content">
             <div
               className={classNames(
-                "hidden md:block px-2 pb-2 text-[10px] font-bold",
+                "hidden md:block mlpn-league-archive-header pb-2 text-[10px] font-bold",
                 darkMode ? "text-gray-400" : "text-gray-600"
               )}
             >
-              <div className="grid grid-cols-[30px_30px_1fr_35px_35px_35px_35px_45px_45px_40px] gap-1 items-center">
+              <div className="mlpn-league-archive-grid">
                 <div className="text-center">#</div>
                 <div></div>
                 <div>Drużyna</div>
@@ -7393,7 +7396,7 @@ function LeagueHomePage({
                     getStandingsWithdrawnRowClass(r.withdrawn, darkMode)
                   )}
                 >
-                  <div className="grid grid-cols-[30px_30px_1fr_35px_35px_35px_35px_45px_45px_40px] gap-1 items-center text-xs">
+                  <div className="mlpn-league-archive-grid text-xs">
                     <div className="text-center font-extrabold">
                       {r.pos}
                     </div>
@@ -7421,6 +7424,8 @@ function LeagueHomePage({
                   </div>
                 </div>
               ))}
+            </div>
+            </div>
             </div>
           </Card>
 
@@ -8056,7 +8061,7 @@ function LeagueHomePage({
       {!isArchived && (
         <div className="grid lg:grid-cols-2 gap-4">
         {/* Lewa strona: Tabela */}
-        <Card darkMode={darkMode}>
+        <Card darkMode={darkMode} className="min-w-0">
           <div className="font-extrabold mb-3 text-lg">Tabela ligowa</div>
 
           <MobileLeagueScrollableTable
@@ -8068,13 +8073,15 @@ function LeagueHomePage({
           />
 
           {/* Nagłówki kolumn */}
+          <div className="hidden md:block mlpn-league-table-scroll" role="region" aria-label="Tabela ligowa — przewijaj w poziomie, aby zobaczyć wszystkie kolumny" tabIndex={0}>
+          <div className="mlpn-league-summary-content">
           <div
             className={classNames(
-              "hidden md:block px-2 pb-2 text-xs font-bold",
+              "hidden md:block mlpn-league-summary-header pb-2 text-xs font-bold",
               darkMode ? "text-gray-400" : "text-gray-600"
             )}
           >
-            <div className="grid grid-cols-[40px_40px_1fr_60px_100px] gap-2 items-center">
+            <div className="mlpn-league-summary-grid">
               <div className="text-center">#</div>
               <div></div>
               <div>Drużyna</div>
@@ -8099,7 +8106,7 @@ function LeagueHomePage({
                   getStandingsWithdrawnRowClass(r.withdrawn, darkMode)
                 )}
               >
-                <div className="grid grid-cols-[40px_40px_1fr_60px_100px] gap-2 items-center">
+                <div className="mlpn-league-summary-grid">
                   <div className="text-center font-extrabold text-sm">
                     {r.pos}
                   </div>
@@ -8126,18 +8133,21 @@ function LeagueHomePage({
                   <div className="flex gap-1 justify-start">
                     {(r.form5 || []).map((f, i) => (
                       <FormDot
+                        small
                         key={i}
                         v={f.result}
                         title={`${f.score} ${displayTeamName(f.opponent)}`}
                       />
                     ))}
                     {r.nextOpponent && (
-                      <FormDot v="?" title={`Następny mecz: ${displayTeamName(r.nextOpponent)}`} />
+                      <FormDot small v="?" title={`Następny mecz: ${displayTeamName(r.nextOpponent)}`} />
                     )}
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+          </div>
           </div>
         </Card>
 
@@ -8426,13 +8436,15 @@ function LeagueTablePage({
           getRowBg={getPositionBg}
         />
 
+        <div className="hidden md:block mlpn-league-table-scroll" role="region" aria-label={`${leagueName} — tabela, przewijaj w poziomie, aby zobaczyć wszystkie kolumny`} tabIndex={0}>
+        <div className="mlpn-league-table-content">
         <div
           className={classNames(
             "hidden md:block px-4 py-3 text-xs font-bold tracking-wide",
             darkMode ? "text-gray-300 bg-black/20" : "text-gray-600 bg-gray-50"
           )}
         >
-          <div className="grid grid-cols-[48px_1fr_60px_60px_60px_60px_70px_70px_50px_60px_190px] gap-2">
+          <div className="mlpn-league-table-grid">
             <div>#</div>
             <div>Drużyna</div>
             <div>M</div>
@@ -8462,11 +8474,11 @@ function LeagueTablePage({
               getStandingsWithdrawnRowClass(r.withdrawn, darkMode)
             )}
           >
-            <div className="grid grid-cols-[48px_1fr_60px_60px_60px_60px_70px_70px_50px_60px_190px] gap-2 items-center">
+            <div className="mlpn-league-table-grid">
               <div className="font-extrabold">{r.displayPos}</div>
 
-              <div className="flex items-center gap-3">
-                <div className={getStandingsWithdrawnLogoClass(r.withdrawn)}>
+              <div className="flex min-w-0 items-center gap-3">
+                <div className={classNames("shrink-0", getStandingsWithdrawnLogoClass(r.withdrawn))}>
                   <TeamLogo
                     team={r.team}
                     darkMode={darkMode}
@@ -8474,12 +8486,12 @@ function LeagueTablePage({
                     onClick={() => openTeam(r.team)}
                   />
                 </div>
-                <div className="flex min-w-0 items-center gap-2 font-extrabold">
-                  <div className="min-w-0 truncate">
+                <div className="flex min-w-0 flex-1 flex-col items-start gap-1 font-extrabold">
+                  <div className="w-full min-w-0 truncate" title={getStandingsTeamLabel(r.team, r.withdrawn)}>
                     <TeamLink
                       team={getStandingsTeamLabel(r.team, r.withdrawn)}
                       onClick={() => openTeam(r.team)}
-                      className="e3d-link"
+                      className="e3d-link block max-w-full truncate"
                     />
                   </div>
                   {r.isLivePlaying && (
@@ -8512,6 +8524,8 @@ function LeagueTablePage({
             </div>
           </div>
         ))}
+        </div>
+        </div>
       </div>
     </div>
   );
