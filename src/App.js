@@ -34,6 +34,7 @@ import AdminPanel from "./pages/admin/AdminPanel";
 import ContactForm from "./components/ContactForm";
 import { useMLPNData } from "./hooks/useMLPNData";
 import { getLeagueRules, getPromotionRowsForLeague, getRelegationRowsForLeague } from "./lib/leagueRules";
+import { applyLiveFixturesToTable, sortStandingsForDisplay } from "./lib/standingsRanking";
 import { compareFixturesChronologically, compareMatchesNewestFirst, fixtureDateSortValue, fixtureTimeSortValue } from "./lib/fixtureChronology";
 import {
   fetchMatchDetails,
@@ -2914,82 +2915,6 @@ function teamSetFromRows(rows = []) {
   return new Set((rows || []).map((row) => row?.team).filter(Boolean));
 }
 
-function liveGoalValue(value) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
-}
-
-function applyLiveResultToRow(row, goalsFor, goalsAgainst, opponent) {
-  row.played = Number(row.played || 0) + 1;
-  row.gf = Number(row.gf || 0) + goalsFor;
-  row.ga = Number(row.ga || 0) + goalsAgainst;
-
-  if (goalsFor > goalsAgainst) {
-    row.win = Number(row.win || 0) + 1;
-    row.pts = Number(row.pts || 0) + 3;
-    row.liveResult = "W";
-  } else if (goalsFor === goalsAgainst) {
-    row.draw = Number(row.draw || 0) + 1;
-    row.pts = Number(row.pts || 0) + 1;
-    row.liveResult = "R";
-  } else {
-    row.loss = Number(row.loss || 0) + 1;
-    row.liveResult = "P";
-  }
-
-  row.isLivePlaying = true;
-  row.liveOpponent = opponent;
-  row.liveScore = formatTeamScore(goalsFor, goalsAgainst);
-}
-
-function sortLiveStandingsRows(a, b) {
-  if (a.withdrawn !== b.withdrawn) return a.withdrawn ? 1 : -1;
-
-  const goalDiffA = Number(a.gf || 0) - Number(a.ga || 0);
-  const goalDiffB = Number(b.gf || 0) - Number(b.ga || 0);
-  const originalPosA = Number(a.originalPos || a.pos || Number.MAX_SAFE_INTEGER);
-  const originalPosB = Number(b.originalPos || b.pos || Number.MAX_SAFE_INTEGER);
-
-  return (
-    Number(b.pts || 0) - Number(a.pts || 0) ||
-    goalDiffB - goalDiffA ||
-    Number(b.gf || 0) - Number(a.gf || 0) ||
-    originalPosA - originalPosB ||
-    String(a.team || "").localeCompare(String(b.team || ""), "pl")
-  );
-}
-
-function applyLiveFixturesToTable(rows = [], fixtures = [], leagueId = "") {
-  const liveFixtures = (fixtures || []).filter((fixture) =>
-    isLiveFixture(fixture) &&
-    (!leagueId || fixture.league === leagueId)
-  );
-
-  if (liveFixtures.length === 0) return rows;
-
-  const byTeam = new Map((rows || []).map((row) => [row.team, { ...row }]));
-
-  for (const fixture of liveFixtures) {
-    const homeRow = byTeam.get(fixture.home);
-    const awayRow = byTeam.get(fixture.away);
-    if (!homeRow || !awayRow) continue;
-
-    const homeGoals = liveGoalValue(fixture.homeGoals);
-    const awayGoals = liveGoalValue(fixture.awayGoals);
-
-    applyLiveResultToRow(homeRow, homeGoals, awayGoals, fixture.away);
-    applyLiveResultToRow(awayRow, awayGoals, homeGoals, fixture.home);
-  }
-
-  return Array.from(byTeam.values())
-    .sort(sortLiveStandingsRows)
-    .map((row, index) => ({
-      ...row,
-      pos: index + 1,
-      liveAdjusted: !!row.isLivePlaying,
-    }));
-}
-
 function normalizeFormItem(item) {
   const result = typeof item === "string" ? item : item?.result;
   if (!["W", "R", "P"].includes(result)) return null;
@@ -3702,7 +3627,12 @@ function RegulationsPage({ darkMode }) {
             <li>
               <strong>I Liga:</strong> do II Ligi spada {firstLeagueRules.relegationPlaces} drużyna z ostatniego miejsca, z pominięciem drużyn wycofanych
             </li>
-            <li>W przypadku równej liczby punktów decyduje bilans bramkowy</li>
+            <li>
+              Przy równej liczbie punktów decydują mecze bezpośrednie:
+              punkty, bilans bramek i bramki zdobyte w spotkaniach pomiędzy
+              zainteresowanymi drużynami. Następnie porównuje się ogólny
+              bilans bramek i liczbę zdobytych bramek.
+            </li>
           </ol>
         </section>
 
@@ -6141,6 +6071,7 @@ export default function App() {
             leagueName={leagueName(activeContext)}
             table={activeTable}
             fixtures={fixtures}
+            matches={matches}
             openTeam={openTeam}
             currentSeason={currentSeason}
             availableSeasons={availableSeasons}
@@ -7315,8 +7246,8 @@ function LeagueHomePage({
 
   // Tabela - wszystkie drużyny (bez limitu), z doliczeniem aktualnie trwających meczów.
   const simpleTable = useMemo(
-    () => applyLiveFixturesToTable(table, fixtures, leagueId),
-    [table, fixtures, leagueId]
+    () => applyLiveFixturesToTable(table, fixtures, leagueId, matches),
+    [table, fixtures, leagueId, matches]
   );
   const leagueHasResults = hasLeagueTableResults(simpleTable);
   const promotedRows = useMemo(
@@ -8408,6 +8339,7 @@ function LeagueTablePage({
   leagueName,
   table,
   fixtures = [],
+  matches = [],
   openTeam,
   currentSeason,
   availableSeasons,
@@ -8417,50 +8349,13 @@ function LeagueTablePage({
   const [sortBy, setSortBy] = useState("pts"); // pts, played, win, draw, loss, gf, ga, team
   const [sortOrder, setSortOrder] = useState("desc"); // asc/desc
   const liveTable = useMemo(
-    () => applyLiveFixturesToTable(table, fixtures, leagueId),
-    [table, fixtures, leagueId]
+    () => applyLiveFixturesToTable(table, fixtures, leagueId, matches),
+    [table, fixtures, leagueId, matches]
   );
 
   const sortedTable = useMemo(() => {
-    const copy = [...liveTable];
-    copy.sort((a, b) => {
-      let valA, valB;
-
-      if (a.withdrawn !== b.withdrawn) {
-        return a.withdrawn ? 1 : -1;
-      }
-
-      if (sortBy === "team") {
-        return sortOrder === "asc"
-          ? a.team.localeCompare(b.team)
-          : b.team.localeCompare(a.team);
-      }
-
-      valA = a[sortBy] || 0;
-      valB = b[sortBy] || 0;
-
-      if (sortBy === "pts") {
-        const goalDiffA = Number(a.gf || 0) - Number(a.ga || 0);
-        const goalDiffB = Number(b.gf || 0) - Number(b.ga || 0);
-        const originalPosA = Number(a.originalPos || a.pos || Number.MAX_SAFE_INTEGER);
-        const originalPosB = Number(b.originalPos || b.pos || Number.MAX_SAFE_INTEGER);
-        const byPoints = sortOrder === "desc" ? valB - valA : valA - valB;
-        return (
-          byPoints ||
-          goalDiffB - goalDiffA ||
-          Number(b.gf || 0) - Number(a.gf || 0) ||
-          originalPosA - originalPosB ||
-          a.team.localeCompare(b.team)
-        );
-      }
-
-      if (sortOrder === "desc") {
-        return valB - valA || b.pts - a.pts || a.team.localeCompare(b.team);
-      } else {
-        return valA - valB || b.pts - a.pts || a.team.localeCompare(b.team);
-      }
-    });
-    return copy.map((r, idx) => ({ ...r, displayPos: idx + 1 }));
+    return sortStandingsForDisplay(liveTable, sortBy, sortOrder)
+      .map((r, idx) => ({ ...r, displayPos: idx + 1 }));
   }, [liveTable, sortBy, sortOrder]);
   const promotedRows = useMemo(
     () => getPromotionRowsForLeague(liveTable, leagueId, currentSeason),
