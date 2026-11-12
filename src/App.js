@@ -258,9 +258,10 @@ const SPONSOR_CATEGORY_META = {
   },
 };
 
+const ISOLA_SPONSOR_ID = "0cdd86c5-99e0-40bd-87a7-1589806ba826";
 const FALLBACK_LOADING_SPONSORS = [
   {
-    id: "0cdd86c5-99e0-40bd-87a7-1589806ba826",
+    id: ISOLA_SPONSOR_ID,
     name: "ISOLA Ristorante",
     logoUrl: `${PU}/loading-sponsors/000-isola-ristorante.webp`,
   },
@@ -5067,6 +5068,8 @@ export default function App() {
   );
 
   const publicSponsors = useMemo(() => getRenderableSponsors(sponsors), [sponsors]);
+  const isolaFacebookUrl = publicSponsors.find((sponsor) => sponsor.id === ISOLA_SPONSOR_ID)?.facebookUrl?.trim();
+  const isolaFacebookHref = /^https?:\/\//i.test(isolaFacebookUrl || "") ? isolaFacebookUrl : undefined;
   const loadingSponsorInitialPoolRef = useRef(null);
   if (!loadingSponsorInitialPoolRef.current) {
     loadingSponsorInitialPoolRef.current = initialLoadingSponsorPool();
@@ -6715,10 +6718,10 @@ export default function App() {
                 Sponsor tytularny
               </div>
               <a
-                href="https://www.facebook.com/isolaristorante" 
+                href={isolaFacebookHref}
                 target="_blank"
                 rel="noreferrer"
-                className="block hover:opacity-80 transition-opacity"
+                className={classNames("block", isolaFacebookHref && "hover:opacity-80 transition-opacity")}
               >
                 <img
                   src={`${PU}/isola.png`}
