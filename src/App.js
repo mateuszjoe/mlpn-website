@@ -10989,56 +10989,31 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
   const cardsHome = cards.filter((c) => c.team === match.home);
   const cardsAway = cards.filter((c) => c.team === match.away);
 
-  const Header = () => (
-    <Card darkMode={darkMode}>
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <TeamLogo
-            team={match.home}
-            darkMode={darkMode}
-            size={56}
-            onClick={() => openTeam(match.home)}
-          />
-          <div className="font-extrabold text-lg">
-            <TeamLink
-              team={displayTeamName(match.home)}
-              onClick={() => openTeam(match.home)}
-              className="e3d-link"
-            />
-          </div>
-        </div>
+  const renderTeam = (team, away = false) => (
+    <div className={classNames("match-result-team", away && "match-result-team--away")}>
+      <TeamLogo team={team} darkMode={darkMode} size={56} onClick={() => openTeam(team)} />
+      <TeamLink team={team} onClick={() => openTeam(team)} className="e3d-link" />
+    </div>
+  );
 
+  const header = (
+    <Card darkMode={darkMode}>
+      <div className="match-result-scoreboard">
+        {renderTeam(match.home)}
         <div
           className={classNames(
-            "px-5 py-2 rounded-2xl border font-black text-2xl e3d-pill",
-            darkMode
-              ? "bg-white/5 border-white/10"
-              : "bg-black/5 border-black/10"
+            "self-start mt-1.5 whitespace-nowrap rounded-2xl border px-3 py-2 text-2xl font-black leading-none tabular-nums e3d-pill sm:self-center sm:mt-0 sm:px-5",
+            darkMode ? "bg-white/5 border-white/10" : "bg-black/5 border-black/10"
           )}
         >
           {formatTeamScore(match.homeGoals, match.awayGoals)}
         </div>
-
-        <div className="flex items-center gap-3">
-          <div className="font-extrabold text-lg text-right">
-            <TeamLink
-              team={displayTeamName(match.away)}
-              onClick={() => openTeam(match.away)}
-              className="e3d-link"
-            />
-          </div>
-          <TeamLogo
-            team={match.away}
-            darkMode={darkMode}
-            size={56}
-            onClick={() => openTeam(match.away)}
-          />
-        </div>
+        {renderTeam(match.away, true)}
       </div>
 
       <div
         className={classNames(
-          "mt-2 flex flex-wrap gap-2 text-xs",
+          "mt-2 flex flex-wrap items-center gap-2 text-xs",
           darkMode ? "text-gray-400" : "text-gray-600"
         )}
       >
@@ -11056,6 +11031,12 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
           {match.date} {match.time}
         </span>
 
+        {match.referee && (
+          <>
+            <span>•</span>
+            <span className="font-semibold">Sędzia: {match.referee}</span>
+          </>
+        )}
         <MediaIcons
           darkMode={darkMode}
           videoUrl={match.videoUrl}
@@ -11139,7 +11120,7 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
   if (detailsLoading) {
     return (
       <div className="space-y-4">
-        <Header />
+        {header}
         <Card darkMode={darkMode}>
           <div className={classNames("text-sm text-center py-6", darkMode ? "text-gray-400" : "text-gray-500")}>
             Ładowanie szczegółów meczu...
@@ -11159,83 +11140,7 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
         />
       )}
 
-      <Card darkMode={darkMode}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <TeamLogo
-              team={match.home}
-              darkMode={darkMode}
-              size={56}
-              onClick={() => openTeam(match.home)}
-            />
-            <div className="font-extrabold text-lg">
-              <TeamLink
-                team={displayTeamName(match.home)}
-                onClick={() => openTeam(match.home)}
-                className="e3d-link"
-              />
-            </div>
-          </div>
-
-          <div
-            className={classNames(
-              "px-5 py-2 rounded-2xl border font-black text-2xl e3d-pill",
-              darkMode
-                ? "bg-white/5 border-white/10"
-                : "bg-black/5 border-black/10"
-            )}
-          >
-            {formatTeamScore(match.homeGoals, match.awayGoals)}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="font-extrabold text-lg text-right">
-              <TeamLink
-                team={displayTeamName(match.away)}
-                onClick={() => openTeam(match.away)}
-                className="e3d-link"
-              />
-            </div>
-            <TeamLogo
-              team={match.away}
-              darkMode={darkMode}
-              size={56}
-              onClick={() => openTeam(match.away)}
-            />
-          </div>
-        </div>
-
-        <div
-          className={classNames(
-            "mt-2 flex flex-wrap gap-2 text-xs items-center",
-            darkMode ? "text-gray-400" : "text-gray-600"
-          )}
-        >
-          <span className="font-semibold">{leagueName}</span>
-          <span>•</span>
-          <span className="font-semibold">Kolejka {match.round}</span>
-          <span>•</span>
-          <span className="font-semibold">
-            {match.date} {match.time}
-          </span>
-          {match.referee && (
-            <>
-              <span>•</span>
-              <span className="font-semibold">Sędzia: {match.referee}</span>
-            </>
-          )}
-          <MediaIcons
-            darkMode={darkMode}
-            videoUrl={match.videoUrl}
-            galleryUrl={match.galleryUrl}
-            galleryCount={match.galleryCount}
-            onOpenGallery={
-              match.hasGallery ? () => openGallery?.(match) : undefined
-            }
-            className="ml-2"
-          />
-        </div>
-      </Card>
+      {header}
 
       {/* Bramki i kartki w układzie lewa/prawa strona */}
       <div className="grid lg:grid-cols-2 gap-3">
@@ -11297,14 +11202,14 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
       {/* MVP meczu */}
       {match.mvp && (
         <Card darkMode={darkMode}>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
             <div className={classNames(
-              "px-3 py-1.5 rounded-xl border font-black text-xs",
+              "shrink-0 px-3 py-1.5 rounded-xl border font-black text-xs",
               darkMode ? "bg-amber-500/20 border-amber-500/30 text-amber-200" : "bg-amber-100 border-amber-300 text-amber-900"
             )}>
               ⭐ MVP MECZU
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 max-w-full items-center gap-3">
               {match.mvp.team && (
                 <TeamLogo
                   team={match.mvp.team}
@@ -11313,7 +11218,7 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
                   onClick={() => openTeam(match.mvp.team)}
                 />
               )}
-              <div>
+              <div className="min-w-0 [overflow-wrap:anywhere]">
                 <div className="font-extrabold text-lg">{match.mvp.playerName}</div>
                 {match.mvp.team && (
                   <div className={classNames(
@@ -11323,7 +11228,7 @@ function MatchDetails({ darkMode, match, onBack, openTeam, goToLeague, openGalle
                     <TeamLink
                       team={displayTeamName(match.mvp.team)}
                       onClick={() => openTeam(match.mvp.team)}
-                      className="e3d-link"
+                      className="e3d-link max-w-full !whitespace-normal"
                     />
                   </div>
                 )}
