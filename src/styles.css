@@ -1034,6 +1034,38 @@ button.mlpn-home-panel:hover {
   }
 }
 
+.match-result-scoreboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.match-result-team {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.match-result-team .e3d-link {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+@media (min-width: 640px) {
+  .match-result-scoreboard { align-items: center; gap: 12px; }
+  .match-result-team { flex-direction: row; gap: 12px; }
+  .match-result-team--away { flex-direction: row-reverse; }
+  .match-result-team .e3d-link { text-align: left; font-size: 1.125rem; }
+  .match-result-team--away .e3d-link { text-align: right; }
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .mlpn-shell::before {
