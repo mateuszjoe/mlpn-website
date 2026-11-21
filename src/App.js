@@ -32,6 +32,8 @@ import {
 import { useAuth } from "./contexts/AuthContext";
 import AdminPanel from "./pages/admin/AdminPanel";
 import ContactForm from "./components/ContactForm";
+import LeagueSeasonSummary from "./components/LeagueSeasonSummary";
+import { season2026Honours } from "./data/season2026Honours";
 import { useMLPNData } from "./hooks/useMLPNData";
 import { getLeagueRules, getPromotionRowsForLeague, getRelegationRowsForLeague } from "./lib/leagueRules";
 import { applyLiveFixturesToTable, sortStandingsForDisplay } from "./lib/standingsRanking";
@@ -7206,7 +7208,8 @@ function LeagueHomePage({
   totalRoundsByLeague,
   playedRoundsByLeague,
 }) {
-  const isArchived = seasonStatus === 'completed';
+  const officialHonours = Number(currentSeason) === 2026 ? season2026Honours[leagueId] : null;
+  const isArchived = seasonStatus === 'completed' || Boolean(officialHonours);
   const isExcludedFromUpcoming = (status) =>
     status === "cancelled" || status === "unplayed" || status === "postponed" || status === "live";
   const leagueTotalRounds = totalRoundsByLeague?.[leagueId] || totalRounds;
@@ -7270,7 +7273,7 @@ function LeagueHomePage({
 
   // Najlepsi zawodnicy dla sezonów archiwalnych
   const seasonBest = useMemo(() => {
-    if (!isArchived || !stats) return null;
+    if (!isArchived || officialHonours || !stats) return null;
     
     // Tylko zawodnicy z tej ligi
     const allPlayers = Object.values(stats.playerStats).filter(p => {
@@ -7313,7 +7316,7 @@ function LeagueHomePage({
       .sort((a, b) => a.goalsAgainst - b.goalsAgainst)[0] : null;
     
     return { mvp, topScorer, topAssister, topGoalkeeper };
-  }, [isArchived, stats, table, playersByTeam]);
+  }, [isArchived, officialHonours, stats, table, playersByTeam]);
 
   // Funkcja określająca kolor tła dla pozycji
   const getPositionBg = (row) => {
@@ -7334,7 +7337,7 @@ function LeagueHomePage({
               darkMode ? "text-gray-400" : "text-gray-600"
             )}
           >
-            Sezon {leaguePlayedRounds || 0}/{leagueTotalRounds || 0} kolejek
+            {officialHonours ? `Podsumowanie sezonu ${currentSeason}` : `Sezon ${leaguePlayedRounds || 0}/${leagueTotalRounds || 0} kolejek`}
           </div>
         </div>
         <div className="w-full sm:w-auto self-stretch sm:self-auto">
@@ -7347,6 +7350,16 @@ function LeagueHomePage({
           />
         </div>
       </div>
+
+      {officialHonours && (
+        <LeagueSeasonSummary
+          summary={officialHonours}
+          leagueName={leagueName}
+          darkMode={darkMode}
+          TeamLogo={TeamLogo}
+          openTeam={openTeam}
+        />
+      )}
 
       {/* WIDOK ARCHIWALNY SEZONU - Tabela + Kafle */}
       {isArchived && (
