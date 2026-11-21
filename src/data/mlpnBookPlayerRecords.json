@@ -1,0 +1,360 @@
+{
+  "asOf": "2026-11-21",
+  "coverage": "Rekordy zawodników w sezonie 2026 i zgłoszenia do kadr z lat 2003–2026. Protokoły nie obejmują wszystkich bramek; dane o zgłoszeniu nie potwierdzają występu.",
+  "verification": {
+    "completedMatches2026": 317,
+    "matchesWithGoalEvents2026": 307,
+    "matchesWithIncompleteGoalDetails2026": 22,
+    "unassignedGoals2026": 78,
+    "exactDuplicateGoalEvents2026": 0,
+    "overcountedTeamScores2026": 0,
+    "historicalPlayerMatchGoalTotalsExceedingTeamScore": 1586,
+    "registrationMethod": "COUNT(DISTINCT season year) by player ID, including former registrations; a transfer in the same season is counted once.",
+    "goalMethod": "GOAL events in completed matches, excluding own goals. When checking score totals, own goals are assigned to the opposing team.",
+    "knownLimits": [
+      "Historical events from 2004–2025 contain duplicated or inconsistent goal totals; career scoring records are not derived from them.",
+      "2026 contains 78 team goals without complete scorer attribution across 22 matches.",
+      "Historical match lineups are absent before 2026; a registration does not establish an appearance.",
+      "The four registration leaders have same-name empty duplicate profiles; each duplicate has no registrations or match events and does not change the result."
+    ]
+  },
+  "records": [
+    {
+      "id": "player-season-goals-2026",
+      "group": "players",
+      "label": "Najwięcej goli w sezonie",
+      "value": 58,
+      "unit": "goli",
+      "holder": "Karol Sochocki",
+      "detail": "Al Mar Wołomin · I Liga · sezon 2026",
+      "season": 2026,
+      "leagueCode": "1st",
+      "scope": "Sezon 2026 · I–III liga",
+      "status": "verified",
+      "sourceLabel": "Profil zawodnika",
+      "sourceUrl": "/zawodnik/e1393a08-8263-41be-9e43-259463cbf5c3?sezon=2026",
+      "sourceNote": "58 goli potwierdzają protokoły oraz wyróżnienie króla strzelców na gali 2026. Porównanie dotyczy wyłącznie sezonu 2026, nie całej historii MLPN.",
+      "ranking": [
+        {
+          "rank": 1,
+          "holder": "Karol Sochocki",
+          "value": 58,
+          "detail": "Al Mar Wołomin · sezon 2026",
+          "sourceUrl": "/zawodnik/e1393a08-8263-41be-9e43-259463cbf5c3?sezon=2026"
+        },
+        {
+          "rank": 2,
+          "holder": "Kacper Kucharek",
+          "value": 50,
+          "detail": "RMB Bulls · sezon 2026",
+          "sourceUrl": "/zawodnik/c2925274-de46-4e1d-ad3d-4af367ea0f7e?sezon=2026"
+        },
+        {
+          "rank": 3,
+          "holder": "Mateusz Trąbiński",
+          "value": 49,
+          "detail": "Starszaki · sezon 2026",
+          "sourceUrl": "/zawodnik/cfc991df-fa83-46b2-9c38-531bed477337?sezon=2026"
+        },
+        {
+          "rank": 4,
+          "holder": "Damian Bąk",
+          "value": 26,
+          "detail": "Rebelianci · sezon 2026",
+          "sourceUrl": "/zawodnik/404f95bc-0494-45fb-b813-451e80d1411c?sezon=2026"
+        },
+        {
+          "rank": 4,
+          "holder": "Rafał Pawlak",
+          "value": 26,
+          "detail": "TPS Azbest Wołomin · sezon 2026",
+          "sourceUrl": "/zawodnik/fb98d220-9e4b-4d6b-91dd-f043624392a3?sezon=2026"
+        }
+      ]
+    },
+    {
+      "id": "player-match-goals-2026",
+      "group": "players",
+      "label": "Najwięcej goli w jednym meczu",
+      "value": 12,
+      "unit": "goli",
+      "holder": "Mateusz Trąbiński",
+      "detail": "Starszaki – Lider 15:5 · 11.04.2026",
+      "season": 2026,
+      "leagueCode": "1st",
+      "scope": "Zapisane protokoły · 2026",
+      "status": "partial",
+      "sourceLabel": "Protokół meczu",
+      "sourceUrl": "/mecz/2522a9ac-ef4f-4c1d-b155-5aa0679952bc?sezon=2026",
+      "sourceNote": "W tym spotkaniu zapisano wszystkie 20 bramek, w tym 12 Trąbińskiego. To maksimum w dostępnych wpisach 2026. W 22 meczach sezonu brakuje części nazwisk strzelców (łącznie 78 goli), m.in. przy wyniku Tidy Team 14:0. Pełny rekord sezonu może wymagać uzupełnienia tych protokołów.",
+      "ranking": [
+        {
+          "rank": 1,
+          "holder": "Mateusz Trąbiński",
+          "value": 12,
+          "detail": "Starszaki – Lider 15:5 · 11.04.2026",
+          "sourceUrl": "/mecz/2522a9ac-ef4f-4c1d-b155-5aa0679952bc?sezon=2026"
+        },
+        {
+          "rank": 2,
+          "holder": "Karol Sochocki",
+          "value": 10,
+          "detail": "Al Mar Wołomin – Rebelianci 12:2 · 08.11.2026",
+          "sourceUrl": "/mecz/f3b40028-7c9a-420a-9be0-db0175cbcc96?sezon=2026"
+        },
+        {
+          "rank": 3,
+          "holder": "Karol Sochocki",
+          "value": 8,
+          "detail": "Fanatycy – Al Mar Wołomin 1:15 · 21.06.2026",
+          "sourceUrl": "/mecz/4894cb76-ec75-421e-a9d0-ad3810434486?sezon=2026"
+        },
+        {
+          "rank": 3,
+          "holder": "Mateusz Trąbiński",
+          "value": 8,
+          "detail": "Lider – Starszaki 3:12 · 07.11.2026",
+          "sourceUrl": "/mecz/a0cca4d9-b04e-46fe-a349-93feb3beb528?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Karol Sochocki",
+          "value": 7,
+          "detail": "Al Mar Wołomin – FC Zieloni 12:3 · 12.04.2026",
+          "sourceUrl": "/mecz/2316bb6d-9b80-4998-94f9-02ef15582582?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Karol Sochocki",
+          "value": 7,
+          "detail": "Al Mar Wołomin – Legioholicy 11:2 · 23.05.2026",
+          "sourceUrl": "/mecz/9f0155dd-7066-4a85-a841-5237e51b1796?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Kacper Kucharek",
+          "value": 7,
+          "detail": "AL-Komat – RMB Bulls 4:10 · 20.09.2026",
+          "sourceUrl": "/mecz/13e2af67-fa57-4174-9ff2-eb379ab600b1?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Kacper Kucharek",
+          "value": 7,
+          "detail": "Sami Swoi FC – RMB Bulls 1:7 · 27.09.2026",
+          "sourceUrl": "/mecz/7a705226-0fbd-4518-87e6-2d55e274684c?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Karol Sochocki",
+          "value": 7,
+          "detail": "Al Mar Wołomin – Elo Melo 12:2 · 25.10.2026",
+          "sourceUrl": "/mecz/e02304a9-e0f6-4d7b-939f-170f00558206?sezon=2026"
+        }
+      ]
+    },
+    {
+      "id": "player-registered-seasons",
+      "group": "players",
+      "label": "Najwięcej sezonów w kadrach",
+      "value": 21,
+      "unit": "sezonów",
+      "holder": "Czterech współliderów",
+      "detail": "Kamil Szlejzer, Krzysztof Wieczorek, Piotr Wieczorek i Tomasz Gomulski.",
+      "season": null,
+      "leagueCode": null,
+      "scope": "Zgłoszenia do kadr · 2003–2026",
+      "status": "archive",
+      "sourceLabel": "Historia zawodnika",
+      "sourceUrl": "/zawodnik/2de4b220-dc9c-43a4-952d-aaa3867bdb79?sezon=2026",
+      "sourceNote": "Liczymy różne sezony zapisane przy profilu zawodnika, także dawne kluby. Transfer między klubami w jednym sezonie nie dodaje kolejnego sezonu. To zgłoszenia do kadr; przed 2026 brakuje list meczowych pozwalających potwierdzić liczbę rozegranych sezonów. Remis obejmuje wszystkich czterech współliderów.",
+      "ranking": [
+        {
+          "rank": 1,
+          "holder": "Kamil Szlejzer",
+          "value": 21,
+          "detail": "Wpisy z lat 2003–2026 · FC Faworyt, Inter Trade, Legioholicy 2003, Pętla Team",
+          "sourceUrl": "/zawodnik/2de4b220-dc9c-43a4-952d-aaa3867bdb79?sezon=2026"
+        },
+        {
+          "rank": 1,
+          "holder": "Krzysztof Wieczorek",
+          "value": 21,
+          "detail": "Wpisy z lat 2005–2026 · FC Zakręt, FIFA Squad, Legioholicy, Lider",
+          "sourceUrl": "/zawodnik/743924fc-4bb4-49a6-80ae-3a6bf0888573?sezon=2026"
+        },
+        {
+          "rank": 1,
+          "holder": "Piotr Wieczorek",
+          "value": 21,
+          "detail": "Wpisy z lat 2005–2026 · Alabama, ES Chobot Meat, FIFA Squad, Lider",
+          "sourceUrl": "/zawodnik/860b4252-b47f-49fd-b7e2-3c1e68ef669d?sezon=2026"
+        },
+        {
+          "rank": 1,
+          "holder": "Tomasz Gomulski",
+          "value": 21,
+          "detail": "Wpisy z lat 2005–2026 · Fanatycy, MBM Kebab, MKS Halinów, Nowa Południowa Afryka",
+          "sourceUrl": "/zawodnik/5fffe2ba-e68f-4d23-8f96-c0830843ba71?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Hubert Łukasiewicz",
+          "value": 19,
+          "detail": "Wpisy z lat 2004–2026",
+          "sourceUrl": "/zawodnik/c12531a7-24b8-4641-9691-e54499cde99b?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Karol Bujalski",
+          "value": 19,
+          "detail": "Wpisy z lat 2004–2026",
+          "sourceUrl": "/zawodnik/af068b66-25aa-464c-9d08-586347cf69d6?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Marcin Czesuch",
+          "value": 19,
+          "detail": "Wpisy z lat 2007–2026",
+          "sourceUrl": "/zawodnik/2a050223-1f36-4ddd-a582-584794cf7b1f?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Piotr Jerzak",
+          "value": 19,
+          "detail": "Wpisy z lat 2004–2026",
+          "sourceUrl": "/zawodnik/325b77d4-e018-4fcc-a9a7-f6f6b27d4f96?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Wojciech Kubisz",
+          "value": 19,
+          "detail": "Wpisy z lat 2004–2022",
+          "sourceUrl": "/zawodnik/a43ef68c-a1d6-4d60-b8ab-3ba5738175c6?sezon=2026"
+        }
+      ]
+    },
+    {
+      "id": "player-season-assists-2026",
+      "group": "players",
+      "label": "Najwięcej asyst w sezonie",
+      "value": 27,
+      "unit": "asyst",
+      "holder": "Damian Zajdowski",
+      "detail": "Al Mar Wołomin · I Liga · sezon 2026",
+      "season": 2026,
+      "leagueCode": "1st",
+      "scope": "Sezon 2026 · I–III liga",
+      "status": "verified",
+      "sourceLabel": "Profil zawodnika",
+      "sourceUrl": "/zawodnik/12d4cdf8-c3b6-46da-905a-816d04ac5666?sezon=2026",
+      "sourceNote": "27 asyst potwierdzają zapisane statystyki i wyróżnienie najlepszego asystenta na gali 2026. Nie porównujemy z archiwalnymi sezonami, w których asysty nie były kompletnie zapisywane.",
+      "ranking": [
+        {
+          "rank": 1,
+          "holder": "Damian Zajdowski",
+          "value": 27,
+          "detail": "Al Mar Wołomin · sezon 2026",
+          "sourceUrl": "/zawodnik/12d4cdf8-c3b6-46da-905a-816d04ac5666?sezon=2026"
+        },
+        {
+          "rank": 2,
+          "holder": "Kacper Kucharek",
+          "value": 26,
+          "detail": "RMB Bulls · sezon 2026",
+          "sourceUrl": "/zawodnik/c2925274-de46-4e1d-ad3d-4af367ea0f7e?sezon=2026"
+        },
+        {
+          "rank": 3,
+          "holder": "Piotr Wąsowski",
+          "value": 24,
+          "detail": "AL-Komat · sezon 2026",
+          "sourceUrl": "/zawodnik/ed938039-59cf-4d72-ae7d-3c9a7ad294fe?sezon=2026"
+        },
+        {
+          "rank": 4,
+          "holder": "Sebastian Gołąb",
+          "value": 19,
+          "detail": "Starszaki · sezon 2026",
+          "sourceUrl": "/zawodnik/668e3ae9-d8bc-4e73-ab80-f730681f89a8?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Mateusz Jamka",
+          "value": 18,
+          "detail": "Fanatycy / RKS Pendrachy II · sezon 2026",
+          "sourceUrl": "/zawodnik/6ca44f08-a2d8-485c-90ff-5422cf26de55?sezon=2026"
+        }
+      ]
+    },
+    {
+      "id": "player-goals-assists-2026",
+      "group": "players",
+      "label": "Najwięcej goli i asyst łącznie",
+      "value": 76,
+      "unit": "goli + asyst",
+      "holder": "Kacper Kucharek",
+      "detail": "RMB Bulls · III Liga · 50 goli + 26 asyst",
+      "season": 2026,
+      "leagueCode": "3rd",
+      "scope": "Zapisane statystyki · 2026",
+      "status": "partial",
+      "sourceLabel": "Profil zawodnika",
+      "sourceUrl": "/zawodnik/c2925274-de46-4e1d-ad3d-4af367ea0f7e?sezon=2026",
+      "sourceNote": "Sumujemy gole bez samobójczych i asysty przypisane zawodnikowi w rozegranych meczach. Wynik 50 + 26 jest zgodny z wyróżnieniami na gali. Ranking obejmuje dostępne zapisy sezonu 2026; część pozostałych protokołów ma braki.",
+      "ranking": [
+        {
+          "rank": 1,
+          "holder": "Kacper Kucharek",
+          "value": 76,
+          "detail": "RMB Bulls · 50 goli + 26 asyst",
+          "sourceUrl": "/zawodnik/c2925274-de46-4e1d-ad3d-4af367ea0f7e?sezon=2026"
+        },
+        {
+          "rank": 2,
+          "holder": "Karol Sochocki",
+          "value": 68,
+          "detail": "Al Mar Wołomin · 58 goli + 10 asyst",
+          "sourceUrl": "/zawodnik/e1393a08-8263-41be-9e43-259463cbf5c3?sezon=2026"
+        },
+        {
+          "rank": 3,
+          "holder": "Mateusz Trąbiński",
+          "value": 62,
+          "detail": "Starszaki · 49 goli + 13 asyst",
+          "sourceUrl": "/zawodnik/cfc991df-fa83-46b2-9c38-531bed477337?sezon=2026"
+        },
+        {
+          "rank": 4,
+          "holder": "Damian Zajdowski",
+          "value": 47,
+          "detail": "Al Mar Wołomin · 20 goli + 27 asyst",
+          "sourceUrl": "/zawodnik/12d4cdf8-c3b6-46da-905a-816d04ac5666?sezon=2026"
+        },
+        {
+          "rank": 5,
+          "holder": "Piotr Wąsowski",
+          "value": 44,
+          "detail": "AL-Komat · 20 goli + 24 asyst",
+          "sourceUrl": "/zawodnik/ed938039-59cf-4d72-ae7d-3c9a7ad294fe?sezon=2026"
+        }
+      ]
+    },
+    {
+      "id": "player-career-goals",
+      "group": "players",
+      "label": "Najwięcej goli w całej karierze",
+      "value": "—",
+      "unit": "do potwierdzenia",
+      "holder": "Archiwum wymaga weryfikacji",
+      "detail": "Nie wskazujemy lidera na podstawie niekompletnych i powielonych zapisów.",
+      "season": null,
+      "leagueCode": null,
+      "scope": "Cała historia MLPN",
+      "status": "partial",
+      "sourceLabel": "Audyt historycznych protokołów · 21.11.2026",
+      "sourceNote": "W rozegranych meczach archiwum 2004–2025 znaleziono 1586 zestawień zawodnik–mecz, w których liczba zapisanych goli zawodnika przekracza wynik jego drużyny. W wielu meczach brakuje też strzelców. Najpierw trzeba zweryfikować import i uzupełnić protokoły; prosta suma dawałaby fałszywy rekord.",
+      "ranking": []
+    }
+  ]
+}
