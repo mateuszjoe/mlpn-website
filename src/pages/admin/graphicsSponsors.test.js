@@ -1,4 +1,5 @@
 import { drawGraphic, drawSponsorCell, getBestEightHeaderLayout, getSponsorPanelLayout } from "./graphicsRenderer";
+import * as sponsorArtwork from "./utils/graphicsSponsorArtwork";
 
 const CATEGORIES = ["round-typer", "round-preview", "round-results", "best-eight", "player-award", "player-vote", "table-summary"];
 const FORMATS = [
@@ -27,7 +28,7 @@ function recordingContext() {
   const gradient = { addColorStop: jest.fn() };
   const ctx = {
     font: "800 20px Arial", textAlign: "start", textBaseline: "alphabetic",
-    tx: 0, ty: 0, text: [], images: [],
+    tx: 0, ty: 0, text: [], images: [], shadowBlur: 0, shadowColor: "transparent", shadowOffsetX: 0, shadowOffsetY: 0,
     measureText(value) {
       const size = Number(this.font.match(/([\d.]+)px/)[1]);
       return { width: Array.from(String(value)).reduce((sum, char) => sum + (/[MW]/u.test(char) ? 0.95 : 0.62) * size, 0) };
@@ -41,9 +42,10 @@ function recordingContext() {
     },
     drawImage(image, ...args) {
       const [x, y, w, h] = args.length === 8 ? args.slice(4) : args;
-      this.images.push({ image, x: x + this.tx, y: y + this.ty, w, h });
+      this.images.push({ image, x: x + this.tx, y: y + this.ty, w, h, shadowBlur: this.shadowBlur });
     },
-    save() { stack.push({ font: this.font, textAlign: this.textAlign, textBaseline: this.textBaseline, tx: this.tx, ty: this.ty }); },
+    save() { stack.push({ font: this.font, textAlign: this.textAlign, textBaseline: this.textBaseline, tx: this.tx, ty: this.ty,
+      shadowBlur: this.shadowBlur, shadowColor: this.shadowColor, shadowOffsetX: this.shadowOffsetX, shadowOffsetY: this.shadowOffsetY }); },
     restore() { Object.assign(this, stack.pop()); },
     translate(x, y) { this.tx += x; this.ty += y; },
     createLinearGradient: () => gradient,
@@ -127,7 +129,7 @@ describe("partner logos across complete graphic categories", () => {
   });
   afterEach(() => canvasContext.mockRestore());
 
-  test("renders clean partner artwork even when a saved frame enables heavy shadows", () => {
+  test("ignores legacy heavy shadows when pixel analysis is unavailable", () => {
     const ctx = recordingContext();
     const logo = { naturalWidth: 220, naturalHeight: 100 };
     expect(drawSponsorCell(ctx, logo, { glow: true, glowStrength: 1, glowBlur: 16, glowDensity: 24 },
@@ -135,6 +137,30 @@ describe("partner logos across complete graphic categories", () => {
     expect(ctx.images).toHaveLength(1);
     expect(ctx.images[0].image).toBe(logo);
     expect(ctx.shadowBlur || 0).toBe(0);
+  });
+
+  test("outlines low-contrast artwork inside the cell, preserves the original and restores canvas state", () => {
+    const ctx = recordingContext();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = "red";
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 5;
+    const logo = { naturalWidth: 220, naturalHeight: 100 };
+    const mask = { naturalWidth: 110, naturalHeight: 50 };
+    const contrast = jest.spyOn(sponsorArtwork, "getSponsorContrastMask").mockReturnValue(mask);
+    try {
+      expect(drawSponsorCell(ctx, logo, { glow: true, glowBlur: 16, glowDensity: 24 }, 110, 50,
+        { forceBg: "light", outline: false, name: "New sponsor" })).toBe(true);
+      expect(contrast).toHaveBeenCalledWith(logo, "light");
+      expect(ctx.images.at(-1).image).toBe(logo);
+      expect(ctx.images.filter(({ image }) => image === logo)).toHaveLength(1);
+      expect(ctx.images.filter(({ image }) => image === mask).length).toBeGreaterThan(0);
+      ctx.images.forEach(image => {
+        assertInside(image, { x: 0, y: 0, w: 110, h: 50 });
+        expect(image.shadowBlur).toBe(0);
+      });
+      expect([ctx.shadowBlur, ctx.shadowColor, ctx.shadowOffsetX, ctx.shadowOffsetY]).toEqual([16, "red", 4, 5]);
+    } finally { contrast.mockRestore(); }
   });
 
   test.each(CASES)("draws all sixteen partners once below the content in %s %s with %i rows", (format, category, rows, layout) => {

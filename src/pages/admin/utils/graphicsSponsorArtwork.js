@@ -1,64 +1,66 @@
-const LIGHT_TEXT_NAVY = [15, 42, 74];
-const contrastingArtworkCache = new WeakMap();
+const BACKGROUNDS = { light: [244, 246, 249], dark: [10, 30, 55] };
+const OUTLINES = { light: [15, 42, 74], dark: [244, 246, 249] };
+const contrastMaskCache = new WeakMap();
+const linear = Array.from({ length: 256 }, (_, value) => {
+  const channel = value / 255;
+  return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+});
+const luminance = ([r, g, b]) => 0.2126 * linear[r] + 0.7152 * linear[g] + 0.0722 * linear[b];
 
-export function hasLightSponsorWordmark(name) {
-  const key = String(name || "").toLocaleLowerCase("pl-PL").normalize("NFKD")
-    .replace(/\p{M}/gu, "").replace(/ł/gu, "l").replace(/[^a-z0-9]/gu, "");
-  return [
-    "isola", "isolaristorante", "jadlostacja", "jadlostacjasulejowek",
-    "oslonydookien", "oslonydookienpl", "oslonydookiengrubek", "oslonydookienplgrubek",
-  ].includes(key);
-}
-
-// Return an independent raster, leaving both source artwork and its alpha intact.
-// A fully opaque white board is artwork in its own right and must not be recoloured.
-export function recolorLightSponsorPixels(source) {
+// Identify only the details that disappear into the actual backing. The mask is
+// drawn underneath the original artwork, so brand colours are never replaced.
+export function createSponsorContrastMaskPixels(source, background = "light") {
+  const pixels = new Uint8ClampedArray(source.length);
   let transparent = 0;
-  for (let i = 3; i < source.length; i += 4) {
-    if (source[i] < 16) transparent += 1;
-  }
-  const pixels = new Uint8ClampedArray(source);
-  if (!source.length || transparent < Math.max(1, source.length / 4 * 0.01)) {
-    return { pixels, changed: false };
-  }
+  for (let i = 3; i < source.length; i += 4) if (source[i] < 16) transparent += 1;
+  // An opaque rectangular logo already has its own backing. Do not outline its
+  // white board or turn the entire rectangle into another sponsor tile.
+  if (!source.length || transparent < Math.max(1, source.length / 4 * 0.01)) return { pixels, changed: false };
+  const bg = BACKGROUNDS[background] || BACKGROUNDS.light;
+  const ink = OUTLINES[background] || OUTLINES.light;
+  const bgLuminance = luminance(bg);
   let changed = false;
-  for (let i = 0; i < pixels.length; i += 4) {
-    if (pixels[i + 3] === 0) continue;
-    const min = Math.min(pixels[i], pixels[i + 1], pixels[i + 2]);
-    const max = Math.max(pixels[i], pixels[i + 1], pixels[i + 2]);
-    if (min >= 210 && max - min <= 20) {
-      [pixels[i], pixels[i + 1], pixels[i + 2]] = LIGHT_TEXT_NAVY;
-      changed = true;
-    }
+  for (let i = 0; i < source.length; i += 4) {
+    if (source[i + 3] < 32) continue;
+    const alpha = source[i + 3] / 255;
+    const composed = bg.map((channel, index) => Math.round(source[i + index] * alpha + channel * (1 - alpha)));
+    const light = luminance(composed);
+    const contrast = (Math.max(light, bgLuminance) + 0.05) / (Math.min(light, bgLuminance) + 0.05);
+    if (contrast >= 2.5) continue;
+    pixels.set(ink, i);
+    pixels[i + 3] = source[i + 3];
+    changed = true;
   }
   return { pixels, changed };
 }
 
-export function getLightBackgroundSponsorArtwork(image, name) {
-  if (!image?.naturalWidth || !image?.naturalHeight || !hasLightSponsorWordmark(name)) return image;
-  if (contrastingArtworkCache.has(image)) return contrastingArtworkCache.get(image);
-  // Cache the original on any unsupported/tainted canvas too: never retry pixel
-  // reads on every preview frame or compromise export when CORS blocks access.
-  contrastingArtworkCache.set(image, image);
+export function getSponsorContrastMask(image, background = "light") {
+  if (!image?.naturalWidth || !image?.naturalHeight) return null;
+  const key = background === "dark" ? "dark" : "light";
+  if (!contrastMaskCache.has(image)) contrastMaskCache.set(image, new Map());
+  const cache = contrastMaskCache.get(image);
+  if (cache.has(key)) return cache.get(key);
+  // Unsupported or CORS-blocked reads fall back to the original artwork; do not
+  // retry expensive reads on every preview frame.
+  cache.set(key, null);
   try {
     const canvas = document.createElement("canvas");
     const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
     canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return image;
+    if (!ctx) return null;
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
     const raster = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const { pixels, changed } = recolorLightSponsorPixels(raster.data);
-    if (!changed) return image;
+    const { pixels, changed } = createSponsorContrastMaskPixels(raster.data, key);
+    if (!changed) return null;
     raster.data.set(pixels);
     ctx.putImageData(raster, 0, 0);
-    // The shared crest fitter accepts images by their intrinsic dimensions.
     canvas.naturalWidth = canvas.width;
     canvas.naturalHeight = canvas.height;
-    contrastingArtworkCache.set(image, canvas);
+    cache.set(key, canvas);
     return canvas;
   } catch {
-    return image;
+    return null;
   }
 }
