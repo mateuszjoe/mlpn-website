@@ -10,7 +10,7 @@ const LEAGUE_SLIDES = [
   { id: '3rd', name: 'III Liga' },
 ];
 
-export default function SeasonHonoursCarousel({ TeamLogo, openTeam, goToLeague }) {
+export default function SeasonHonoursCarousel({ TeamLogo, openTeam, openPlayer, playerHref, goToLeague }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const touchStart = useRef(null);
   const leagueButtons = useRef([]);
@@ -104,6 +104,8 @@ export default function SeasonHonoursCarousel({ TeamLogo, openTeam, goToLeague }
           darkMode={true}
           TeamLogo={TeamLogo}
           openTeam={openTeam}
+          openPlayer={openPlayer}
+          playerHref={playerHref}
           showHeading={false}
         />
       </div>
