@@ -39,6 +39,7 @@ function PlayerProfileLink({ player, year, playerHref, openPlayer, className, ch
         if (!openPlayer || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
         openPlayer(player.playerId);
+        window.scrollTo({ top: 0, behavior: 'auto' });
       }}
     >{children}</a>
   );

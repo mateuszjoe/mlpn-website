@@ -181,13 +181,16 @@ test.each(['1st', '2nd', '3rd'])('links every official %s award and best-eight n
 test('opens the correct player in-app while retaining native modified-click links and league context', async () => {
   const summary = season2026Honours['3rd'];
   const openPlayer = jest.fn();
+  const scrollTo = jest.spyOn(window, 'scrollTo').mockImplementation(() => {});
   const playerHref = id => `/zawodnik/${id}?sezon=2026&ctx=3rd&sekcja=home`;
   await act(async () => root.render(<LeagueSeasonSummary summary={summary} leagueName="III Liga" TeamLogo={TestTeamLogo} openTeam={openTeam} openPlayer={openPlayer} playerHref={playerHref} />));
   const winner = host.querySelector('a.season-honours__winner');
   expect(winner.getAttribute('href')).toBe(playerHref(summary.awards[0].playerId));
   await act(async () => Simulate.click(winner, { button: 0 }));
   expect(openPlayer).toHaveBeenCalledWith(summary.awards[0].playerId);
+  expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
   openPlayer.mockClear();
+  scrollTo.mockClear();
 
   for (const modifier of [{ ctrlKey: true }, { metaKey: true }, { shiftKey: true }, { button: 1 }]) {
     const preventDefault = jest.fn();
@@ -195,10 +198,12 @@ test('opens the correct player in-app while retaining native modified-click link
     expect(preventDefault).not.toHaveBeenCalled();
   }
   expect(openPlayer).not.toHaveBeenCalled();
+  expect(scrollTo).not.toHaveBeenCalled();
 
   const attacker = host.querySelector('a.season-honours__player-name');
   await act(async () => Simulate.click(attacker, { button: 0 }));
   expect(openPlayer).toHaveBeenCalledWith(summary.bestEight[7].playerId);
+  scrollTo.mockRestore();
 });
 
 test('uses the canonical FC KSS route without changing its gala label', async () => {
