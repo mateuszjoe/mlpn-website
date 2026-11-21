@@ -36,6 +36,7 @@ import LeagueSeasonSummary from "./components/LeagueSeasonSummary";
 import SeasonHonoursCarousel from "./components/SeasonHonoursCarousel";
 import { season2026Honours } from "./data/season2026Honours";
 import { useMLPNData } from "./hooks/useMLPNData";
+import { BOOK_PREVIEW_SLUG, BOOK_PREVIEW_SECTION, syncBookPreviewMetadata } from "./lib/bookPreview";
 import { getLeagueRules, getPromotionRowsForLeague, getRelegationRowsForLeague } from "./lib/leagueRules";
 import { applyLiveFixturesToTable, sortStandingsForDisplay } from "./lib/standingsRanking";
 import "./components/LeagueTableLayout.css";
@@ -50,6 +51,8 @@ import {
   fetchTeamsDirectory,
   fetchPlayersDirectory,
 } from "./services/supabaseQueries";
+
+const MLPNBookPage = React.lazy(() => import("./pages/MLPNBookPage"));
 
 /* =========================================
    DRUŻYNY (legacy - dane teraz z Supabase)
@@ -554,6 +557,7 @@ const HOME_SECTION_TO_SLUG = {
   home: "",
   news: "aktualnosci",
   archive: "archiwum",
+  [BOOK_PREVIEW_SECTION]: BOOK_PREVIEW_SLUG,
   polls: "ankiety",
   free: "wolni-zawodnicy",
   "teams-db": "baza-druzyn",
@@ -732,7 +736,9 @@ function parseRouteString(route) {
   const round = parseRoundParam(params.get("kolejka") || params.get("round"));
   const inlineMatchId = params.get("mecz") || params.get("match") || null;
   const rawContext = params.get("ctx");
-  const rawSection = params.get("sekcja") || params.get("section");
+  const requestedSection = params.get("sekcja") || params.get("section");
+  // The unlisted preview is entered through its full path, never a return hint.
+  const rawSection = requestedSection === BOOK_PREVIEW_SECTION ? null : requestedSection;
 
   if (segments[0] === "druzyna" && segments[1]) {
     const context = normalizeContext(rawContext || "home");
@@ -869,7 +875,9 @@ function parseRouteString(route) {
 }
 
 function parseHashRoute(hash) {
-  return parseRouteString(hash);
+  const route = parseRouteString(hash);
+  // The preview uses its dedicated HTML entry point rather than a hash alias.
+  return route.activeSection === BOOK_PREVIEW_SECTION ? parseRouteString("/") : route;
 }
 
 function parseBrowserRoute() {
@@ -911,7 +919,7 @@ function buildRouteUrl({
   }
 
   const detailContext = baseContext;
-  const detailSection = baseSection;
+  const detailSection = baseSection === BOOK_PREVIEW_SECTION ? "home" : baseSection;
   const isDetailRoute =
     selectedSponsorId ||
     selectedPlayerId ||
@@ -4884,6 +4892,13 @@ export default function App() {
   const [selectedSponsorId, setSelectedSponsorId] = useState(null);
   const [matchViewMode, setMatchViewMode] = useState("inline");
 
+  useEffect(() => {
+    const isPreview = activeContext === "home" && activeSection === BOOK_PREVIEW_SECTION &&
+      !selectedTeam && !selectedMatchId && !selectedPlayerId && !selectedSponsorId;
+    syncBookPreviewMetadata(isPreview);
+    return () => syncBookPreviewMetadata(false);
+  }, [activeContext, activeSection, selectedTeam, selectedMatchId, selectedPlayerId, selectedSponsorId]);
+
   // Historia nawigacji - stos poprzednich widoków
   const [navigationHistory, setNavigationHistory] = useState([]);
 
@@ -5973,6 +5988,12 @@ export default function App() {
           return <PollsPage darkMode={darkMode} polls={polls} />;
         case "archive":
           return <HomeArchivePage darkMode={darkMode} />;
+        case BOOK_PREVIEW_SECTION:
+          return (
+            <React.Suspense fallback={<div className="p-6" role="status">Ładowanie Księgi MLPN…</div>}>
+              <MLPNBookPage darkMode={darkMode} />
+            </React.Suspense>
+          );
         case "free":
           return (
             <FreePlayersPage darkMode={darkMode} freeAgents={freeAgents} />

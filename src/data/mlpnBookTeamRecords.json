@@ -1,0 +1,975 @@
+{
+  "asOf": "2026-11-21",
+  "coverage": "Rekordy meczów i serii: sezon 2026, seniorskie ligi I–III. Odczytano 357 spotkań: 317 zakończonych na boisku, 39 walkowerów i 1 anulowane. Po wyłączeniu 19 technicznych walkowerów wycofanych ekip oraz anulowanego spotkania SDK pozostało 337 pozycji terminarza (I liga 90, II liga 91, III liga 156). Potwierdzono wszystkie oczekiwane pary; każda ma datę, godzinę i rozstrzygnięcie. Rankingi rozdzielają bilanse tabel, wyniki boiskowe i odtworzone bilanse archiwalne. Nie traktujemy sezonowych rekordów jako rekordów wszech czasów.",
+  "records": [
+    {
+      "id": "team-goals-table-2026",
+      "group": "teams",
+      "label": "Najwięcej goli w tabeli",
+      "value": 139,
+      "unit": "goli",
+      "holder": "Al Mar Wołomin",
+      "detail": "I liga · 19 meczów w tabeli · bilans 139:39",
+      "season": 2026,
+      "leagueCode": "1st",
+      "scope": "Sezon 2026 · I–III liga",
+      "status": "verified",
+      "sourceLabel": "Oficjalne tabele 2026",
+      "sourceUrl": "https://mlpn.pl/1-liga/tabela?sezon=2026",
+      "sourceNote": "Liczby zapisane w tabelach uwzględniają wyniki administracyjne. Al Mar: 136 goli na boisku + 3 za walkower z wycofanym Oldrembham Forest. Do porównania wyników sportowych służy osobny rekord „Najwięcej goli na boisku”.",
+      "ranking": [
+        {
+          "holder": "Al Mar Wołomin",
+          "value": 139,
+          "detail": "I liga · 19 meczów w tabeli · bilans 139:39",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/1-liga/tabela?sezon=2026",
+          "rank": 1
+        },
+        {
+          "holder": "RMB Bulls",
+          "value": 103,
+          "detail": "III liga · 24 meczów w tabeli · bilans 103:59",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/3-liga/tabela?sezon=2026",
+          "rank": 2
+        },
+        {
+          "holder": "Starszaki",
+          "value": 100,
+          "detail": "I liga · 19 meczów w tabeli · bilans 100:57",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/1-liga/tabela?sezon=2026",
+          "rank": 3
+        },
+        {
+          "holder": "AL-Komat",
+          "value": 92,
+          "detail": "III liga · 24 meczów w tabeli · bilans 92:71",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/3-liga/tabela?sezon=2026",
+          "rank": 4
+        },
+        {
+          "holder": "Detox",
+          "value": 90,
+          "detail": "II liga · 19 meczów w tabeli · bilans 90:39",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/2-liga/tabela?sezon=2026",
+          "rank": 5
+        }
+      ]
+    },
+    {
+      "id": "team-goals-played-2026",
+      "group": "teams",
+      "label": "Najwięcej goli na boisku",
+      "value": 136,
+      "unit": "goli",
+      "holder": "Al Mar Wołomin",
+      "detail": "I liga · 18 meczów na boisku · bilans 136:39",
+      "season": 2026,
+      "leagueCode": "1st",
+      "scope": "Sezon 2026 · I–III liga",
+      "status": "verified",
+      "sourceLabel": "Wyniki sezonu 2026",
+      "sourceUrl": "https://mlpn.pl/1-liga/kalendarz?sezon=2026",
+      "sourceNote": "Wyłącznie 317 spotkań ze statusem completed i kompletnym wynikiem. Pominięte wszystkie walkowery, mecze anulowane i wycofane ekipy. Liczby mogą różnić się od oficjalnych tabel.",
+      "ranking": [
+        {
+          "holder": "Al Mar Wołomin",
+          "value": 136,
+          "detail": "I liga · 18 meczów na boisku · bilans 136:39",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/1-liga/kalendarz?sezon=2026",
+          "rank": 1
+        },
+        {
+          "holder": "RMB Bulls",
+          "value": 97,
+          "detail": "III liga · 22 meczów na boisku · bilans 97:59",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/3-liga/kalendarz?sezon=2026",
+          "rank": 2
+        },
+        {
+          "holder": "AL-Komat",
+          "value": 92,
+          "detail": "III liga · 24 meczów na boisku · bilans 92:71",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/3-liga/kalendarz?sezon=2026",
+          "rank": 3
+        },
+        {
+          "holder": "Starszaki",
+          "value": 91,
+          "detail": "I liga · 16 meczów na boisku · bilans 91:57",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/1-liga/kalendarz?sezon=2026",
+          "rank": 4
+        },
+        {
+          "holder": "Detox",
+          "value": 87,
+          "detail": "II liga · 17 meczów na boisku · bilans 87:36",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/2-liga/kalendarz?sezon=2026",
+          "rank": 5
+        }
+      ]
+    },
+    {
+      "id": "team-goals-audited-archive",
+      "group": "teams",
+      "label": "Najwięcej goli w archiwum",
+      "value": 1832,
+      "unit": "goli",
+      "holder": "Starszaki",
+      "detail": "Zebrane bilanse ligowe z lat 2003–2026",
+      "season": "2003–2026",
+      "leagueCode": "all",
+      "scope": "Archiwum 2003–2026 · seniorskie ligi I–III",
+      "status": "archive",
+      "sourceLabel": "Audyt archiwalnych tabel i prezentacji MLPN 2026",
+      "sourceNote": "Zestawienie odtworzone z oryginalnych plików L98 (2003–2017), końcowych tabel starej strony (2018–2025) oraz sezonu 2026; audyt: kontrola-z-archiwum.csv i bilans-weryfikacja.json. Łączy wyłącznie potwierdzone zmiany nazw. Rezerwy i drużyny występujące równolegle są osobne. Zawiera oficjalne wyniki administracyjne poza 19 technicznymi walkowerami z Nankatsu i Oldrembham Forest w 2026. Nie jest to liczba samych goli boiskowych. Część roku 2003 zachowała się tylko w bilansach zbiorczych; obecne podstrony nie odtwarzają całego archiwum.",
+      "ranking": [
+        {
+          "holder": "Starszaki",
+          "value": 1832,
+          "detail": "2003–2026 · z uzupełnieniem brakujących goli z 2003 r.",
+          "rank": 1
+        },
+        {
+          "holder": "Legioholicy",
+          "value": 1749,
+          "detail": "2003–2026 · z uzupełnieniem brakujących goli z 2003 r.",
+          "rank": 2
+        },
+        {
+          "holder": "Fanatycy",
+          "value": 1655,
+          "detail": "Łącznie z Zakładem Mięsnym Miśko i MBM Kebab",
+          "rank": 3
+        },
+        {
+          "holder": "FC Faworyt",
+          "value": 1576,
+          "detail": "Łącznie z FC Marino (2011); bez San Faworytu",
+          "rank": 4
+        },
+        {
+          "holder": "Joga Finito",
+          "value": 1482,
+          "detail": "Łącznie z KP/DKL Żurawka; bez równoległego San Marino",
+          "rank": 5
+        }
+      ]
+    },
+    {
+      "id": "match-total-goals-2026",
+      "group": "matches",
+      "label": "Najwięcej goli w meczu",
+      "value": 20,
+      "unit": "goli łącznie",
+      "holder": "Starszaki — Lider",
+      "detail": "15:5 · I liga · 11.04.2026",
+      "season": 2026,
+      "leagueCode": "1st",
+      "scope": "Sezon 2026 · I–III liga",
+      "status": "verified",
+      "sourceLabel": "Wyniki sezonu 2026",
+      "sourceUrl": "https://mlpn.pl/mecz/2522a9ac-ef4f-4c1d-b155-5aa0679952bc",
+      "sourceNote": "Suma bramek obu drużyn. Mecze rozegrane na boisku, bez walkowerów.",
+      "ranking": [
+        {
+          "holder": "Starszaki — Lider",
+          "value": 20,
+          "detail": "15:5 · I liga · 11.04.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/2522a9ac-ef4f-4c1d-b155-5aa0679952bc",
+          "rank": 1
+        },
+        {
+          "holder": "Al Mar Wołomin — Lider",
+          "value": 17,
+          "detail": "16:1 · I liga · 13.09.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/473a7bc6-4ca6-4c9b-bc4b-04f492fb3184",
+          "rank": 2
+        },
+        {
+          "holder": "Legioholicy — Lider",
+          "value": 17,
+          "detail": "15:2 · I liga · 18.10.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/6127c623-aa3b-43a7-b2a7-bf74467b1222",
+          "rank": 2
+        },
+        {
+          "holder": "Starszaki — FC Zieloni",
+          "value": 17,
+          "detail": "13:4 · I liga · 13.09.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/48b8b90d-5a8c-4817-a6bb-a082a2c75a95",
+          "rank": 2
+        },
+        {
+          "holder": "Fanatycy — Al Mar Wołomin",
+          "value": 16,
+          "detail": "1:15 · I liga · 21.06.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/4894cb76-ec75-421e-a9d0-ad3810434486",
+          "rank": 5
+        },
+        {
+          "holder": "FC Restart — Fc KSS",
+          "value": 16,
+          "detail": "2:14 · III liga · 18.10.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/e8484cb4-32de-4ecc-8b22-a601f9769474",
+          "rank": 5
+        },
+        {
+          "holder": "Huragan Poręby Nowe — FC Faworyt",
+          "value": 16,
+          "detail": "6:10 · III liga · 18.10.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/6e9e3807-a53e-4d2b-9dad-a84f0d088da1",
+          "rank": 5
+        },
+        {
+          "holder": "Rayo Vallerano — Detox",
+          "value": 16,
+          "detail": "3:13 · II liga · 11.11.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/e3f81b3f-76f5-42e5-9a4c-1a6688ff597f",
+          "rank": 5
+        }
+      ]
+    },
+    {
+      "id": "match-winning-margin-2026",
+      "group": "matches",
+      "label": "Największa wygrana",
+      "value": 15,
+      "unit": "goli przewagi",
+      "holder": "Al Mar Wołomin — Lider",
+      "detail": "16:1 · I liga · 13.09.2026",
+      "season": 2026,
+      "leagueCode": "1st",
+      "scope": "Sezon 2026 · I–III liga",
+      "status": "verified",
+      "sourceLabel": "Wyniki sezonu 2026",
+      "sourceUrl": "https://mlpn.pl/mecz/473a7bc6-4ca6-4c9b-bc4b-04f492fb3184",
+      "sourceNote": "Różnica bramek w jednym spotkaniu rozegranym na boisku. Nie jest to suma goli.",
+      "ranking": [
+        {
+          "holder": "Al Mar Wołomin — Lider",
+          "value": 15,
+          "detail": "16:1 · I liga · 13.09.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/473a7bc6-4ca6-4c9b-bc4b-04f492fb3184",
+          "rank": 1
+        },
+        {
+          "holder": "Fanatycy — Al Mar Wołomin",
+          "value": 14,
+          "detail": "1:15 · I liga · 21.06.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/4894cb76-ec75-421e-a9d0-ad3810434486",
+          "rank": 2
+        },
+        {
+          "holder": "Joga Finito — Tidy Team",
+          "value": 14,
+          "detail": "0:14 · II liga · 21.10.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/a0f80fe6-9292-4222-bad4-ba0d5b8970cd",
+          "rank": 2
+        },
+        {
+          "holder": "Legioholicy — Lider",
+          "value": 13,
+          "detail": "15:2 · I liga · 18.10.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/6127c623-aa3b-43a7-b2a7-bf74467b1222",
+          "rank": 4
+        },
+        {
+          "holder": "Lider — Al Mar Wołomin",
+          "value": 13,
+          "detail": "1:14 · I liga · 10.05.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/6ce6069e-a731-4228-98af-3685bd5322fa",
+          "rank": 4
+        }
+      ]
+    },
+    {
+      "id": "match-team-goals-2026",
+      "group": "matches",
+      "label": "Najwięcej goli drużyny w meczu",
+      "value": 16,
+      "unit": "goli drużyny",
+      "holder": "Al Mar Wołomin — Lider",
+      "detail": "16:1 · I liga · 13.09.2026",
+      "season": 2026,
+      "leagueCode": "1st",
+      "scope": "Sezon 2026 · I–III liga",
+      "status": "verified",
+      "sourceLabel": "Wyniki sezonu 2026",
+      "sourceUrl": "https://mlpn.pl/mecz/473a7bc6-4ca6-4c9b-bc4b-04f492fb3184",
+      "sourceNote": "Bramki skuteczniejszej drużyny w jednym spotkaniu rozegranym na boisku. Wynik zachowuje kolejność gospodarz–gość.",
+      "ranking": [
+        {
+          "holder": "Al Mar Wołomin — Lider",
+          "value": 16,
+          "detail": "16:1 · I liga · 13.09.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/473a7bc6-4ca6-4c9b-bc4b-04f492fb3184",
+          "rank": 1
+        },
+        {
+          "holder": "Fanatycy — Al Mar Wołomin",
+          "value": 15,
+          "detail": "1:15 · I liga · 21.06.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/4894cb76-ec75-421e-a9d0-ad3810434486",
+          "rank": 2
+        },
+        {
+          "holder": "Legioholicy — Lider",
+          "value": 15,
+          "detail": "15:2 · I liga · 18.10.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/6127c623-aa3b-43a7-b2a7-bf74467b1222",
+          "rank": 2
+        },
+        {
+          "holder": "Starszaki — Lider",
+          "value": 15,
+          "detail": "15:5 · I liga · 11.04.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/2522a9ac-ef4f-4c1d-b155-5aa0679952bc",
+          "rank": 2
+        },
+        {
+          "holder": "FC Restart — Fc KSS",
+          "value": 14,
+          "detail": "2:14 · III liga · 18.10.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/e8484cb4-32de-4ecc-8b22-a601f9769474",
+          "rank": 5
+        },
+        {
+          "holder": "Joga Finito — Tidy Team",
+          "value": 14,
+          "detail": "0:14 · II liga · 21.10.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/a0f80fe6-9292-4222-bad4-ba0d5b8970cd",
+          "rank": 5
+        },
+        {
+          "holder": "Lider — Al Mar Wołomin",
+          "value": 14,
+          "detail": "1:14 · I liga · 10.05.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/6ce6069e-a731-4228-98af-3685bd5322fa",
+          "rank": 5
+        }
+      ]
+    },
+    {
+      "id": "streak-wins-2026",
+      "group": "streaks",
+      "label": "Zwycięstwa z rzędu",
+      "value": 8,
+      "unit": "mecze w serii",
+      "holder": "Al Mar Wołomin",
+      "detail": "I liga · 12.04.2026–21.06.2026",
+      "season": 2026,
+      "leagueCode": "1st",
+      "scope": "Sezon 2026 · serie boiskowe I–III ligi",
+      "status": "verified",
+      "sourceLabel": "Chronologiczne wyniki 2026",
+      "sourceUrl": "https://mlpn.pl/1-liga/kalendarz?sezon=2026",
+      "sourceNote": "Kolejność według daty i godziny rozegrania, także dla zaległych spotkań. Walkower lub nieustalony wynik przerywa serię. Spotkania wycofanych ekip pominięto. Sprawdzono kompletność par meczów; nie łączymy przez brakujące spotkania ani między sezonami. Ranking pokazuje najdłuższą serię każdej drużyny i wszystkie remisy na granicy 5. miejsca.",
+      "ranking": [
+        {
+          "rank": 1,
+          "holder": "Al Mar Wołomin",
+          "value": 8,
+          "detail": "I liga · 12.04.2026–21.06.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/4894cb76-ec75-421e-a9d0-ad3810434486",
+          "matchIds": [
+            "2316bb6d-9b80-4998-94f9-02ef15582582",
+            "521099fc-800e-4cbf-85d1-d30a8035fb50",
+            "6ce6069e-a731-4228-98af-3685bd5322fa",
+            "7cde857d-85c8-4f60-9469-640b8e527d38",
+            "9f0155dd-7066-4a85-a841-5237e51b1796",
+            "724e12be-433e-494c-bc97-dc1665e64420",
+            "ad45c19b-39bb-4f30-af8e-5e0c7b5fe18f",
+            "4894cb76-ec75-421e-a9d0-ad3810434486"
+          ]
+        },
+        {
+          "rank": 2,
+          "holder": "Alchemia Futbolu",
+          "value": 6,
+          "detail": "III liga · 06.07.2026–27.09.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/149d47e4-23f4-4b78-81b9-75ae4e193d59",
+          "matchIds": [
+            "ae7729f1-b5db-4e90-b539-686f2b0e0de5",
+            "7cde4372-3d27-4630-8996-60eb34fc422e",
+            "6de0a060-e3c1-4008-a974-918eec3c8688",
+            "63c47448-bb87-4a57-b116-4baf01cb10c1",
+            "97ddd278-c708-4aa0-a07d-16d1ec376074",
+            "149d47e4-23f4-4b78-81b9-75ae4e193d59"
+          ]
+        },
+        {
+          "rank": 2,
+          "holder": "Faludża",
+          "value": 6,
+          "detail": "II liga · 29.03.2026–16.05.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/2315d422-7da4-4654-b993-c57d4db13817",
+          "matchIds": [
+            "145ed30a-5a67-497c-9975-652d65a44566",
+            "bf6dae30-f372-4249-9f1a-ef7d54e8d3f5",
+            "cf798c98-9afa-476b-be6f-ec7c89c0a8b5",
+            "294e742c-9048-4b76-8966-135514c9ab9e",
+            "84d20be0-04df-428e-a56e-301e3e84dce6",
+            "2315d422-7da4-4654-b993-c57d4db13817"
+          ]
+        },
+        {
+          "rank": 2,
+          "holder": "Legioholicy",
+          "value": 6,
+          "detail": "I liga · 27.09.2026–08.11.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/5d7d8a22-98a8-4460-b57d-11e93b0be5ed",
+          "matchIds": [
+            "2149ad0f-4b7e-4418-b520-2645af5ae708",
+            "b9cdb8fb-387a-46f9-9e11-e002e2bd8625",
+            "cd9f0d30-a28a-4c2c-aead-b6f7392d6bbe",
+            "6127c623-aa3b-43a7-b2a7-bf74467b1222",
+            "08286ad0-e5f9-4a2a-a0d3-352f605de763",
+            "5d7d8a22-98a8-4460-b57d-11e93b0be5ed"
+          ]
+        },
+        {
+          "rank": 2,
+          "holder": "RKS Pendrachy II",
+          "value": 6,
+          "detail": "III liga · 13.09.2026–17.10.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/03e15cc9-4c02-4624-8338-bae7e08a4ebb",
+          "matchIds": [
+            "f220abb7-32d1-4474-abe1-addb90a5df6a",
+            "100a5366-eba0-4400-b5ae-68286b8ae031",
+            "31cd5991-b647-47e4-a281-38195cf2c5d1",
+            "72d241c6-893b-486d-ad8c-3f21e6aa38d3",
+            "6dd6e8e1-6b89-42d2-ac05-ffadd07418e0",
+            "03e15cc9-4c02-4624-8338-bae7e08a4ebb"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "streak-draws-2026",
+      "group": "streaks",
+      "label": "Remisy z rzędu",
+      "value": 3,
+      "unit": "mecze w serii",
+      "holder": "Alchemia Futbolu i ES Chobot Meat",
+      "detail": "III liga · 25.10.2026–08.11.2026",
+      "season": 2026,
+      "leagueCode": "3rd",
+      "scope": "Sezon 2026 · serie boiskowe I–III ligi",
+      "status": "verified",
+      "sourceLabel": "Chronologiczne wyniki 2026",
+      "sourceUrl": "https://mlpn.pl/3-liga/kalendarz?sezon=2026",
+      "sourceNote": "Kolejność według daty i godziny rozegrania, także dla zaległych spotkań. Walkower lub nieustalony wynik przerywa serię. Spotkania wycofanych ekip pominięto. Sprawdzono kompletność par meczów; nie łączymy przez brakujące spotkania ani między sezonami. Ranking pokazuje najdłuższą serię każdej drużyny i wszystkie remisy na granicy 5. miejsca.",
+      "ranking": [
+        {
+          "rank": 1,
+          "holder": "Alchemia Futbolu",
+          "value": 3,
+          "detail": "III liga · 25.10.2026–08.11.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/fd76acf6-7f3f-4da9-9325-8b9c43cbdcaa",
+          "matchIds": [
+            "17123298-c713-401f-8fa6-fdca40dc5dfe",
+            "f01735af-2765-422c-a256-ec6c5e0e4bc1",
+            "fd76acf6-7f3f-4da9-9325-8b9c43cbdcaa"
+          ]
+        },
+        {
+          "rank": 1,
+          "holder": "ES Chobot Meat",
+          "value": 3,
+          "detail": "III liga · 23.05.2026–21.06.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/1dd9e439-f45b-4352-920a-cf22fe1a6719",
+          "matchIds": [
+            "7d3d09c6-c6f5-4cb9-ac17-7050e06d2c40",
+            "4a8016b3-ee7a-456b-8918-ddbc72ca369b",
+            "1dd9e439-f45b-4352-920a-cf22fe1a6719"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "AL-Komat",
+          "value": 2,
+          "detail": "III liga · 29.03.2026–12.04.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/20836a5b-14f9-46bd-be1e-13f0bc73caea",
+          "matchIds": [
+            "670e2209-030d-4f60-9025-ae673f1f2077",
+            "20836a5b-14f9-46bd-be1e-13f0bc73caea"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "Detox",
+          "value": 2,
+          "detail": "II liga · 26.04.2026–10.05.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/7a6f4a40-de8b-43fa-b443-d0cfd953fa7d",
+          "matchIds": [
+            "8ea6bb2b-6208-4a76-8713-972dddbbaa87",
+            "7a6f4a40-de8b-43fa-b443-d0cfd953fa7d"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "FC Restart",
+          "value": 2,
+          "detail": "III liga · 16.05.2026–23.05.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/7d3d09c6-c6f5-4cb9-ac17-7050e06d2c40",
+          "matchIds": [
+            "460a4225-bfdd-42f0-8fad-a7c417308d8d",
+            "7d3d09c6-c6f5-4cb9-ac17-7050e06d2c40"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "Gosuansa",
+          "value": 2,
+          "detail": "II liga · 28.06.2026–19.09.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/04f0f199-aefc-4d6e-8fc5-b1f2c2474ce7",
+          "matchIds": [
+            "5d472ca3-0559-4b36-9d53-8b85bad7ace5",
+            "04f0f199-aefc-4d6e-8fc5-b1f2c2474ce7"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "Huragan Poręby Nowe",
+          "value": 2,
+          "detail": "III liga · 06.09.2026–14.09.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/05df065e-08b4-495b-bb01-9bca9aad39e6",
+          "matchIds": [
+            "90452878-5e8a-4a9b-9057-1b739b5d7958",
+            "05df065e-08b4-495b-bb01-9bca9aad39e6"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "RKS Pendrachy",
+          "value": 2,
+          "detail": "II liga · 13.09.2026–19.09.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/04f0f199-aefc-4d6e-8fc5-b1f2c2474ce7",
+          "matchIds": [
+            "7e2daccf-4763-485a-8813-7534a99d3d6f",
+            "04f0f199-aefc-4d6e-8fc5-b1f2c2474ce7"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "RMB Bulls",
+          "value": 2,
+          "detail": "III liga · 27.10.2026–02.11.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/f01735af-2765-422c-a256-ec6c5e0e4bc1",
+          "matchIds": [
+            "17692c13-92d0-448b-9647-45cd1d4f9927",
+            "f01735af-2765-422c-a256-ec6c5e0e4bc1"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "STM FC",
+          "value": 2,
+          "detail": "II liga · 14.06.2026–30.08.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/317a8741-88d7-4fd1-ad89-866c9a7982ad",
+          "matchIds": [
+            "3de4d362-954b-42a6-af54-cbe8e4e1fea6",
+            "317a8741-88d7-4fd1-ad89-866c9a7982ad"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "streak-losses-2026",
+      "group": "streaks",
+      "label": "Porażki z rzędu",
+      "value": 7,
+      "unit": "mecze w serii",
+      "holder": "TPS Azbest Wołomin",
+      "detail": "III liga · 29.06.2026–10.10.2026",
+      "season": 2026,
+      "leagueCode": "3rd",
+      "scope": "Sezon 2026 · serie boiskowe I–III ligi",
+      "status": "verified",
+      "sourceLabel": "Chronologiczne wyniki 2026",
+      "sourceUrl": "https://mlpn.pl/3-liga/kalendarz?sezon=2026",
+      "sourceNote": "Kolejność według daty i godziny rozegrania, także dla zaległych spotkań. Walkower lub nieustalony wynik przerywa serię. Spotkania wycofanych ekip pominięto. Sprawdzono kompletność par meczów; nie łączymy przez brakujące spotkania ani między sezonami. Ranking pokazuje najdłuższą serię każdej drużyny i wszystkie remisy na granicy 5. miejsca.",
+      "ranking": [
+        {
+          "rank": 1,
+          "holder": "TPS Azbest Wołomin",
+          "value": 7,
+          "detail": "III liga · 29.06.2026–10.10.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/0cc72740-220a-4a2c-a148-00e9f4babf55",
+          "matchIds": [
+            "76151b87-d3c7-403e-ac32-16d1145e4229",
+            "ae7729f1-b5db-4e90-b539-686f2b0e0de5",
+            "a10dce68-c00a-4ec0-b9cc-e82c0864b3a9",
+            "f220abb7-32d1-4474-abe1-addb90a5df6a",
+            "85b782a4-0c4e-422b-916c-55fe2bd8b8a2",
+            "149d47e4-23f4-4b78-81b9-75ae4e193d59",
+            "0cc72740-220a-4a2c-a148-00e9f4babf55"
+          ]
+        },
+        {
+          "rank": 2,
+          "holder": "FC Restart",
+          "value": 6,
+          "detail": "III liga · 12.09.2026–18.10.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/e8484cb4-32de-4ecc-8b22-a601f9769474",
+          "matchIds": [
+            "b1870ed8-133f-4e4d-b247-b532de85cbc5",
+            "45a23d66-5e40-49ba-b2df-c33513366ec6",
+            "68f6c453-2c00-457a-bc48-122f4370bf06",
+            "7f62aafb-0278-455b-a68a-26494278fa49",
+            "942ff42b-a4d5-4ceb-8afd-8ddcf15896c3",
+            "e8484cb4-32de-4ecc-8b22-a601f9769474"
+          ]
+        },
+        {
+          "rank": 2,
+          "holder": "Lider",
+          "value": 6,
+          "detail": "I liga · 29.03.2026–27.05.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/7e16caec-f58d-40b0-98a0-f62e8d6b9308",
+          "matchIds": [
+            "1d76a6d8-c56f-4feb-8d5b-458a0e5ac713",
+            "2522a9ac-ef4f-4c1d-b155-5aa0679952bc",
+            "48e4e641-e786-4fa0-976f-6dc6063f4c72",
+            "966cd49a-e05c-4756-903b-4d98d0dcc921",
+            "6ce6069e-a731-4228-98af-3685bd5322fa",
+            "7e16caec-f58d-40b0-98a0-f62e8d6b9308"
+          ]
+        },
+        {
+          "rank": 4,
+          "holder": "FC Ślimak Halinów",
+          "value": 5,
+          "detail": "II liga · 05.09.2026–03.10.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/bfc1c00d-3aee-4fef-bff2-de7c6f4d4de1",
+          "matchIds": [
+            "40b8c2c4-91cb-4a79-b2fa-dfd7413fe6e9",
+            "4a95d23e-1350-41e2-9e68-1c35aedd1222",
+            "3acac7bb-c9cc-4448-b0bd-6d2f9bb0b559",
+            "110a86a9-1c0b-4fb2-8524-635ba86cb169",
+            "bfc1c00d-3aee-4fef-bff2-de7c6f4d4de1"
+          ]
+        },
+        {
+          "rank": 4,
+          "holder": "Gosuansa",
+          "value": 5,
+          "detail": "II liga · 19.04.2026–08.06.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/a4391c9c-655a-4d22-90d8-b2590fc609b6",
+          "matchIds": [
+            "cf798c98-9afa-476b-be6f-ec7c89c0a8b5",
+            "c50787de-ebf4-4131-8f0a-5d6d26d2f480",
+            "96cef482-7d2d-4516-9f6c-6866dd18c4ac",
+            "9b87150d-8bfb-4d99-8ec1-7a8c8bd51733",
+            "a4391c9c-655a-4d22-90d8-b2590fc609b6"
+          ]
+        },
+        {
+          "rank": 4,
+          "holder": "Joga Finito",
+          "value": 5,
+          "detail": "II liga · 17.05.2026–05.09.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/2f4e7d41-463f-4519-a946-2e39d997ad60",
+          "matchIds": [
+            "67b9d490-1843-45cc-b973-46e742a02990",
+            "31f3abe5-6fdb-4d28-a435-0bb157b43c3b",
+            "b5e3d909-6dea-4406-9847-bdc3103470e8",
+            "ea7c6c40-fc8b-4f86-9894-1413f12f17b0",
+            "2f4e7d41-463f-4519-a946-2e39d997ad60"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "streak-winless-2026",
+      "group": "streaks",
+      "label": "Najdłużej bez zwycięstwa",
+      "value": 10,
+      "unit": "mecze w serii",
+      "holder": "FC Ślimak Halinów",
+      "detail": "II liga · 05.09.2026–15.11.2026",
+      "season": 2026,
+      "leagueCode": "2nd",
+      "scope": "Sezon 2026 · serie boiskowe I–III ligi",
+      "status": "verified",
+      "sourceLabel": "Chronologiczne wyniki 2026",
+      "sourceUrl": "https://mlpn.pl/2-liga/kalendarz?sezon=2026",
+      "sourceNote": "Kolejność według daty i godziny rozegrania, także dla zaległych spotkań. Walkower lub nieustalony wynik przerywa serię. Spotkania wycofanych ekip pominięto. Sprawdzono kompletność par meczów; nie łączymy przez brakujące spotkania ani między sezonami. Ranking pokazuje najdłuższą serię każdej drużyny i wszystkie remisy na granicy 5. miejsca.",
+      "ranking": [
+        {
+          "rank": 1,
+          "holder": "FC Ślimak Halinów",
+          "value": 10,
+          "detail": "II liga · 05.09.2026–15.11.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/d351de35-1211-4eb4-b20a-b206a130661c",
+          "matchIds": [
+            "40b8c2c4-91cb-4a79-b2fa-dfd7413fe6e9",
+            "4a95d23e-1350-41e2-9e68-1c35aedd1222",
+            "3acac7bb-c9cc-4448-b0bd-6d2f9bb0b559",
+            "110a86a9-1c0b-4fb2-8524-635ba86cb169",
+            "bfc1c00d-3aee-4fef-bff2-de7c6f4d4de1",
+            "e7f2c095-607a-43b0-a828-71fa3b3b1dc3",
+            "176ff9eb-28ce-424b-98bb-0202df0f8a3a",
+            "323c5be2-9c4f-4b94-8361-f517408ecd8b",
+            "64de2af8-83a4-405b-ba85-9a18b3334821",
+            "d351de35-1211-4eb4-b20a-b206a130661c"
+          ]
+        },
+        {
+          "rank": 2,
+          "holder": "Joga Finito",
+          "value": 9,
+          "detail": "II liga · 29.03.2026–05.09.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/2f4e7d41-463f-4519-a946-2e39d997ad60",
+          "matchIds": [
+            "145ed30a-5a67-497c-9975-652d65a44566",
+            "7634b83f-397d-49a4-ac26-e2bae6458640",
+            "73d1eb2c-5d79-4bb6-b7f6-d99057aa2d29",
+            "7a6f4a40-de8b-43fa-b443-d0cfd953fa7d",
+            "67b9d490-1843-45cc-b973-46e742a02990",
+            "31f3abe5-6fdb-4d28-a435-0bb157b43c3b",
+            "b5e3d909-6dea-4406-9847-bdc3103470e8",
+            "ea7c6c40-fc8b-4f86-9894-1413f12f17b0",
+            "2f4e7d41-463f-4519-a946-2e39d997ad60"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "Fanatycy",
+          "value": 8,
+          "detail": "I liga · 29.03.2026–21.06.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/4894cb76-ec75-421e-a9d0-ad3810434486",
+          "matchIds": [
+            "1f4df952-af5d-45a9-830c-b4911e96768f",
+            "457671e2-dd06-4e8a-9df3-d13ab84ec722",
+            "a10d1771-9e5d-4c66-9209-0626304386c0",
+            "09625a4d-e8b7-4542-8314-ea99270c388d",
+            "471a079b-1639-4c34-8857-6c23f3f8ddda",
+            "7a7e27bd-0ed7-470a-8b26-ca5a4ab44dd8",
+            "0fc9ccaf-3df1-4218-9add-b5560a5b8532",
+            "4894cb76-ec75-421e-a9d0-ad3810434486"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "FC Restart",
+          "value": 8,
+          "detail": "III liga · 29.03.2026–15.06.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/20d9545f-aa38-4f2b-9c66-b49528cdb623",
+          "matchIds": [
+            "18d7c94b-20d6-4ee9-bad3-bd5cb111aef1",
+            "cffe9d45-5884-44ed-b17f-3acb7a138fed",
+            "d8fe93de-0009-4a55-9936-dead907d9962",
+            "8b7292c7-a54d-4a87-84c5-a8be9d466ec0",
+            "9796026a-2725-4d81-ba87-3b3cbeec4fa6",
+            "460a4225-bfdd-42f0-8fad-a7c417308d8d",
+            "7d3d09c6-c6f5-4cb9-ac17-7050e06d2c40",
+            "20d9545f-aa38-4f2b-9c66-b49528cdb623"
+          ]
+        },
+        {
+          "rank": 5,
+          "holder": "TPS Azbest Wołomin",
+          "value": 7,
+          "detail": "III liga · 29.06.2026–10.10.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/0cc72740-220a-4a2c-a148-00e9f4babf55",
+          "matchIds": [
+            "76151b87-d3c7-403e-ac32-16d1145e4229",
+            "ae7729f1-b5db-4e90-b539-686f2b0e0de5",
+            "a10dce68-c00a-4ec0-b9cc-e82c0864b3a9",
+            "f220abb7-32d1-4474-abe1-addb90a5df6a",
+            "85b782a4-0c4e-422b-916c-55fe2bd8b8a2",
+            "149d47e4-23f4-4b78-81b9-75ae4e193d59",
+            "0cc72740-220a-4a2c-a148-00e9f4babf55"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "streak-unbeaten-2026",
+      "group": "streaks",
+      "label": "Najdłużej bez porażki",
+      "value": 11,
+      "unit": "mecze w serii",
+      "holder": "SC Halinów",
+      "detail": "III liga · 05.09.2026–11.11.2026",
+      "season": 2026,
+      "leagueCode": "3rd",
+      "scope": "Sezon 2026 · serie boiskowe I–III ligi",
+      "status": "verified",
+      "sourceLabel": "Chronologiczne wyniki 2026",
+      "sourceUrl": "https://mlpn.pl/3-liga/kalendarz?sezon=2026",
+      "sourceNote": "Kolejność według daty i godziny rozegrania, także dla zaległych spotkań. Walkower lub nieustalony wynik przerywa serię. Spotkania wycofanych ekip pominięto. Sprawdzono kompletność par meczów; nie łączymy przez brakujące spotkania ani między sezonami. Ranking pokazuje najdłuższą serię każdej drużyny i wszystkie remisy na granicy 5. miejsca.",
+      "ranking": [
+        {
+          "rank": 1,
+          "holder": "SC Halinów",
+          "value": 11,
+          "detail": "III liga · 05.09.2026–11.11.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/a202b2c0-4ee7-4ca0-9a15-776e76645323",
+          "matchIds": [
+            "43d3e131-33d1-4c00-9995-8f7f368fa554",
+            "4da22d13-459b-4266-a681-1b23a78f37c9",
+            "90494bab-ce1d-4a46-8b27-45c8c8325de2",
+            "68f6c453-2c00-457a-bc48-122f4370bf06",
+            "7dc69464-7f9d-4767-a6fe-eba5e58d9946",
+            "74330561-1c3b-440d-aa6c-0f2ff980310a",
+            "2931befc-5024-474f-9839-49209dd180ad",
+            "17692c13-92d0-448b-9647-45cd1d4f9927",
+            "2485acbd-ab35-4d09-8c21-26f72f7391f0",
+            "fd76acf6-7f3f-4da9-9325-8b9c43cbdcaa",
+            "a202b2c0-4ee7-4ca0-9a15-776e76645323"
+          ]
+        },
+        {
+          "rank": 2,
+          "holder": "FC Faworyt",
+          "value": 9,
+          "detail": "III liga · 13.09.2026–07.11.2026",
+          "leagueCode": "3rd",
+          "sourceUrl": "https://mlpn.pl/mecz/632f0c08-156c-4908-8427-a5f96bd84e9d",
+          "matchIds": [
+            "3c975bbf-4ac7-4b89-a7c6-4864ccebf69c",
+            "90494bab-ce1d-4a46-8b27-45c8c8325de2",
+            "9485e20c-5eab-4646-ba26-45f2cb224fb2",
+            "0cc72740-220a-4a2c-a148-00e9f4babf55",
+            "3f098c5d-75ed-4cc8-a154-7222dae93594",
+            "6e9e3807-a53e-4d2b-9dad-a84f0d088da1",
+            "17123298-c713-401f-8fa6-fdca40dc5dfe",
+            "e4f7c580-6295-4386-8a1e-dfa02e894ed4",
+            "632f0c08-156c-4908-8427-a5f96bd84e9d"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "Al Mar Wołomin",
+          "value": 8,
+          "detail": "I liga · 12.04.2026–21.06.2026",
+          "leagueCode": "1st",
+          "sourceUrl": "https://mlpn.pl/mecz/4894cb76-ec75-421e-a9d0-ad3810434486",
+          "matchIds": [
+            "2316bb6d-9b80-4998-94f9-02ef15582582",
+            "521099fc-800e-4cbf-85d1-d30a8035fb50",
+            "6ce6069e-a731-4228-98af-3685bd5322fa",
+            "7cde857d-85c8-4f60-9469-640b8e527d38",
+            "9f0155dd-7066-4a85-a841-5237e51b1796",
+            "724e12be-433e-494c-bc97-dc1665e64420",
+            "ad45c19b-39bb-4f30-af8e-5e0c7b5fe18f",
+            "4894cb76-ec75-421e-a9d0-ad3810434486"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "Detox",
+          "value": 8,
+          "detail": "II liga · 26.04.2026–12.09.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/4a95d23e-1350-41e2-9e68-1c35aedd1222",
+          "matchIds": [
+            "8ea6bb2b-6208-4a76-8713-972dddbbaa87",
+            "7a6f4a40-de8b-43fa-b443-d0cfd953fa7d",
+            "90af06d9-0bbf-480a-891d-3d83eac03262",
+            "3d6609f1-67e6-4883-92fe-e272841fca61",
+            "a4391c9c-655a-4d22-90d8-b2590fc609b6",
+            "3de4d362-954b-42a6-af54-cbe8e4e1fea6",
+            "cb3ad3e9-905b-4e97-b009-9bcd0fdbca3d",
+            "4a95d23e-1350-41e2-9e68-1c35aedd1222"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "PJM",
+          "value": 8,
+          "detail": "II liga · 27.09.2026–16.11.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/1183ae25-4c32-43e4-a3e4-10e07b6d84c0",
+          "matchIds": [
+            "4ba8a24d-8b42-4086-ac91-934a782c9732",
+            "34ca790c-9128-48ce-9c74-8c18f069e9f1",
+            "73bed1d3-7159-41be-8ec9-ae4483e81e7d",
+            "176ff9eb-28ce-424b-98bb-0202df0f8a3a",
+            "eeffdfa0-c9a3-4439-8c0f-e9a14eaf52cb",
+            "316c939d-0793-4ece-9628-ea106e59c9b9",
+            "c4b2a4c3-434e-417b-bc2f-d5c28b34aff2",
+            "1183ae25-4c32-43e4-a3e4-10e07b6d84c0"
+          ]
+        },
+        {
+          "rank": 3,
+          "holder": "STM FC",
+          "value": 8,
+          "detail": "II liga · 26.04.2026–05.09.2026",
+          "leagueCode": "2nd",
+          "sourceUrl": "https://mlpn.pl/mecz/2f4e7d41-463f-4519-a946-2e39d997ad60",
+          "matchIds": [
+            "679b078e-b665-438a-92b6-0001578f7d9f",
+            "50a43af5-2a18-4451-a2df-9834005f8f78",
+            "67b9d490-1843-45cc-b973-46e742a02990",
+            "96cef482-7d2d-4516-9f6c-6866dd18c4ac",
+            "94160326-83b6-4396-b932-86727e9fa9fc",
+            "3de4d362-954b-42a6-af54-cbe8e4e1fea6",
+            "317a8741-88d7-4fd1-ad89-866c9a7982ad",
+            "2f4e7d41-463f-4519-a946-2e39d997ad60"
+          ]
+        }
+      ]
+    }
+  ]
+}

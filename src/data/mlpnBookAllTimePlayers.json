@@ -1,0 +1,64 @@
+{
+  "asOf": "2026-11-21",
+  "coverage": "Oryginalne notatki L98 z lat 2003–2017, klasyfikacje i zdarzenia starej strony WordPress z lat 2018–2025, protokoły 2026. Historyczne protokoły nie są kompletne; zaprezentowane wyniki są osiągnięciami potwierdzonymi w dostępnych źródłach, a nie dowodem pełnej klasyfikacji wszystkich występów.",
+  "records": [
+    {
+      "id": "player-all-editions-2003-2026",
+      "group": "players",
+      "label": "Zawodnik z każdej edycji MLPN",
+      "value": 24,
+      "unit": "sezony z zapisanym golem",
+      "holder": "Kamil Szlejzer",
+      "detail": "Udokumentowane trafienia w każdym sezonie od 2003 do 2026 roku.",
+      "scope": "Historia MLPN · 2003–2026",
+      "status": "archive",
+      "sourceLabel": "Oryginalne listy strzelców L98, klasyfikacje WordPress i protokoły 2026",
+      "sourceUrl": "/zawodnik/2de4b220-dc9c-43a4-952d-aaa3867bdb79?sezon=2026",
+      "sourceNote": "W archiwum L98 Szlejzer widnieje jako strzelec w każdym roku 2003–2017. Klasyfikacje WordPress potwierdzają gole w każdym sezonie 2018–2025, a protokoły 2026 zapisują 20 goli. Obecna baza pomija przy jego poprawnym profilu lata 2015–2017, stąd błędny wcześniejszy wynik 21. To potwierdzenie obecności we wszystkich 24 edycjach, nie liczby rozegranych meczów ani twierdzenie, że był jedynym takim zawodnikiem.",
+      "ranking": [
+        { "rank": 1, "holder": "Kamil Szlejzer", "value": 24, "detail": "2003–2026 · każdy rok potwierdzony listą strzelców; pozostałe kariery wymagają scalenia rozproszonych profili", "sourceUrl": "/zawodnik/2de4b220-dc9c-43a4-952d-aaa3867bdb79?sezon=2026" }
+      ]
+    },
+    {
+      "id": "player-historical-season-goals",
+      "group": "players",
+      "label": "Najwyższe znane dorobki sezonowe",
+      "value": 58,
+      "unit": "goli w sezonie",
+      "holder": "Karol Sochocki · 2026",
+      "detail": "Zestawienie potwierdzonych osiągnięć z obecnych i historycznych rozgrywek.",
+      "scope": "Archiwum strzelców · 2003–2026",
+      "status": "partial",
+      "sourceLabel": "Oryginalne notatki L98, końcowe klasyfikacje WordPress oraz gala i protokoły 2026",
+      "sourceNote": "To ranking znanych, zweryfikowanych dorobków. Waś ma 50 goli zapisanych w 14 oryginalnych notatkach I ligi 2017; 46 Trąbińskiego w 2024 potwierdzają końcowa klasyfikacja WordPress i jej zdarzenia. Najstarsze lata mają niepełne listy strzelców, więc wynik 58 nie jest tu przedstawiany jako niezależnie dowiedziony rekord absolutny wszystkich sezonów. Nie sumujemy zdublowanych historycznych zdarzeń z obecnej bazy.",
+      "ranking": [
+        { "rank": 1, "holder": "Karol Sochocki", "value": 58, "detail": "Al Mar Wołomin · I liga 2026", "sourceUrl": "/zawodnik/e1393a08-8263-41be-9e43-259463cbf5c3?sezon=2026" },
+        { "rank": 2, "holder": "Damian Waś", "value": 50, "detail": "Gold Dent · I liga 2017 · 14 oryginalnych notatek bramkowych" },
+        { "rank": 2, "holder": "Kacper Kucharek", "value": 50, "detail": "RMB Bulls · III liga 2026", "sourceUrl": "/zawodnik/c2925274-de46-4e1d-ad3d-4af367ea0f7e?sezon=2026" },
+        { "rank": 4, "holder": "Mateusz Trąbiński", "value": 49, "detail": "Starszaki · I liga 2026", "sourceUrl": "/zawodnik/cfc991df-fa83-46b2-9c38-531bed477337?sezon=2026" },
+        { "rank": 5, "holder": "Mateusz Trąbiński", "value": 46, "detail": "Starszaki · I liga 2024 · oryginalna klasyfikacja WordPress" }
+      ]
+    },
+    {
+      "id": "player-historical-match-goals",
+      "group": "players",
+      "label": "Najwięcej zapisanych goli w meczu",
+      "value": 12,
+      "unit": "goli jednego zawodnika",
+      "holder": "Mateusz Trąbiński · 2026",
+      "detail": "Historyczne porównanie pojedynczych występów — od oryginalnych notatek do obecnych protokołów.",
+      "scope": "Archiwum strzelców · 2003–2026",
+      "status": "partial",
+      "sourceLabel": "Oryginalne protokoły L98, zdarzenia WordPress i protokoły 2026",
+      "sourceNote": "Zestawienie obejmuje wyłącznie nazwane trafienia w rozegranych, nieanulowanych meczach. Niepełne listy strzelców mogą zmienić kolejność. W źródle Maciążka zapisano samo nazwisko, dlatego nie dopisujemy imienia. Historyczne notatki zweryfikowano bezpośrednio, bez powielonych zdarzeń importu. Wynik 12 Trąbińskiego pochodzi z 12 wpisów w protokole 2026; nie znaleziono niezależnego nagrania potwierdzającego każde trafienie.",
+      "ranking": [
+        { "rank": 1, "holder": "Mateusz Trąbiński", "value": 12, "detail": "Starszaki – Lider 15:5 · I liga · 11.04.2026", "sourceUrl": "/mecz/2522a9ac-ef4f-4c1d-b155-5aa0679952bc?sezon=2026" },
+        { "rank": 2, "holder": "Maciążek", "value": 10, "detail": "Pędzące Żółwie – Pan Pierożek.pl 26:0 · III liga 2013 · kolejka 3; w oryginale tylko nazwisko" },
+        { "rank": 2, "holder": "Damian Waś", "value": 10, "detail": "Sparta – Gold Dent 2:14 · I liga 2017 · kolejka 16" },
+        { "rank": 2, "holder": "Bartosz Szulim", "value": 10, "detail": "Legioholicy – Magnatt.eu 17:1 · I liga · 10.11.2019" },
+        { "rank": 2, "holder": "Mateusz Trąbiński", "value": 10, "detail": "Starszaki – Green Team 13:1 · I liga · 13.04.2024" },
+        { "rank": 2, "holder": "Karol Sochocki", "value": 10, "detail": "Al Mar Wołomin – Rebelianci 12:2 · I liga · 08.11.2026", "sourceUrl": "/mecz/f3b40028-7c9a-420a-9be0-db0175cbcc96?sezon=2026" }
+      ]
+    }
+  ]
+}

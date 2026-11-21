@@ -1,0 +1,4862 @@
+{
+  "asOf": "2026-11-21",
+  "coverage": {
+    "originalMatches": 8530,
+    "scoredMatches": 8001,
+    "knownPlayed": 7754,
+    "excludedSeries": [
+      "2007/3rd/samograj",
+      "2007/3rd/nowapołudniowaafryka",
+      "2007/3rd/szakalejózefin",
+      "2007/3rd/detox",
+      "2007/3rd/ateam",
+      "2008/3rd/detox",
+      "2008/3rd/pv",
+      "2008/3rd/piankakuflew",
+      "2008/3rd/mdt",
+      "2008/3rd/sanmarino",
+      "2008/3rd/legioholicyii",
+      "2008/3rd/polutilrządza",
+      "2008/3rd/elomelo",
+      "2008/3rd/kortbudokuniew",
+      "2008/3rd/bałtykmiłosna",
+      "2008/3rd/szakalejózefin",
+      "2008/3rd/promilczarniecki",
+      "2012/3rd/teknosystem",
+      "2012/3rd/fckolejniak",
+      "2012/3rd/chaosteam",
+      "2012/3rd/pędząceżółwie",
+      "2012/3rd/fckosmos",
+      "2012/3rd/fccenturio",
+      "2012/3rd/detox",
+      "2012/3rd/poschtitanium",
+      "2012/3rd/starszakiii",
+      "2012/3rd/alabama",
+      "2012/3rd/wsnt",
+      "2014/3rd/fckosmos",
+      "2014/3rd/okinawa",
+      "2014/3rd/napaciapani",
+      "2014/3rd/panpierożekpl",
+      "2014/3rd/naftateam",
+      "2014/3rd/teknosystem",
+      "2014/3rd/huraganporębynowe",
+      "2014/3rd/sparta",
+      "2014/3rd/nowadrużyna",
+      "2014/3rd/fcbiałowieska",
+      "2014/3rd/ptslzstęczapustelnik",
+      "2015/3rd/huraganporębynowe",
+      "2015/3rd/panpierożek",
+      "2015/3rd/chaosteam",
+      "2015/3rd/fckosmos",
+      "2015/3rd/sparta",
+      "2015/3rd/tęczapustelnik",
+      "2015/3rd/walencja",
+      "2015/3rd/revolta",
+      "2015/3rd/lo",
+      "2015/3rd/młodagwardia",
+      "2015/3rd/hardcoreteam",
+      "2015/3rd/wsnt",
+      "2017/3rd/dtgalacticos",
+      "2017/3rd/panikapapryka",
+      "2017/3rd/chaosteam",
+      "2017/3rd/pkkl",
+      "2017/3rd/rebelianci",
+      "2017/3rd/hardcoreteam",
+      "2017/3rd/mordorteam",
+      "2017/3rd/impet",
+      "2017/3rd/eurothermwalencja",
+      "2017/3rd/okinawa",
+      "2017/3rd/multimedicazielonka",
+      "2017/3rd/alchemiafutbolu",
+      "2003/2nd/colgate",
+      "2003/2nd/lostorpedos",
+      "2003/2nd/phenianclub",
+      "2003/2nd/fcbelfast",
+      "2003/2nd/kpżurawka",
+      "2003/2nd/michałów",
+      "2004/2nd/viking",
+      "2004/2nd/mkshalinów",
+      "2004/2nd/husariahipolitów",
+      "2004/2nd/dziadki",
+      "2004/2nd/wichura",
+      "2004/2nd/dklżurawka",
+      "2004/2nd/cyganka",
+      "2004/2nd/colgate",
+      "2004/2nd/global",
+      "2004/2nd/starszaki",
+      "2007/2nd/hydroinstalwołomin",
+      "2007/2nd/pkkl",
+      "2007/2nd/fc",
+      "2007/2nd/dklżurawka",
+      "2007/2nd/husariahipolitów",
+      "2007/2nd/filmwebpl",
+      "2007/2nd/huraganporębynowe",
+      "2007/2nd/fczakręt",
+      "2007/2nd/derejn",
+      "2007/2nd/wichura",
+      "2007/2nd/mkshalinów",
+      "2007/2nd/prawiejakmistrz",
+      "2010/2nd/huraganporębynowe",
+      "2010/2nd/korsarze",
+      "2010/2nd/pędząceżółwie",
+      "2010/2nd/długateam",
+      "2010/2nd/husariahipolitów",
+      "2010/2nd/fczakręt",
+      "2010/2nd/majtom",
+      "2010/2nd/gosuansa",
+      "2010/2nd/pradziadki",
+      "2010/2nd/drinkteam",
+      "2010/2nd/nowapołudniowaafryka",
+      "2010/2nd/promilczarniecki",
+      "2010/2nd/wmr",
+      "2010/2nd/slimakcompl",
+      "2003/1st/impet",
+      "2003/1st/husaria",
+      "2003/1st/siwebobki",
+      "2003/1st/fcfaworyt",
+      "2003/1st/starszaki",
+      "2003/1st/legioholicy",
+      "2003/1st/pkkl",
+      "2003/1st/cklasa",
+      "2003/1st/młodeżółwieninja",
+      "2003/1st/kkpgrabaż",
+      "2003/1st/dragons",
+      "2003/1st/gosuansa",
+      "2003/1st/pogońokuniew",
+      "2003/1st/zabraniec",
+      "2003/1st/pętlateam",
+      "2003/1st/fifasquad",
+      "2004/1st/fcfaworyt",
+      "2004/1st/pkkl",
+      "2004/1st/fifasquad",
+      "2004/1st/lostorpedos",
+      "2004/1st/okuniew",
+      "2004/1st/impet",
+      "2004/1st/legioholicy",
+      "2004/1st/cklasa",
+      "2004/1st/gosuansa",
+      "2004/1st/michałów",
+      "2004/1st/pętlateam",
+      "2004/1st/zabraniec",
+      "2007/1st/dziadki",
+      "2007/1st/starszakinieruchomościbelweder",
+      "2007/1st/fcfaworytanwatech",
+      "2007/1st/intertrade",
+      "2007/1st/legioholicy",
+      "2007/1st/lostorpedos",
+      "2007/1st/pętlateam",
+      "2007/1st/colgate",
+      "2007/1st/fifasquad",
+      "2007/1st/gosuansa",
+      "2007/1st/zakładmięsnymiśko",
+      "2007/1st/impet",
+      "2014/1st/prawiejakmistrz",
+      "2014/1st/starszaki",
+      "2014/1st/stmteam",
+      "2014/1st/dziadki",
+      "2014/1st/gosuansa",
+      "2014/1st/lider",
+      "2014/1st/legioholicy",
+      "2014/1st/długaimichałów",
+      "2014/1st/fcfaworyt",
+      "2014/1st/elomelo",
+      "2014/1st/fanatycy",
+      "2014/1st/smjogafinito",
+      "2016/1st/detox",
+      "2016/1st/pjm",
+      "2016/1st/golddentpt",
+      "2016/1st/fanatycy",
+      "2016/1st/lider",
+      "2016/1st/tęczapustelnik",
+      "2016/1st/starszaki",
+      "2016/1st/długaimichałów",
+      "2016/1st/jogafinito",
+      "2016/1st/legioholicy",
+      "2016/1st/elomelo",
+      "2016/1st/orłystaramiłosna",
+      "2018/1st/fczieloni",
+      "2018/1st/magnatteu",
+      "2018/1st/elomelo",
+      "2018/1st/sparta",
+      "2018/1st/kominkisim8211piankakuflew",
+      "2018/3rd/dtgalacticos",
+      "2018/3rd/alchemiafutbolu",
+      "2018/3rd/detoxu23",
+      "2018/3rd/rebelianci",
+      "2018/3rd/fcbartycka04",
+      "2019/3rd/impet",
+      "2019/3rd/pkkl",
+      "2019/3rd/noname",
+      "2019/3rd/staraekipa",
+      "2019/3rd/chaosteam",
+      "2019/1st/fanatycy",
+      "2019/1st/legioholicy",
+      "2019/1st/kominkisim8211piankakuflew",
+      "2019/1st/elomelo",
+      "2019/1st/walencja",
+      "2019/1st/pjm",
+      "2019/1st/lider",
+      "2019/1st/magnatteu",
+      "2019/1st/jogafinito",
+      "2019/1st/fczieloni",
+      "2019/1st/starszaki",
+      "2020/3rd/greenteam",
+      "2020/3rd/fcinternational",
+      "2020/3rd/pkkl",
+      "2020/3rd/staraekipa",
+      "2020/3rd/sfinks",
+      "2020/3rd/okinawa",
+      "2021/1st/fczieloni",
+      "2021/2nd/rksptmp",
+      "2024/2nd/fcfaworyt",
+      "2024/3rd/gosuansa",
+      "2025/2nd/gosuansa",
+      "2026/1st/legioholicy"
+    ],
+    "wpExcluded": [
+      {
+        "id": 7610,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 7616,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 7621,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 7626,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 7631,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 7636,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 7641,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 7648,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 7655,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 7662,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 7669,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 7676,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 9642,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 9648,
+        "reason": "Empty 0:0 slot; independent import has no result"
+      },
+      {
+        "id": 9653,
+        "reason": "Empty 0:0 slot; independent import has no result"
+      },
+      {
+        "id": 9658,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 9663,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 9668,
+        "reason": "Empty 0:0 slot; independent import has no result"
+      },
+      {
+        "id": 9673,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 9680,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 9687,
+        "reason": "Empty 0:0 slot; independent import has no result"
+      },
+      {
+        "id": 9701,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10383,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10390,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10397,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10404,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10410,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10415,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10420,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10425,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10430,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10435,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10442,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10449,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10456,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10463,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10470,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10476,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10481,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10486,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10491,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10496,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10501,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10508,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10714,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10719,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10726,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10733,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10747,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10754,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10760,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10765,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10770,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 10775,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11752,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11759,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11766,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11773,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11779,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11784,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11789,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11794,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11799,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11804,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11811,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11818,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11825,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11832,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11839,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11845,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11850,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11855,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11860,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11865,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11870,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11877,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11894,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11898,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11902,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11908,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11914,
+        "reason": "Bye or missing participant"
+      },
+      {
+        "id": 11920,
+        "reason": "Bye or missing participant"
+      }
+    ],
+    "files": 41,
+    "years": 24
+  },
+  "records": [
+    {
+      "id": "archive-match-total",
+      "group": "matches",
+      "label": "Najwięcej goli w meczu w archiwum",
+      "unit": "goli",
+      "value": 29,
+      "holder": "Repra — MDT Sulejówek",
+      "detail": "III liga · 2010 · Repra – MDT Sulejówek 24:5 · 2010-10-09",
+      "season": 2010,
+      "leagueCode": "3rd",
+      "scope": "Zachowane wyniki · 2003–2026",
+      "status": "partial",
+      "sourceLabel": "III_liga_MLPN_2010.l98 · Round18/mecz4",
+      "sourceUrl": "/mecz/69f5ce45-2dc3-451c-b799-c2a3b2ba4314?sezon=2010",
+      "sourceNote": "Przeszukano 7754 rozstrzygniętych wpisów w oryginalnych plikach ligi 2003–2017, kopii starej strony 2018–2025 i protokołach 2026. Wczesne sezony mają brakujące wyniki, dlatego jest to maksimum zachowanych wyników. Jawne walkowery pominięto; w starej bazie WordPress część wyników administracyjnych nie ma osobnego oznaczenia. Ranking pokazuje wszystkie remisy na granicy piątego miejsca.",
+      "ranking": [
+        {
+          "holder": "Repra — MDT Sulejówek",
+          "value": 29,
+          "detail": "III liga · 2010 · Repra – MDT Sulejówek 24:5 · 2010-10-09",
+          "sourceUrl": "/mecz/69f5ce45-2dc3-451c-b799-c2a3b2ba4314?sezon=2010",
+          "rank": 1
+        },
+        {
+          "holder": "Pędzące Żółwie — Pan Pierożek.pl",
+          "value": 26,
+          "detail": "III liga · 2013 · Pędzące Żółwie – Pan Pierożek.pl 26:0 · 2013-04-28",
+          "sourceUrl": "/mecz/16c2bc83-a49b-40fe-ae0c-d1b9a5fad68d?sezon=2013",
+          "rank": 2
+        },
+        {
+          "holder": "Pędzące Żółwie — FC Centurio",
+          "value": 24,
+          "detail": "III liga · 2012 · Pędzące Żółwie – FC Centurio 24:0 · 2012-06-16",
+          "sourceUrl": "/mecz/d165c6c9-32c4-41cd-a98c-1ebd68a5b44b?sezon=2012",
+          "rank": 3
+        },
+        {
+          "holder": "Pędzące Żółwie — Majtom",
+          "value": 24,
+          "detail": "II liga · 2010 · Pędzące Żółwie – Majtom 23:1 · 2010-10-31",
+          "sourceUrl": "/mecz/be4b79ee-0e32-45dd-a6cf-d88a3e8cde84?sezon=2010",
+          "rank": 3
+        },
+        {
+          "holder": "SC Halinów — Fc Faworyt",
+          "value": 23,
+          "detail": "III liga · 2021 · SC Halinów – Fc Faworyt 0:23 · 2021-11-07",
+          "sourceUrl": "/mecz/e2970212-a346-44c3-9366-f180ab84ae8e?sezon=2021",
+          "rank": 5
+        }
+      ]
+    },
+    {
+      "id": "archive-match-margin",
+      "group": "matches",
+      "label": "Największa wygrana w archiwum",
+      "unit": "goli przewagi",
+      "value": 26,
+      "holder": "Pędzące Żółwie — Pan Pierożek.pl",
+      "detail": "III liga · 2013 · Pędzące Żółwie – Pan Pierożek.pl 26:0 · 2013-04-28",
+      "season": 2013,
+      "leagueCode": "3rd",
+      "scope": "Zachowane wyniki · 2003–2026",
+      "status": "partial",
+      "sourceLabel": "III_liga_MLPN_2013.l98 · Round3/mecz4",
+      "sourceUrl": "/mecz/16c2bc83-a49b-40fe-ae0c-d1b9a5fad68d?sezon=2013",
+      "sourceNote": "Przeszukano 7754 rozstrzygniętych wpisów w oryginalnych plikach ligi 2003–2017, kopii starej strony 2018–2025 i protokołach 2026. Wczesne sezony mają brakujące wyniki, dlatego jest to maksimum zachowanych wyników. Jawne walkowery pominięto; w starej bazie WordPress część wyników administracyjnych nie ma osobnego oznaczenia. Ranking pokazuje wszystkie remisy na granicy piątego miejsca.",
+      "ranking": [
+        {
+          "holder": "Pędzące Żółwie — Pan Pierożek.pl",
+          "value": 26,
+          "detail": "III liga · 2013 · Pędzące Żółwie – Pan Pierożek.pl 26:0 · 2013-04-28",
+          "sourceUrl": "/mecz/16c2bc83-a49b-40fe-ae0c-d1b9a5fad68d?sezon=2013",
+          "rank": 1
+        },
+        {
+          "holder": "Pędzące Żółwie — FC Centurio",
+          "value": 24,
+          "detail": "III liga · 2012 · Pędzące Żółwie – FC Centurio 24:0 · 2012-06-16",
+          "sourceUrl": "/mecz/d165c6c9-32c4-41cd-a98c-1ebd68a5b44b?sezon=2012",
+          "rank": 2
+        },
+        {
+          "holder": "SC Halinów — Fc Faworyt",
+          "value": 23,
+          "detail": "III liga · 2021 · SC Halinów – Fc Faworyt 0:23 · 2021-11-07",
+          "sourceUrl": "/mecz/e2970212-a346-44c3-9366-f180ab84ae8e?sezon=2021",
+          "rank": 3
+        },
+        {
+          "holder": "Pędzące Żółwie — Majtom",
+          "value": 22,
+          "detail": "II liga · 2010 · Pędzące Żółwie – Majtom 23:1 · 2010-10-31",
+          "sourceUrl": "/mecz/be4b79ee-0e32-45dd-a6cf-d88a3e8cde84?sezon=2010",
+          "rank": 4
+        },
+        {
+          "holder": "Los Torpedos — FC Belfast",
+          "value": 20,
+          "detail": "II liga · 2003 · Los Torpedos – FC Belfast 20:0 · 2003-10-04",
+          "sourceUrl": "/mecz/168d5591-2b70-45dc-a5e0-6bb3a17cb6b3?sezon=2003",
+          "rank": 5
+        },
+        {
+          "holder": "Prawie Jak Mistrz — FC Faworyt",
+          "value": 20,
+          "detail": "I liga · 2014 · Prawie Jak Mistrz – FC Faworyt 20:0 · 2014-11-08",
+          "rank": 5
+        }
+      ]
+    },
+    {
+      "id": "archive-match-team",
+      "group": "matches",
+      "label": "Najwięcej goli drużyny w meczu w archiwum",
+      "unit": "goli",
+      "value": 26,
+      "holder": "Pędzące Żółwie — Pan Pierożek.pl",
+      "detail": "III liga · 2013 · Pędzące Żółwie – Pan Pierożek.pl 26:0 · 2013-04-28",
+      "season": 2013,
+      "leagueCode": "3rd",
+      "scope": "Zachowane wyniki · 2003–2026",
+      "status": "partial",
+      "sourceLabel": "III_liga_MLPN_2013.l98 · Round3/mecz4",
+      "sourceUrl": "/mecz/16c2bc83-a49b-40fe-ae0c-d1b9a5fad68d?sezon=2013",
+      "sourceNote": "Przeszukano 7754 rozstrzygniętych wpisów w oryginalnych plikach ligi 2003–2017, kopii starej strony 2018–2025 i protokołach 2026. Wczesne sezony mają brakujące wyniki, dlatego jest to maksimum zachowanych wyników. Jawne walkowery pominięto; w starej bazie WordPress część wyników administracyjnych nie ma osobnego oznaczenia. Ranking pokazuje wszystkie remisy na granicy piątego miejsca.",
+      "ranking": [
+        {
+          "holder": "Pędzące Żółwie — Pan Pierożek.pl",
+          "value": 26,
+          "detail": "III liga · 2013 · Pędzące Żółwie – Pan Pierożek.pl 26:0 · 2013-04-28",
+          "sourceUrl": "/mecz/16c2bc83-a49b-40fe-ae0c-d1b9a5fad68d?sezon=2013",
+          "rank": 1
+        },
+        {
+          "holder": "Pędzące Żółwie — FC Centurio",
+          "value": 24,
+          "detail": "III liga · 2012 · Pędzące Żółwie – FC Centurio 24:0 · 2012-06-16",
+          "sourceUrl": "/mecz/d165c6c9-32c4-41cd-a98c-1ebd68a5b44b?sezon=2012",
+          "rank": 2
+        },
+        {
+          "holder": "Repra — MDT Sulejówek",
+          "value": 24,
+          "detail": "III liga · 2010 · Repra – MDT Sulejówek 24:5 · 2010-10-09",
+          "sourceUrl": "/mecz/69f5ce45-2dc3-451c-b799-c2a3b2ba4314?sezon=2010",
+          "rank": 2
+        },
+        {
+          "holder": "Pędzące Żółwie — Majtom",
+          "value": 23,
+          "detail": "II liga · 2010 · Pędzące Żółwie – Majtom 23:1 · 2010-10-31",
+          "sourceUrl": "/mecz/be4b79ee-0e32-45dd-a6cf-d88a3e8cde84?sezon=2010",
+          "rank": 4
+        },
+        {
+          "holder": "SC Halinów — Fc Faworyt",
+          "value": 23,
+          "detail": "III liga · 2021 · SC Halinów – Fc Faworyt 0:23 · 2021-11-07",
+          "sourceUrl": "/mecz/e2970212-a346-44c3-9366-f180ab84ae8e?sezon=2021",
+          "rank": 4
+        }
+      ]
+    },
+    {
+      "id": "archive-streak-wins",
+      "group": "streaks",
+      "label": "Zwycięstwa z rzędu w jednym sezonie",
+      "value": 18,
+      "unit": "meczów",
+      "holder": "Tidy Team",
+      "detail": "III liga · 2021 · 2021-04-24 – 2021-11-14",
+      "season": 2021,
+      "leagueCode": "3rd",
+      "scope": "Datowane protokoły · 2003–2026",
+      "status": "partial",
+      "sourceLabel": "Kopia WordPress MLPN 2018–2025 · kolejne datowane wyniki",
+      "sourceUrl": "/mecz/a665d852-ddd3-4f06-ac11-4da38555ea9d?sezon=2021",
+      "sourceNote": "Porównanie wszystkich dostępnych sezonów, ale każda seria mieści się w jednym sezonie. Liczymy kolejne rozstrzygnięte wyniki według daty, z walkowerami. Pominięto 207 zestawień drużyna–sezon z brakującymi datami, wynikami lub niejednoznaczną kolejnością; dlatego nie jest to bezwarunkowy rekord całej historii. Serie przechodzące pomiędzy sezonami wymagają osobnego audytu ciągłości drużyn.",
+      "ranking": [
+        {
+          "holder": "Tidy Team",
+          "value": 18,
+          "detail": "III liga · 2021 · 2021-04-24 – 2021-11-14",
+          "sourceUrl": "/mecz/a665d852-ddd3-4f06-ac11-4da38555ea9d?sezon=2021",
+          "season": 2021,
+          "leagueCode": "3rd",
+          "rank": 1
+        },
+        {
+          "holder": "Starszaki",
+          "value": 17,
+          "detail": "I liga · 2023 · 2023-03-25 – 2023-11-04",
+          "sourceUrl": "/mecz/40a825dc-ac59-455c-9290-dae907e3048b?sezon=2023",
+          "season": 2023,
+          "leagueCode": "1st",
+          "rank": 2
+        },
+        {
+          "holder": "FC Zieloni",
+          "value": 13,
+          "detail": "II liga · 2016 · 2016-06-05 – 2016-11-12",
+          "season": 2016,
+          "leagueCode": "2nd",
+          "rank": 3
+        },
+        {
+          "holder": "Gold Dent",
+          "value": 13,
+          "detail": "II liga · 2015 · 2015-06-14 – 2015-11-11",
+          "sourceUrl": "/mecz/5fb0a5d3-edf9-431a-8903-49426a94fa94?sezon=2015",
+          "season": 2015,
+          "leagueCode": "2nd",
+          "rank": 3
+        },
+        {
+          "holder": "Kominki Sim Pianka Kuflew",
+          "value": 13,
+          "detail": "II liga · 2017 · 2017-05-20 – 2017-10-22",
+          "season": 2017,
+          "leagueCode": "2nd",
+          "rank": 3
+        }
+      ],
+      "evidence": [
+        {
+          "holder": "Tidy Team",
+          "year": 2021,
+          "games": [
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7681",
+              "date": "2021-04-24",
+              "result": "6:4",
+              "opponent": "Sportowe Zakapiory"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7686",
+              "date": "2021-05-09",
+              "result": "9:1",
+              "opponent": "Hard Impet Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7690",
+              "date": "2021-05-16",
+              "result": "4:0",
+              "opponent": "Huragan Poręby Nowe"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7694",
+              "date": "2021-05-23",
+              "result": "2:0",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7698",
+              "date": "2021-05-30",
+              "result": "6:2",
+              "opponent": "Stara Ekipa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7702",
+              "date": "2021-06-12",
+              "result": "7:2",
+              "opponent": "Fc Faworyt"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7714",
+              "date": "2021-06-27",
+              "result": "9:2",
+              "opponent": "Chaos Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7720",
+              "date": "2021-08-29",
+              "result": "9:0",
+              "opponent": "Okinawa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7708",
+              "date": "2021-09-01",
+              "result": "3:0",
+              "opponent": "SC Halinów"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7726",
+              "date": "2021-09-05",
+              "result": "6:2",
+              "opponent": "Sportowe Zakapiory"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7731",
+              "date": "2021-09-19",
+              "result": "6:1",
+              "opponent": "Hard Impet Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7735",
+              "date": "2021-09-26",
+              "result": "3:2",
+              "opponent": "Huragan Poręby Nowe"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7739",
+              "date": "2021-10-03",
+              "result": "7:3",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7747",
+              "date": "2021-10-17",
+              "result": "6:1",
+              "opponent": "Fc Faworyt"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7743",
+              "date": "2021-10-22",
+              "result": "6:3",
+              "opponent": "Stara Ekipa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7753",
+              "date": "2021-10-24",
+              "result": "10:1",
+              "opponent": "SC Halinów"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7759",
+              "date": "2021-11-07",
+              "result": "8:3",
+              "opponent": "Chaos Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7765",
+              "date": "2021-11-14",
+              "result": "5:1",
+              "opponent": "Okinawa"
+            }
+          ]
+        },
+        {
+          "holder": "Starszaki",
+          "year": 2023,
+          "games": [
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9026",
+              "date": "2023-03-25",
+              "result": "9:0",
+              "opponent": "Elo Melo"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9030",
+              "date": "2023-04-02",
+              "result": "5:0",
+              "opponent": "Dar Mar"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9036",
+              "date": "2023-04-16",
+              "result": "2:0",
+              "opponent": "PJM"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9042",
+              "date": "2023-04-23",
+              "result": "3:0",
+              "opponent": "Legioholicy"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9048",
+              "date": "2023-05-06",
+              "result": "7:3",
+              "opponent": "Fanatycy"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9054",
+              "date": "2023-05-14",
+              "result": "5:0",
+              "opponent": "Tiger Wołomin"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9059",
+              "date": "2023-05-21",
+              "result": "9:1",
+              "opponent": "Rebelianci"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9063",
+              "date": "2023-05-27",
+              "result": "6:3",
+              "opponent": "Oldrembham Forest"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9067",
+              "date": "2023-06-03",
+              "result": "12:4",
+              "opponent": "Green Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9071",
+              "date": "2023-09-02",
+              "result": "3:0",
+              "opponent": "Elo Melo"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9081",
+              "date": "2023-09-17",
+              "result": "4:2",
+              "opponent": "PJM"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9093",
+              "date": "2023-10-01",
+              "result": "5:4",
+              "opponent": "Fanatycy"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9075",
+              "date": "2023-10-08",
+              "result": "7:3",
+              "opponent": "Dar Mar"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9104",
+              "date": "2023-10-14",
+              "result": "5:2",
+              "opponent": "Rebelianci"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9087",
+              "date": "2023-10-28",
+              "result": "8:4",
+              "opponent": "Legioholicy"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9108",
+              "date": "2023-10-28",
+              "result": "3:0",
+              "opponent": "Oldrembham Forest"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 9112",
+              "date": "2023-11-04",
+              "result": "6:3",
+              "opponent": "Green Team"
+            }
+          ]
+        },
+        {
+          "holder": "FC Zieloni",
+          "year": 2016,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round9/mecz4",
+              "date": "2016-06-05",
+              "result": "4:3",
+              "opponent": "PanPierożek.pl"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round10/mecz6",
+              "date": "2016-06-11",
+              "result": "1:0",
+              "opponent": "Okinawa"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round11/mecz5",
+              "date": "2016-06-25",
+              "result": "3:0",
+              "opponent": "Sfinks"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round12/mecz6",
+              "date": "2016-09-10",
+              "result": "4:2",
+              "opponent": "Impet"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round14/mecz6",
+              "date": "2016-09-24",
+              "result": "9:1",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round13/mecz2",
+              "date": "2016-09-25",
+              "result": "5:2",
+              "opponent": "Nankatsu"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round15/mecz4",
+              "date": "2016-10-02",
+              "result": "6:1",
+              "opponent": "Huragan Poręby Nowe"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round16/mecz6",
+              "date": "2016-10-09",
+              "result": "4:1",
+              "opponent": "Sparta"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round17/mecz1",
+              "date": "2016-10-15",
+              "result": "7:3",
+              "opponent": "Nowa Drużyna"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round18/mecz6",
+              "date": "2016-10-23",
+              "result": "10:3",
+              "opponent": "FC Faworyt"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round19/mecz3",
+              "date": "2016-10-29",
+              "result": "2:1",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round20/mecz6",
+              "date": "2016-11-05",
+              "result": "4:1",
+              "opponent": "PanPierożek.pl"
+            },
+            {
+              "source": "II_liga_MLPN_2016.l98",
+              "ref": "Round21/mecz6",
+              "date": "2016-11-12",
+              "result": "5:3",
+              "opponent": "Okinawa"
+            }
+          ]
+        },
+        {
+          "holder": "Gold Dent",
+          "year": 2015,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round10/mecz3",
+              "date": "2015-06-14",
+              "result": "11:0",
+              "opponent": "FC Zieloni"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round11/mecz3",
+              "date": "2015-06-21",
+              "result": "5:3",
+              "opponent": "Długa i Michałów"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round12/mecz5",
+              "date": "2015-08-29",
+              "result": "9:0",
+              "opponent": "Alchemia Futbolu"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round13/mecz2",
+              "date": "2015-09-05",
+              "result": "7:2",
+              "opponent": "Nankatsu"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round14/mecz1",
+              "date": "2015-09-12",
+              "result": "1:0",
+              "opponent": "FC Białowieska"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round15/mecz2",
+              "date": "2015-09-19",
+              "result": "2:0",
+              "opponent": "Impet"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round16/mecz3",
+              "date": "2015-09-27",
+              "result": "6:3",
+              "opponent": "FC Faworyt"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round17/mecz3",
+              "date": "2015-10-03",
+              "result": "5:0",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round18/mecz3",
+              "date": "2015-10-10",
+              "result": "5:1",
+              "opponent": "Nowa Drużyna"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round19/mecz5",
+              "date": "2015-10-17",
+              "result": "3:0",
+              "opponent": "Okinawa"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round20/mecz3",
+              "date": "2015-10-24",
+              "result": "5:0",
+              "opponent": "Sfinks"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round21/mecz2",
+              "date": "2015-11-07",
+              "result": "3:0",
+              "opponent": "FC Zieloni"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round22/mecz3",
+              "date": "2015-11-11",
+              "result": "2:1",
+              "opponent": "Długa i Michałów"
+            }
+          ]
+        },
+        {
+          "holder": "Kominki Sim Pianka Kuflew",
+          "year": 2017,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round8/mecz5",
+              "date": "2017-05-20",
+              "result": "4:3",
+              "opponent": "Nankatsu"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round9/mecz4",
+              "date": "2017-05-27",
+              "result": "7:2",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round10/mecz1",
+              "date": "2017-06-03",
+              "result": "1:0",
+              "opponent": "Stankan"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round11/mecz4",
+              "date": "2017-06-10",
+              "result": "4:1",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round14/mecz5",
+              "date": "2017-09-10",
+              "result": "6:0",
+              "opponent": "PJM"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round13/mecz3",
+              "date": "2017-09-11",
+              "result": "3:1",
+              "opponent": "PTS Tęcza Pustelnik"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round15/mecz5",
+              "date": "2017-09-16",
+              "result": "4:1",
+              "opponent": "Pan Pierożek_pl"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round12/mecz5",
+              "date": "2017-09-18",
+              "result": "3:1",
+              "opponent": "Nowa Drużyna"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round16/mecz5",
+              "date": "2017-09-24",
+              "result": "3:1",
+              "opponent": "Fc Faworyt"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round17/mecz2",
+              "date": "2017-10-01",
+              "result": "3:1",
+              "opponent": "Sfinks"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round18/mecz5",
+              "date": "2017-10-08",
+              "result": "2:1",
+              "opponent": "Młoda Gwardia"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round19/mecz6",
+              "date": "2017-10-15",
+              "result": "4:2",
+              "opponent": "Nankatsu"
+            },
+            {
+              "source": "II_liga_MLPN_2017.l98",
+              "ref": "Round20/mecz6",
+              "date": "2017-10-22",
+              "result": "3:0",
+              "opponent": "Gosuansa"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "archive-streak-draws",
+      "group": "streaks",
+      "label": "Remisy z rzędu w jednym sezonie",
+      "value": 4,
+      "unit": "meczów",
+      "holder": "Ex aequo: 3",
+      "detail": "Inter Trade (2009) · Legioholicy (2006) · Prawie Jak Mistrz (2013)",
+      "season": null,
+      "leagueCode": null,
+      "scope": "Datowane protokoły · 2003–2026",
+      "status": "partial",
+      "sourceLabel": "I_liga_MLPN_2009.l98 · kolejne datowane wyniki",
+      "sourceNote": "Porównanie wszystkich dostępnych sezonów, ale każda seria mieści się w jednym sezonie. Liczymy kolejne rozstrzygnięte wyniki według daty, z walkowerami. Pominięto 207 zestawień drużyna–sezon z brakującymi datami, wynikami lub niejednoznaczną kolejnością; dlatego nie jest to bezwarunkowy rekord całej historii. Serie przechodzące pomiędzy sezonami wymagają osobnego audytu ciągłości drużyn.",
+      "ranking": [
+        {
+          "holder": "Inter Trade",
+          "value": 4,
+          "detail": "I liga · 2009 · 2009-04-18 – 2009-05-17",
+          "season": 2009,
+          "leagueCode": "1st",
+          "rank": 1
+        },
+        {
+          "holder": "Legioholicy",
+          "value": 4,
+          "detail": "I liga · 2006 · 2006-04-30 – 2006-05-21",
+          "sourceUrl": "/mecz/3db19368-8c23-4ff5-b7c0-af7f47c44be7?sezon=2006",
+          "season": 2006,
+          "leagueCode": "1st",
+          "rank": 1
+        },
+        {
+          "holder": "Prawie Jak Mistrz",
+          "value": 4,
+          "detail": "I liga · 2013 · 2013-04-28 – 2013-05-26",
+          "season": 2013,
+          "leagueCode": "1st",
+          "rank": 1
+        },
+        {
+          "holder": "Alchemia Futbolu",
+          "value": 3,
+          "detail": "III liga · 2026 · 2026-10-25 – 2026-11-08",
+          "sourceUrl": "/mecz/17123298-c713-401f-8fa6-fdca40dc5dfe?sezon=2026",
+          "season": 2026,
+          "leagueCode": "3rd",
+          "rank": 4
+        },
+        {
+          "holder": "Derejn",
+          "value": 3,
+          "detail": "II liga · 2006 · 2006-04-09 – 2006-04-30",
+          "sourceUrl": "/mecz/ab907470-3dc7-4f7e-8a69-01e10bd43f95?sezon=2006",
+          "season": 2006,
+          "leagueCode": "2nd",
+          "rank": 4
+        },
+        {
+          "holder": "Devils Wołomin",
+          "value": 3,
+          "detail": "I liga · 2008 · 2008-04-20 – 2008-05-10",
+          "season": 2008,
+          "leagueCode": "1st",
+          "rank": 4
+        },
+        {
+          "holder": "Dziadki",
+          "value": 3,
+          "detail": "I liga · 2006 · 2006-05-14 – 2006-05-27",
+          "season": 2006,
+          "leagueCode": "1st",
+          "rank": 4
+        },
+        {
+          "holder": "Elo Melo",
+          "value": 3,
+          "detail": "I liga · 2013 · 2013-10-13 – 2013-10-26",
+          "season": 2013,
+          "leagueCode": "1st",
+          "rank": 4
+        },
+        {
+          "holder": "Elo Melo",
+          "value": 3,
+          "detail": "I liga · 2015 · 2015-04-11 – 2015-04-26",
+          "sourceUrl": "/mecz/251b7539-0813-4bc6-b62a-e3dcd06d697f?sezon=2015",
+          "season": 2015,
+          "leagueCode": "1st",
+          "rank": 4
+        },
+        {
+          "holder": "ES Chobot Meat",
+          "value": 3,
+          "detail": "III liga · 2026 · 2026-05-23 – 2026-06-21",
+          "sourceUrl": "/mecz/7d3d09c6-c6f5-4cb9-ac17-7050e06d2c40?sezon=2026",
+          "season": 2026,
+          "leagueCode": "3rd",
+          "rank": 4
+        },
+        {
+          "holder": "KOMINKI SIM – Pianka Kuflew",
+          "value": 3,
+          "detail": "I liga · 2018 · 2018-10-14 – 2018-10-27",
+          "season": 2018,
+          "leagueCode": "1st",
+          "rank": 4
+        },
+        {
+          "holder": "Lider",
+          "value": 3,
+          "detail": "II liga · 2024 · 2024-09-15 – 2024-10-02",
+          "sourceUrl": "/mecz/16a41515-00e7-4433-b3a1-c66ad9e3a161?sezon=2024",
+          "season": 2024,
+          "leagueCode": "2nd",
+          "rank": 4
+        },
+        {
+          "holder": "Los Torpedos",
+          "value": 3,
+          "detail": "I liga · 2005 · 2005-10-02 – 2005-10-16",
+          "sourceUrl": "/mecz/51762eb8-261f-4c00-bf76-0463368be426?sezon=2005",
+          "season": 2005,
+          "leagueCode": "1st",
+          "rank": 4
+        },
+        {
+          "holder": "Nankatsu",
+          "value": 3,
+          "detail": "II liga · 2015 · 2015-09-12 – 2015-09-26",
+          "season": 2015,
+          "leagueCode": "2nd",
+          "rank": 4
+        },
+        {
+          "holder": "Nowa Południowa Afryka",
+          "value": 3,
+          "detail": "II liga · 2008 · 2008-06-15 – 2008-08-23",
+          "sourceUrl": "/mecz/2125d260-5a30-4057-9300-a62b965052d3?sezon=2008",
+          "season": 2008,
+          "leagueCode": "2nd",
+          "rank": 4
+        },
+        {
+          "holder": "Promil Czarniecki",
+          "value": 3,
+          "detail": "II liga · 2012 · 2012-03-31 – 2012-04-21",
+          "sourceUrl": "/mecz/bf399478-e6c1-44ee-88a8-f0346b30261c?sezon=2012",
+          "season": 2012,
+          "leagueCode": "2nd",
+          "rank": 4
+        },
+        {
+          "holder": "Rebelianci",
+          "value": 3,
+          "detail": "II liga · 2019 · 2019-04-13 – 2019-05-11",
+          "sourceUrl": "/mecz/93a63fe1-c569-416f-ac50-c5876df96603?sezon=2019",
+          "season": 2019,
+          "leagueCode": "2nd",
+          "rank": 4
+        },
+        {
+          "holder": "Revolta",
+          "value": 3,
+          "detail": "II liga · 2014 · 2014-05-31 – 2014-06-14",
+          "sourceUrl": "/mecz/2c5b8acb-bd8f-46f1-86da-dd63b697089e?sezon=2014",
+          "season": 2014,
+          "leagueCode": "2nd",
+          "rank": 4
+        },
+        {
+          "holder": "Starszaki",
+          "value": 3,
+          "detail": "I liga · 2011 · 2011-04-10 – 2011-05-07",
+          "season": 2011,
+          "leagueCode": "1st",
+          "rank": 4
+        },
+        {
+          "holder": "Wichura",
+          "value": 3,
+          "detail": "II liga · 2009 · 2009-05-16 – 2009-05-31",
+          "sourceUrl": "/mecz/34d08ac9-d986-41de-916f-fb74d3b5a8ec?sezon=2009",
+          "season": 2009,
+          "leagueCode": "2nd",
+          "rank": 4
+        }
+      ],
+      "evidence": [
+        {
+          "holder": "Inter Trade",
+          "year": 2009,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2009.l98",
+              "ref": "Round3/mecz3",
+              "date": "2009-04-18",
+              "result": "1:1",
+              "opponent": "Colgate-Palmolive Poland"
+            },
+            {
+              "source": "I_liga_MLPN_2009.l98",
+              "ref": "Round4/mecz6",
+              "date": "2009-04-26",
+              "result": "3:3",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "I_liga_MLPN_2009.l98",
+              "ref": "Round5/mecz1",
+              "date": "2009-05-09",
+              "result": "3:3",
+              "opponent": "Husaria Hipolitów"
+            },
+            {
+              "source": "I_liga_MLPN_2009.l98",
+              "ref": "Round6/mecz5",
+              "date": "2009-05-17",
+              "result": "1:1",
+              "opponent": "Los Torpedos"
+            }
+          ]
+        },
+        {
+          "holder": "Legioholicy",
+          "year": 2006,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2006.l98",
+              "ref": "Round3/mecz1",
+              "date": "2006-04-30",
+              "result": "0:0",
+              "opponent": "Hydro Instal Wołomin"
+            },
+            {
+              "source": "I_liga_MLPN_2006.l98",
+              "ref": "Round5/mecz1",
+              "date": "2006-05-13",
+              "result": "1:1",
+              "opponent": "Inter Trade"
+            },
+            {
+              "source": "I_liga_MLPN_2006.l98",
+              "ref": "Round4/mecz1",
+              "date": "2006-05-18",
+              "result": "1:1",
+              "opponent": "Impet Sulejówek"
+            },
+            {
+              "source": "I_liga_MLPN_2006.l98",
+              "ref": "Round6/mecz1",
+              "date": "2006-05-21",
+              "result": "0:0",
+              "opponent": "FC Faworyt Anwa-Tech"
+            }
+          ]
+        },
+        {
+          "holder": "Prawie Jak Mistrz",
+          "year": 2013,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round3/mecz6",
+              "date": "2013-04-28",
+              "result": "1:1",
+              "opponent": "Dziadki"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round4/mecz4",
+              "date": "2013-05-12",
+              "result": "1:1",
+              "opponent": "Sami Swoi"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round5/mecz1",
+              "date": "2013-05-18",
+              "result": "2:2",
+              "opponent": "Legioholicy"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round6/mecz6",
+              "date": "2013-05-26",
+              "result": "1:1",
+              "opponent": "SM Joga Finito"
+            }
+          ]
+        },
+        {
+          "holder": "Alchemia Futbolu",
+          "year": 2026,
+          "games": [
+            {
+              "source": "Protokoły MLPN 2026",
+              "ref": "17123298-c713-401f-8fa6-fdca40dc5dfe",
+              "date": "2026-10-25",
+              "result": "0:0",
+              "opponent": "FC Faworyt"
+            },
+            {
+              "source": "Protokoły MLPN 2026",
+              "ref": "f01735af-2765-422c-a256-ec6c5e0e4bc1",
+              "date": "2026-11-02",
+              "result": "1:1",
+              "opponent": "RMB Bulls"
+            },
+            {
+              "source": "Protokoły MLPN 2026",
+              "ref": "fd76acf6-7f3f-4da9-9325-8b9c43cbdcaa",
+              "date": "2026-11-08",
+              "result": "1:1",
+              "opponent": "SC Halinów"
+            }
+          ]
+        },
+        {
+          "holder": "Derejn",
+          "year": 2006,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round1/mecz4",
+              "date": "2006-04-09",
+              "result": "0:0",
+              "opponent": "Filmweb.pl"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round2/mecz6",
+              "date": "2006-04-21",
+              "result": "1:1",
+              "opponent": "DKL Żurawka"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round3/mecz3",
+              "date": "2006-04-30",
+              "result": "1:1",
+              "opponent": "Nowa Południowa Afryka"
+            }
+          ]
+        },
+        {
+          "holder": "Devils Wołomin",
+          "year": 2008,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round3/mecz4",
+              "date": "2008-04-20",
+              "result": "2:2",
+              "opponent": "Colgate Palmolive"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round4/mecz6",
+              "date": "2008-04-27",
+              "result": "1:1",
+              "opponent": "FIFA Squad"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round5/mecz3",
+              "date": "2008-05-10",
+              "result": "1:1",
+              "opponent": "Starszaki"
+            }
+          ]
+        },
+        {
+          "holder": "Dziadki",
+          "year": 2006,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2006.l98",
+              "ref": "Round5/mecz3",
+              "date": "2006-05-14",
+              "result": "0:0",
+              "opponent": "Husaria Hipolitów"
+            },
+            {
+              "source": "I_liga_MLPN_2006.l98",
+              "ref": "Round6/mecz4",
+              "date": "2006-05-21",
+              "result": "2:2",
+              "opponent": "FIFA Squad"
+            },
+            {
+              "source": "I_liga_MLPN_2006.l98",
+              "ref": "Round7/mecz4",
+              "date": "2006-05-27",
+              "result": "1:1",
+              "opponent": "Starszaki Nieruchomości Belweder"
+            }
+          ]
+        },
+        {
+          "holder": "Elo Melo",
+          "year": 2013,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round19/mecz2",
+              "date": "2013-10-13",
+              "result": "2:2",
+              "opponent": "SM Joga Finito"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round20/mecz5",
+              "date": "2013-10-20",
+              "result": "2:2",
+              "opponent": "Sami Swoi"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round21/mecz3",
+              "date": "2013-10-26",
+              "result": "2:2",
+              "opponent": "Gosuansa"
+            }
+          ]
+        },
+        {
+          "holder": "Elo Melo",
+          "year": 2015,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2015.l98",
+              "ref": "Round2/mecz6",
+              "date": "2015-04-11",
+              "result": "3:3",
+              "opponent": "Lider"
+            },
+            {
+              "source": "I_liga_MLPN_2015.l98",
+              "ref": "Round3/mecz2",
+              "date": "2015-04-18",
+              "result": "3:3",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "I_liga_MLPN_2015.l98",
+              "ref": "Round4/mecz2",
+              "date": "2015-04-26",
+              "result": "1:1",
+              "opponent": "Prawie Jak Mistrz"
+            }
+          ]
+        },
+        {
+          "holder": "ES Chobot Meat",
+          "year": 2026,
+          "games": [
+            {
+              "source": "Protokoły MLPN 2026",
+              "ref": "7d3d09c6-c6f5-4cb9-ac17-7050e06d2c40",
+              "date": "2026-05-23",
+              "result": "2:2",
+              "opponent": "FC Restart"
+            },
+            {
+              "source": "Protokoły MLPN 2026",
+              "ref": "4a8016b3-ee7a-456b-8918-ddbc72ca369b",
+              "date": "2026-06-14",
+              "result": "1:1",
+              "opponent": "Fc KSS"
+            },
+            {
+              "source": "Protokoły MLPN 2026",
+              "ref": "1dd9e439-f45b-4352-920a-cf22fe1a6719",
+              "date": "2026-06-21",
+              "result": "2:2",
+              "opponent": "AL-Komat"
+            }
+          ]
+        },
+        {
+          "holder": "KOMINKI SIM – Pianka Kuflew",
+          "year": 2018,
+          "games": [
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1422",
+              "date": "2018-10-14",
+              "result": "2:2",
+              "opponent": "Detox"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1383",
+              "date": "2018-10-20",
+              "result": "1:1",
+              "opponent": "Fc Zieloni"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1432",
+              "date": "2018-10-27",
+              "result": "2:2",
+              "opponent": "GOLD-DENT.P.T"
+            }
+          ]
+        },
+        {
+          "holder": "Lider",
+          "year": 2024,
+          "games": [
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 10722",
+              "date": "2024-09-15",
+              "result": "3:3",
+              "opponent": "Fc Zieloni"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 10727",
+              "date": "2024-09-22",
+              "result": "3:3",
+              "opponent": "Chaos Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 10732",
+              "date": "2024-10-02",
+              "result": "4:4",
+              "opponent": "SC Halinów"
+            }
+          ]
+        },
+        {
+          "holder": "Los Torpedos",
+          "year": 2005,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2005.l98",
+              "ref": "Round19/mecz4",
+              "date": "2005-10-02",
+              "result": "1:1",
+              "opponent": "FIFA Squad"
+            },
+            {
+              "source": "I_liga_MLPN_2005.l98",
+              "ref": "Round20/mecz2",
+              "date": "2005-10-09",
+              "result": "2:2",
+              "opponent": "Długa Szlachecka"
+            },
+            {
+              "source": "I_liga_MLPN_2005.l98",
+              "ref": "Round21/mecz3",
+              "date": "2005-10-16",
+              "result": "1:1",
+              "opponent": "Pętla Team"
+            }
+          ]
+        },
+        {
+          "holder": "Nankatsu",
+          "year": 2015,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round14/mecz6",
+              "date": "2015-09-12",
+              "result": "1:1",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round15/mecz4",
+              "date": "2015-09-19",
+              "result": "2:2",
+              "opponent": "Nowa Drużyna"
+            },
+            {
+              "source": "II_liga_MLPN_2015.l98",
+              "ref": "Round16/mecz6",
+              "date": "2015-09-26",
+              "result": "1:1",
+              "opponent": "Okinawa"
+            }
+          ]
+        },
+        {
+          "holder": "Nowa Południowa Afryka",
+          "year": 2008,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2008.l98",
+              "ref": "Round10/mecz5",
+              "date": "2008-06-15",
+              "result": "0:0",
+              "opponent": "Samogray"
+            },
+            {
+              "source": "II_liga_MLPN_2008.l98",
+              "ref": "Round11/mecz3",
+              "date": "2008-06-21",
+              "result": "2:2",
+              "opponent": "FC Zakręt"
+            },
+            {
+              "source": "II_liga_MLPN_2008.l98",
+              "ref": "Round12/mecz1",
+              "date": "2008-08-23",
+              "result": "3:3",
+              "opponent": "PKKL Sulejówek"
+            }
+          ]
+        },
+        {
+          "holder": "Promil Czarniecki",
+          "year": 2012,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2012.l98",
+              "ref": "Round1/mecz1",
+              "date": "2012-03-31",
+              "result": "1:1",
+              "opponent": "Huragan Poręby Nowe"
+            },
+            {
+              "source": "II_liga_MLPN_2012.l98",
+              "ref": "Round2/mecz4",
+              "date": "2012-04-15",
+              "result": "1:1",
+              "opponent": "Legioholicy 2003"
+            },
+            {
+              "source": "II_liga_MLPN_2012.l98",
+              "ref": "Round3/mecz3",
+              "date": "2012-04-21",
+              "result": "1:1",
+              "opponent": "Impet"
+            }
+          ]
+        },
+        {
+          "holder": "Rebelianci",
+          "year": 2019,
+          "games": [
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 5109",
+              "date": "2019-04-13",
+              "result": "1:1",
+              "opponent": "Fc Faworyt"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 5114",
+              "date": "2019-04-28",
+              "result": "2:2",
+              "opponent": "Detox"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 5119",
+              "date": "2019-05-11",
+              "result": "4:4",
+              "opponent": "Nankatsu"
+            }
+          ]
+        },
+        {
+          "holder": "Revolta",
+          "year": 2014,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round8/mecz4",
+              "date": "2014-05-31",
+              "result": "2:2",
+              "opponent": "Nankatsu"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round9/mecz3",
+              "date": "2014-06-08",
+              "result": "2:2",
+              "opponent": "Chaos Team"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round10/mecz4",
+              "date": "2014-06-14",
+              "result": "2:2",
+              "opponent": "FC Zieloni"
+            }
+          ]
+        },
+        {
+          "holder": "Starszaki",
+          "year": 2011,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2011.l98",
+              "ref": "Round2/mecz2",
+              "date": "2011-04-10",
+              "result": "4:4",
+              "opponent": "Pianka Kuflew Kominkisim"
+            },
+            {
+              "source": "I_liga_MLPN_2011.l98",
+              "ref": "Round3/mecz6",
+              "date": "2011-04-16",
+              "result": "1:1",
+              "opponent": "San Faworyt"
+            },
+            {
+              "source": "I_liga_MLPN_2011.l98",
+              "ref": "Round4/mecz4",
+              "date": "2011-05-07",
+              "result": "2:2",
+              "opponent": "Pędzące Żółwie"
+            }
+          ]
+        },
+        {
+          "holder": "Wichura",
+          "year": 2009,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2009.l98",
+              "ref": "Round6/mecz1",
+              "date": "2009-05-16",
+              "result": "1:1",
+              "opponent": "Huragan Poręby Nowe"
+            },
+            {
+              "source": "II_liga_MLPN_2009.l98",
+              "ref": "Round7/mecz3",
+              "date": "2009-05-23",
+              "result": "2:2",
+              "opponent": "FC Zakręt"
+            },
+            {
+              "source": "II_liga_MLPN_2009.l98",
+              "ref": "Round8/mecz4",
+              "date": "2009-05-31",
+              "result": "2:2",
+              "opponent": "Pianka Kuflew Kominkisim.pl"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "archive-streak-losses",
+      "group": "streaks",
+      "label": "Porażki z rzędu w jednym sezonie",
+      "value": 22,
+      "unit": "meczów",
+      "holder": "Huragan Poręby Nowe",
+      "detail": "I liga · 2017 · 2017-03-18 – 2017-11-04",
+      "season": 2017,
+      "leagueCode": "1st",
+      "scope": "Datowane protokoły · 2003–2026",
+      "status": "partial",
+      "sourceLabel": "I_liga_MLPN_2017.l98 · kolejne datowane wyniki",
+      "sourceUrl": "/mecz/de81ac06-2de8-4389-9a7a-4c29bf01be1e?sezon=2017",
+      "sourceNote": "Porównanie wszystkich dostępnych sezonów, ale każda seria mieści się w jednym sezonie. Liczymy kolejne rozstrzygnięte wyniki według daty, z walkowerami. Pominięto 207 zestawień drużyna–sezon z brakującymi datami, wynikami lub niejednoznaczną kolejnością; dlatego nie jest to bezwarunkowy rekord całej historii. Serie przechodzące pomiędzy sezonami wymagają osobnego audytu ciągłości drużyn.",
+      "ranking": [
+        {
+          "holder": "Huragan Poręby Nowe",
+          "value": 22,
+          "detail": "I liga · 2017 · 2017-03-18 – 2017-11-04",
+          "sourceUrl": "/mecz/de81ac06-2de8-4389-9a7a-4c29bf01be1e?sezon=2017",
+          "season": 2017,
+          "leagueCode": "1st",
+          "rank": 1
+        },
+        {
+          "holder": "FC Centurio",
+          "value": 20,
+          "detail": "III liga · 2011 · 2011-04-02 – 2011-11-06",
+          "sourceUrl": "/mecz/d8cd9c77-7a7c-42f3-b5e0-9c0b9036805f?sezon=2011",
+          "season": 2011,
+          "leagueCode": "3rd",
+          "rank": 2
+        },
+        {
+          "holder": "KS ProBram24",
+          "value": 20,
+          "detail": "II liga · 2025 · 2025-03-15 – 2025-11-11",
+          "sourceUrl": "/mecz/04f35a6b-eb09-4738-a5aa-5a0a77feb3cb?sezon=2025",
+          "season": 2025,
+          "leagueCode": "2nd",
+          "rank": 2
+        },
+        {
+          "holder": "SC Halinów",
+          "value": 18,
+          "detail": "III liga · 2021 · 2021-04-25 – 2021-11-14",
+          "season": 2021,
+          "leagueCode": "3rd",
+          "rank": 4
+        },
+        {
+          "holder": "Chaos Team",
+          "value": 13,
+          "detail": "III liga · 2018 · 2018-09-02 – 2018-11-10",
+          "sourceUrl": "/mecz/bb191cd1-1757-479e-8f06-d898dc452db0?sezon=2018",
+          "season": 2018,
+          "leagueCode": "3rd",
+          "rank": 5
+        },
+        {
+          "holder": "Legioholicy 2003",
+          "value": 13,
+          "detail": "II liga · 2013 · 2013-06-16 – 2013-11-09",
+          "sourceUrl": "/mecz/6624921f-2c0a-4668-be2b-7d73f38aebb5?sezon=2013",
+          "season": 2013,
+          "leagueCode": "2nd",
+          "rank": 5
+        },
+        {
+          "holder": "Pianka Kuflew Kominkisim.pl",
+          "value": 13,
+          "detail": "I liga · 2013 · 2013-06-23 – 2013-11-09",
+          "season": 2013,
+          "leagueCode": "1st",
+          "rank": 5
+        },
+        {
+          "holder": "Samograj",
+          "value": 13,
+          "detail": "II liga · 2006 · 2006-05-06 – 2006-08-05",
+          "season": 2006,
+          "leagueCode": "2nd",
+          "rank": 5
+        }
+      ],
+      "evidence": [
+        {
+          "holder": "Huragan Poręby Nowe",
+          "year": 2017,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round1/mecz4",
+              "date": "2017-03-18",
+              "result": "2:4",
+              "opponent": "Legioholicy"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round2/mecz4",
+              "date": "2017-03-26",
+              "result": "1:2",
+              "opponent": "Fc Zieloni Superparkiet_pl"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round3/mecz4",
+              "date": "2017-04-01",
+              "result": "2:8",
+              "opponent": "Pędzący Kombajn"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round4/mecz6",
+              "date": "2017-04-09",
+              "result": "2:3",
+              "opponent": "Elo Melo"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round5/mecz4",
+              "date": "2017-04-23",
+              "result": "0:3",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round6/mecz2",
+              "date": "2017-05-07",
+              "result": "3:4",
+              "opponent": "Sparta"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round7/mecz4",
+              "date": "2017-05-13",
+              "result": "1:9",
+              "opponent": "Starszaki"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round8/mecz4",
+              "date": "2017-05-20",
+              "result": "1:4",
+              "opponent": "Gold Dent PT"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round10/mecz5",
+              "date": "2017-06-04",
+              "result": "0:3",
+              "opponent": "Fanatycy"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round11/mecz1",
+              "date": "2017-06-10",
+              "result": "2:4",
+              "opponent": "Detox"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round9/mecz6",
+              "date": "2017-06-25",
+              "result": "1:4",
+              "opponent": "Lider"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round12/mecz3",
+              "date": "2017-08-26",
+              "result": "1:7",
+              "opponent": "Legioholicy"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round13/mecz4",
+              "date": "2017-09-02",
+              "result": "1:9",
+              "opponent": "Fc Zieloni Superparkiet_pl"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round14/mecz5",
+              "date": "2017-09-14",
+              "result": "2:5",
+              "opponent": "Pędzący Kombajn"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round15/mecz4",
+              "date": "2017-09-21",
+              "result": "1:5",
+              "opponent": "Elo Melo"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round16/mecz1",
+              "date": "2017-09-23",
+              "result": "2:8",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round17/mecz4",
+              "date": "2017-10-01",
+              "result": "0:3",
+              "opponent": "Sparta"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round18/mecz3",
+              "date": "2017-10-11",
+              "result": "2:10",
+              "opponent": "Starszaki"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round19/mecz4",
+              "date": "2017-10-15",
+              "result": "0:10",
+              "opponent": "Gold Dent PT"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round20/mecz5",
+              "date": "2017-10-21",
+              "result": "1:4",
+              "opponent": "Lider"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round21/mecz5",
+              "date": "2017-10-29",
+              "result": "1:8",
+              "opponent": "Fanatycy"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round22/mecz5",
+              "date": "2017-11-04",
+              "result": "3:10",
+              "opponent": "Detox"
+            }
+          ]
+        },
+        {
+          "holder": "FC Centurio",
+          "year": 2011,
+          "games": [
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round1/mecz4",
+              "date": "2011-04-02",
+              "result": "1:12",
+              "opponent": "Putka Team"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round2/mecz1",
+              "date": "2011-04-10",
+              "result": "1:3",
+              "opponent": "Wichura"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round3/mecz4",
+              "date": "2011-04-16",
+              "result": "0:9",
+              "opponent": "Sami Swoi"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round4/mecz4",
+              "date": "2011-05-07",
+              "result": "1:8",
+              "opponent": "Detox"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round5/mecz2",
+              "date": "2011-05-15",
+              "result": "0:4",
+              "opponent": "Impet"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round6/mecz2",
+              "date": "2011-05-22",
+              "result": "2:7",
+              "opponent": "Grafix Bis STM"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round7/mecz4",
+              "date": "2011-05-28",
+              "result": "1:14",
+              "opponent": "Bałtyk Miłosna"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round9/mecz4",
+              "date": "2011-06-11",
+              "result": "0:1",
+              "opponent": "Samograj"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round10/mecz2",
+              "date": "2011-06-19",
+              "result": "2:3",
+              "opponent": "FC Kosmos"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round11/mecz5",
+              "date": "2011-06-26",
+              "result": "0:8",
+              "opponent": "Legioholicy 2003"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round12/mecz4",
+              "date": "2011-08-28",
+              "result": "2:5",
+              "opponent": "Putka Team"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round14/mecz4",
+              "date": "2011-09-11",
+              "result": "0:8",
+              "opponent": "Sami Swoi"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round15/mecz4",
+              "date": "2011-09-18",
+              "result": "2:3",
+              "opponent": "Detox"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round16/mecz2",
+              "date": "2011-09-24",
+              "result": "1:6",
+              "opponent": "Impet"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round17/mecz2",
+              "date": "2011-10-01",
+              "result": "0:5",
+              "opponent": "Grafix Bis STM"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round13/mecz1",
+              "date": "2011-10-02",
+              "result": "2:4",
+              "opponent": "Chaos Team"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round18/mecz4",
+              "date": "2011-10-09",
+              "result": "0:4",
+              "opponent": "Bałtyk Miłosna"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round20/mecz4",
+              "date": "2011-10-23",
+              "result": "0:3",
+              "opponent": "Teknosystem"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round21/mecz2",
+              "date": "2011-10-29",
+              "result": "1:2",
+              "opponent": "FC Kosmos"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round22/mecz5",
+              "date": "2011-11-06",
+              "result": "1:10",
+              "opponent": "Legioholicy 2003"
+            }
+          ]
+        },
+        {
+          "holder": "KS ProBram24",
+          "year": 2025,
+          "games": [
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11750",
+              "date": "2025-03-15",
+              "result": "0:3",
+              "opponent": "Nankatsu"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11806",
+              "date": "2025-03-23",
+              "result": "0:3",
+              "opponent": "Fc Zieloni"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11757",
+              "date": "2025-03-30",
+              "result": "0:3",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11771",
+              "date": "2025-04-13",
+              "result": "0:3",
+              "opponent": "SC Halinów"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11778",
+              "date": "2025-04-26",
+              "result": "0:3",
+              "opponent": "Tidy Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11785",
+              "date": "2025-05-10",
+              "result": "0:3",
+              "opponent": "Detox"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11764",
+              "date": "2025-05-18",
+              "result": "0:3",
+              "opponent": "1 Warszawska Brygada Pancerna"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11796",
+              "date": "2025-06-01",
+              "result": "0:3",
+              "opponent": "Lider"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11791",
+              "date": "2025-06-02",
+              "result": "0:3",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11801",
+              "date": "2025-06-08",
+              "result": "0:3",
+              "opponent": "PJM"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11816",
+              "date": "2025-09-06",
+              "result": "0:3",
+              "opponent": "Nankatsu"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11823",
+              "date": "2025-09-14",
+              "result": "0:3",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11830",
+              "date": "2025-09-20",
+              "result": "0:3",
+              "opponent": "1 Warszawska Brygada Pancerna"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11837",
+              "date": "2025-09-27",
+              "result": "0:3",
+              "opponent": "SC Halinów"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11844",
+              "date": "2025-10-04",
+              "result": "0:3",
+              "opponent": "Tidy Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11851",
+              "date": "2025-10-11",
+              "result": "0:3",
+              "opponent": "Detox"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11857",
+              "date": "2025-10-18",
+              "result": "0:3",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11862",
+              "date": "2025-10-25",
+              "result": "0:3",
+              "opponent": "Lider"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11867",
+              "date": "2025-11-08",
+              "result": "0:3",
+              "opponent": "PJM"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11872",
+              "date": "2025-11-11",
+              "result": "0:3",
+              "opponent": "Fc Zieloni"
+            }
+          ]
+        },
+        {
+          "holder": "SC Halinów",
+          "year": 2021,
+          "games": [
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7679",
+              "date": "2021-04-25",
+              "result": "0:3",
+              "opponent": "Okinawa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7685",
+              "date": "2021-05-08",
+              "result": "0:3",
+              "opponent": "Sportowe Zakapiory"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7691",
+              "date": "2021-05-16",
+              "result": "0:3",
+              "opponent": "Hard Impet Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7696",
+              "date": "2021-05-23",
+              "result": "0:3",
+              "opponent": "Huragan Poręby Nowe"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7700",
+              "date": "2021-05-30",
+              "result": "0:3",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7704",
+              "date": "2021-06-13",
+              "result": "0:3",
+              "opponent": "Stara Ekipa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7712",
+              "date": "2021-06-27",
+              "result": "0:3",
+              "opponent": "Fc Faworyt"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7718",
+              "date": "2021-08-29",
+              "result": "0:3",
+              "opponent": "Chaos Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7708",
+              "date": "2021-09-01",
+              "result": "0:3",
+              "opponent": "Tidy Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7730",
+              "date": "2021-09-19",
+              "result": "0:5",
+              "opponent": "Sportowe Zakapiory"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7736",
+              "date": "2021-09-25",
+              "result": "0:11",
+              "opponent": "Hard Impet Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7741",
+              "date": "2021-10-03",
+              "result": "3:12",
+              "opponent": "Huragan Poręby Nowe"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7745",
+              "date": "2021-10-10",
+              "result": "3:5",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7749",
+              "date": "2021-10-16",
+              "result": "1:4",
+              "opponent": "Stara Ekipa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7753",
+              "date": "2021-10-24",
+              "result": "1:10",
+              "opponent": "Tidy Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7757",
+              "date": "2021-11-07",
+              "result": "0:23",
+              "opponent": "Fc Faworyt"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7724",
+              "date": "2021-11-13",
+              "result": "0:3",
+              "opponent": "Okinawa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7763",
+              "date": "2021-11-14",
+              "result": "1:3",
+              "opponent": "Chaos Team"
+            }
+          ]
+        },
+        {
+          "holder": "Chaos Team",
+          "year": 2018,
+          "games": [
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1658",
+              "date": "2018-09-02",
+              "result": "0:4",
+              "opponent": "Impet"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1664",
+              "date": "2018-09-09",
+              "result": "2:13",
+              "opponent": "Rebelianci"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1671",
+              "date": "2018-09-16",
+              "result": "1:2",
+              "opponent": "No Name"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 4476",
+              "date": "2018-09-22",
+              "result": "1:6",
+              "opponent": "FC Bartycka 04"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 4489",
+              "date": "2018-09-29",
+              "result": "2:7",
+              "opponent": "FC Bartycka 04"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1685",
+              "date": "2018-09-30",
+              "result": "1:3",
+              "opponent": "Hardcore Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1692",
+              "date": "2018-10-07",
+              "result": "3:8",
+              "opponent": "FC MBM"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1699",
+              "date": "2018-10-13",
+              "result": "0:5",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 4517",
+              "date": "2018-10-21",
+              "result": "2:4",
+              "opponent": "Olcskul"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1648",
+              "date": "2018-10-28",
+              "result": "1:7",
+              "opponent": "Okinawa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1716",
+              "date": "2018-11-03",
+              "result": "1:5",
+              "opponent": "Alchemia Futbolu"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 4529",
+              "date": "2018-11-04",
+              "result": "3:7",
+              "opponent": "Stara Ekipa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 4524",
+              "date": "2018-11-10",
+              "result": "2:3",
+              "opponent": "Okinawa"
+            }
+          ]
+        },
+        {
+          "holder": "Legioholicy 2003",
+          "year": 2013,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round9/mecz5",
+              "date": "2013-06-16",
+              "result": "1:11",
+              "opponent": "Alabama"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round10/mecz1",
+              "date": "2013-06-22",
+              "result": "3:8",
+              "opponent": "FC Faworyt"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round11/mecz6",
+              "date": "2013-06-30",
+              "result": "2:10",
+              "opponent": "Promil Czarniecki"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round12/mecz2",
+              "date": "2013-08-24",
+              "result": "0:3",
+              "opponent": "Stm Team"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round13/mecz5",
+              "date": "2013-08-31",
+              "result": "0:3",
+              "opponent": "Promil Czarniecki"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round14/mecz2",
+              "date": "2013-09-07",
+              "result": "0:3",
+              "opponent": "Długa i Michałów"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round15/mecz5",
+              "date": "2013-09-14",
+              "result": "0:3",
+              "opponent": "Sfinks"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round17/mecz6",
+              "date": "2013-09-28",
+              "result": "0:3",
+              "opponent": "Impet"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round18/mecz2",
+              "date": "2013-10-05",
+              "result": "0:3",
+              "opponent": "Alabama"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round19/mecz5",
+              "date": "2013-10-12",
+              "result": "0:3",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round20/mecz3",
+              "date": "2013-10-19",
+              "result": "0:3",
+              "opponent": "Starszaki II"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round21/mecz5",
+              "date": "2013-10-26",
+              "result": "0:3",
+              "opponent": "Detox"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round22/mecz2",
+              "date": "2013-11-09",
+              "result": "0:3",
+              "opponent": "PKKL Sulejówek"
+            }
+          ]
+        },
+        {
+          "holder": "Pianka Kuflew Kominkisim.pl",
+          "year": 2013,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round10/mecz4",
+              "date": "2013-06-23",
+              "result": "0:3",
+              "opponent": "Dziadki"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round11/mecz2",
+              "date": "2013-06-29",
+              "result": "1:2",
+              "opponent": "Legioholicy"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round12/mecz3",
+              "date": "2013-08-24",
+              "result": "0:3",
+              "opponent": "Dziadki"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round13/mecz1",
+              "date": "2013-08-31",
+              "result": "0:3",
+              "opponent": "Prawie Jak Mistrz"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round14/mecz5",
+              "date": "2013-09-07",
+              "result": "0:3",
+              "opponent": "Starszaki"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round15/mecz1",
+              "date": "2013-09-14",
+              "result": "0:3",
+              "opponent": "Legioholicy"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round16/mecz2",
+              "date": "2013-09-21",
+              "result": "0:3",
+              "opponent": "Fanatycy"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round17/mecz6",
+              "date": "2013-09-28",
+              "result": "0:3",
+              "opponent": "Wenus"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round18/mecz6",
+              "date": "2013-10-05",
+              "result": "0:3",
+              "opponent": "Sami Swoi"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round19/mecz3",
+              "date": "2013-10-12",
+              "result": "0:3",
+              "opponent": "Lider"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round20/mecz4",
+              "date": "2013-10-19",
+              "result": "0:3",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round21/mecz1",
+              "date": "2013-10-26",
+              "result": "0:3",
+              "opponent": "SM Joga Finito"
+            },
+            {
+              "source": "I_liga_MLPN_2013.l98",
+              "ref": "Round22/mecz4",
+              "date": "2013-11-09",
+              "result": "0:3",
+              "opponent": "Elo Melo"
+            }
+          ]
+        },
+        {
+          "holder": "Samograj",
+          "year": 2006,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round6/mecz2",
+              "date": "2006-05-06",
+              "result": "1:8",
+              "opponent": "Wichura"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round5/mecz8",
+              "date": "2006-05-11",
+              "result": "0:5",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round7/mecz7",
+              "date": "2006-05-13",
+              "result": "0:3",
+              "opponent": "Filmweb.pl"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round4/mecz1",
+              "date": "2006-05-15",
+              "result": "1:2",
+              "opponent": "FC Bravado"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round8/mecz3",
+              "date": "2006-05-21",
+              "result": "1:5",
+              "opponent": "DKL Żurawka"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round10/mecz4",
+              "date": "2006-06-02",
+              "result": "1:4",
+              "opponent": "Szakale Józefin"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round11/mecz5",
+              "date": "2006-06-10",
+              "result": "1:3",
+              "opponent": "Prawie Jak Mistrz"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round12/mecz5",
+              "date": "2006-06-14",
+              "result": "1:4",
+              "opponent": "MKS Halinów"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round13/mecz4",
+              "date": "2006-06-18",
+              "result": "1:2",
+              "opponent": "Derejn"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round14/mecz6",
+              "date": "2006-06-24",
+              "result": "0:1",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round15/mecz3",
+              "date": "2006-06-30",
+              "result": "0:4",
+              "opponent": "Zakład Mięsny Miśko"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round9/mecz6",
+              "date": "2006-07-02",
+              "result": "0:2",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "II_liga_MLPN_2006.l98",
+              "ref": "Round16/mecz7",
+              "date": "2006-08-05",
+              "result": "2:4",
+              "opponent": "FC Sulejówek"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "archive-streak-winless",
+      "group": "streaks",
+      "label": "Mecze bez zwycięstwa w jednym sezonie",
+      "value": 22,
+      "unit": "meczów",
+      "holder": "Huragan Poręby Nowe",
+      "detail": "I liga · 2017 · 2017-03-18 – 2017-11-04",
+      "season": 2017,
+      "leagueCode": "1st",
+      "scope": "Datowane protokoły · 2003–2026",
+      "status": "partial",
+      "sourceLabel": "I_liga_MLPN_2017.l98 · kolejne datowane wyniki",
+      "sourceUrl": "/mecz/de81ac06-2de8-4389-9a7a-4c29bf01be1e?sezon=2017",
+      "sourceNote": "Porównanie wszystkich dostępnych sezonów, ale każda seria mieści się w jednym sezonie. Liczymy kolejne rozstrzygnięte wyniki według daty, z walkowerami. Pominięto 207 zestawień drużyna–sezon z brakującymi datami, wynikami lub niejednoznaczną kolejnością; dlatego nie jest to bezwarunkowy rekord całej historii. Serie przechodzące pomiędzy sezonami wymagają osobnego audytu ciągłości drużyn.",
+      "ranking": [
+        {
+          "holder": "Huragan Poręby Nowe",
+          "value": 22,
+          "detail": "I liga · 2017 · 2017-03-18 – 2017-11-04",
+          "sourceUrl": "/mecz/de81ac06-2de8-4389-9a7a-4c29bf01be1e?sezon=2017",
+          "season": 2017,
+          "leagueCode": "1st",
+          "rank": 1
+        },
+        {
+          "holder": "FC Centurio",
+          "value": 20,
+          "detail": "III liga · 2011 · 2011-04-02 – 2011-11-06",
+          "sourceUrl": "/mecz/d8cd9c77-7a7c-42f3-b5e0-9c0b9036805f?sezon=2011",
+          "season": 2011,
+          "leagueCode": "3rd",
+          "rank": 2
+        },
+        {
+          "holder": "KS ProBram24",
+          "value": 20,
+          "detail": "II liga · 2025 · 2025-03-15 – 2025-11-11",
+          "sourceUrl": "/mecz/04f35a6b-eb09-4738-a5aa-5a0a77feb3cb?sezon=2025",
+          "season": 2025,
+          "leagueCode": "2nd",
+          "rank": 2
+        },
+        {
+          "holder": "SC Halinów",
+          "value": 18,
+          "detail": "III liga · 2021 · 2021-04-25 – 2021-11-14",
+          "season": 2021,
+          "leagueCode": "3rd",
+          "rank": 4
+        },
+        {
+          "holder": "Chaos Team",
+          "value": 17,
+          "detail": "II liga · 2014 · 2014-03-29 – 2014-10-05",
+          "sourceUrl": "/mecz/0e3833c5-840e-48b6-a6bb-02c8f58577ed?sezon=2014",
+          "season": 2014,
+          "leagueCode": "2nd",
+          "rank": 5
+        },
+        {
+          "holder": "FC Sulejówek",
+          "value": 17,
+          "detail": "II liga · 2005 · 2005-04-17 – 2005-09-24",
+          "sourceUrl": "/mecz/84dcb449-bd4f-4455-afb6-772c581294a3?sezon=2005",
+          "season": 2005,
+          "leagueCode": "2nd",
+          "rank": 5
+        }
+      ],
+      "evidence": [
+        {
+          "holder": "Huragan Poręby Nowe",
+          "year": 2017,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round1/mecz4",
+              "date": "2017-03-18",
+              "result": "2:4",
+              "opponent": "Legioholicy"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round2/mecz4",
+              "date": "2017-03-26",
+              "result": "1:2",
+              "opponent": "Fc Zieloni Superparkiet_pl"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round3/mecz4",
+              "date": "2017-04-01",
+              "result": "2:8",
+              "opponent": "Pędzący Kombajn"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round4/mecz6",
+              "date": "2017-04-09",
+              "result": "2:3",
+              "opponent": "Elo Melo"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round5/mecz4",
+              "date": "2017-04-23",
+              "result": "0:3",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round6/mecz2",
+              "date": "2017-05-07",
+              "result": "3:4",
+              "opponent": "Sparta"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round7/mecz4",
+              "date": "2017-05-13",
+              "result": "1:9",
+              "opponent": "Starszaki"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round8/mecz4",
+              "date": "2017-05-20",
+              "result": "1:4",
+              "opponent": "Gold Dent PT"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round10/mecz5",
+              "date": "2017-06-04",
+              "result": "0:3",
+              "opponent": "Fanatycy"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round11/mecz1",
+              "date": "2017-06-10",
+              "result": "2:4",
+              "opponent": "Detox"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round9/mecz6",
+              "date": "2017-06-25",
+              "result": "1:4",
+              "opponent": "Lider"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round12/mecz3",
+              "date": "2017-08-26",
+              "result": "1:7",
+              "opponent": "Legioholicy"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round13/mecz4",
+              "date": "2017-09-02",
+              "result": "1:9",
+              "opponent": "Fc Zieloni Superparkiet_pl"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round14/mecz5",
+              "date": "2017-09-14",
+              "result": "2:5",
+              "opponent": "Pędzący Kombajn"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round15/mecz4",
+              "date": "2017-09-21",
+              "result": "1:5",
+              "opponent": "Elo Melo"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round16/mecz1",
+              "date": "2017-09-23",
+              "result": "2:8",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round17/mecz4",
+              "date": "2017-10-01",
+              "result": "0:3",
+              "opponent": "Sparta"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round18/mecz3",
+              "date": "2017-10-11",
+              "result": "2:10",
+              "opponent": "Starszaki"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round19/mecz4",
+              "date": "2017-10-15",
+              "result": "0:10",
+              "opponent": "Gold Dent PT"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round20/mecz5",
+              "date": "2017-10-21",
+              "result": "1:4",
+              "opponent": "Lider"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round21/mecz5",
+              "date": "2017-10-29",
+              "result": "1:8",
+              "opponent": "Fanatycy"
+            },
+            {
+              "source": "I_liga_MLPN_2017.l98",
+              "ref": "Round22/mecz5",
+              "date": "2017-11-04",
+              "result": "3:10",
+              "opponent": "Detox"
+            }
+          ]
+        },
+        {
+          "holder": "FC Centurio",
+          "year": 2011,
+          "games": [
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round1/mecz4",
+              "date": "2011-04-02",
+              "result": "1:12",
+              "opponent": "Putka Team"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round2/mecz1",
+              "date": "2011-04-10",
+              "result": "1:3",
+              "opponent": "Wichura"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round3/mecz4",
+              "date": "2011-04-16",
+              "result": "0:9",
+              "opponent": "Sami Swoi"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round4/mecz4",
+              "date": "2011-05-07",
+              "result": "1:8",
+              "opponent": "Detox"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round5/mecz2",
+              "date": "2011-05-15",
+              "result": "0:4",
+              "opponent": "Impet"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round6/mecz2",
+              "date": "2011-05-22",
+              "result": "2:7",
+              "opponent": "Grafix Bis STM"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round7/mecz4",
+              "date": "2011-05-28",
+              "result": "1:14",
+              "opponent": "Bałtyk Miłosna"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round9/mecz4",
+              "date": "2011-06-11",
+              "result": "0:1",
+              "opponent": "Samograj"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round10/mecz2",
+              "date": "2011-06-19",
+              "result": "2:3",
+              "opponent": "FC Kosmos"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round11/mecz5",
+              "date": "2011-06-26",
+              "result": "0:8",
+              "opponent": "Legioholicy 2003"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round12/mecz4",
+              "date": "2011-08-28",
+              "result": "2:5",
+              "opponent": "Putka Team"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round14/mecz4",
+              "date": "2011-09-11",
+              "result": "0:8",
+              "opponent": "Sami Swoi"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round15/mecz4",
+              "date": "2011-09-18",
+              "result": "2:3",
+              "opponent": "Detox"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round16/mecz2",
+              "date": "2011-09-24",
+              "result": "1:6",
+              "opponent": "Impet"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round17/mecz2",
+              "date": "2011-10-01",
+              "result": "0:5",
+              "opponent": "Grafix Bis STM"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round13/mecz1",
+              "date": "2011-10-02",
+              "result": "2:4",
+              "opponent": "Chaos Team"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round18/mecz4",
+              "date": "2011-10-09",
+              "result": "0:4",
+              "opponent": "Bałtyk Miłosna"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round20/mecz4",
+              "date": "2011-10-23",
+              "result": "0:3",
+              "opponent": "Teknosystem"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round21/mecz2",
+              "date": "2011-10-29",
+              "result": "1:2",
+              "opponent": "FC Kosmos"
+            },
+            {
+              "source": "III_liga_MLPN_2011.l98",
+              "ref": "Round22/mecz5",
+              "date": "2011-11-06",
+              "result": "1:10",
+              "opponent": "Legioholicy 2003"
+            }
+          ]
+        },
+        {
+          "holder": "KS ProBram24",
+          "year": 2025,
+          "games": [
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11750",
+              "date": "2025-03-15",
+              "result": "0:3",
+              "opponent": "Nankatsu"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11806",
+              "date": "2025-03-23",
+              "result": "0:3",
+              "opponent": "Fc Zieloni"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11757",
+              "date": "2025-03-30",
+              "result": "0:3",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11771",
+              "date": "2025-04-13",
+              "result": "0:3",
+              "opponent": "SC Halinów"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11778",
+              "date": "2025-04-26",
+              "result": "0:3",
+              "opponent": "Tidy Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11785",
+              "date": "2025-05-10",
+              "result": "0:3",
+              "opponent": "Detox"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11764",
+              "date": "2025-05-18",
+              "result": "0:3",
+              "opponent": "1 Warszawska Brygada Pancerna"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11796",
+              "date": "2025-06-01",
+              "result": "0:3",
+              "opponent": "Lider"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11791",
+              "date": "2025-06-02",
+              "result": "0:3",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11801",
+              "date": "2025-06-08",
+              "result": "0:3",
+              "opponent": "PJM"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11816",
+              "date": "2025-09-06",
+              "result": "0:3",
+              "opponent": "Nankatsu"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11823",
+              "date": "2025-09-14",
+              "result": "0:3",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11830",
+              "date": "2025-09-20",
+              "result": "0:3",
+              "opponent": "1 Warszawska Brygada Pancerna"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11837",
+              "date": "2025-09-27",
+              "result": "0:3",
+              "opponent": "SC Halinów"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11844",
+              "date": "2025-10-04",
+              "result": "0:3",
+              "opponent": "Tidy Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11851",
+              "date": "2025-10-11",
+              "result": "0:3",
+              "opponent": "Detox"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11857",
+              "date": "2025-10-18",
+              "result": "0:3",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11862",
+              "date": "2025-10-25",
+              "result": "0:3",
+              "opponent": "Lider"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11867",
+              "date": "2025-11-08",
+              "result": "0:3",
+              "opponent": "PJM"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 11872",
+              "date": "2025-11-11",
+              "result": "0:3",
+              "opponent": "Fc Zieloni"
+            }
+          ]
+        },
+        {
+          "holder": "SC Halinów",
+          "year": 2021,
+          "games": [
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7679",
+              "date": "2021-04-25",
+              "result": "0:3",
+              "opponent": "Okinawa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7685",
+              "date": "2021-05-08",
+              "result": "0:3",
+              "opponent": "Sportowe Zakapiory"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7691",
+              "date": "2021-05-16",
+              "result": "0:3",
+              "opponent": "Hard Impet Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7696",
+              "date": "2021-05-23",
+              "result": "0:3",
+              "opponent": "Huragan Poręby Nowe"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7700",
+              "date": "2021-05-30",
+              "result": "0:3",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7704",
+              "date": "2021-06-13",
+              "result": "0:3",
+              "opponent": "Stara Ekipa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7712",
+              "date": "2021-06-27",
+              "result": "0:3",
+              "opponent": "Fc Faworyt"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7718",
+              "date": "2021-08-29",
+              "result": "0:3",
+              "opponent": "Chaos Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7708",
+              "date": "2021-09-01",
+              "result": "0:3",
+              "opponent": "Tidy Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7730",
+              "date": "2021-09-19",
+              "result": "0:5",
+              "opponent": "Sportowe Zakapiory"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7736",
+              "date": "2021-09-25",
+              "result": "0:11",
+              "opponent": "Hard Impet Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7741",
+              "date": "2021-10-03",
+              "result": "3:12",
+              "opponent": "Huragan Poręby Nowe"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7745",
+              "date": "2021-10-10",
+              "result": "3:5",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7749",
+              "date": "2021-10-16",
+              "result": "1:4",
+              "opponent": "Stara Ekipa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7753",
+              "date": "2021-10-24",
+              "result": "1:10",
+              "opponent": "Tidy Team"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7757",
+              "date": "2021-11-07",
+              "result": "0:23",
+              "opponent": "Fc Faworyt"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7724",
+              "date": "2021-11-13",
+              "result": "0:3",
+              "opponent": "Okinawa"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 7763",
+              "date": "2021-11-14",
+              "result": "1:3",
+              "opponent": "Chaos Team"
+            }
+          ]
+        },
+        {
+          "holder": "Chaos Team",
+          "year": 2014,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round1/mecz2",
+              "date": "2014-03-29",
+              "result": "0:5",
+              "opponent": "Alchemia Futbolu"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round2/mecz5",
+              "date": "2014-04-06",
+              "result": "1:3",
+              "opponent": "Impet"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round3/mecz2",
+              "date": "2014-04-12",
+              "result": "2:5",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round4/mecz2",
+              "date": "2014-04-26",
+              "result": "0:8",
+              "opponent": "Alabama"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round5/mecz5",
+              "date": "2014-05-11",
+              "result": "0:8",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round6/mecz3",
+              "date": "2014-05-17",
+              "result": "3:5",
+              "opponent": "Nankatsu"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round7/mecz3",
+              "date": "2014-05-25",
+              "result": "0:2",
+              "opponent": "FC Zieloni"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round8/mecz1",
+              "date": "2014-06-01",
+              "result": "3:5",
+              "opponent": "Sfinks"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round9/mecz3",
+              "date": "2014-06-08",
+              "result": "2:2",
+              "opponent": "Revolta"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round10/mecz2",
+              "date": "2014-06-14",
+              "result": "1:14",
+              "opponent": "Detox"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round12/mecz4",
+              "date": "2014-08-23",
+              "result": "4:7",
+              "opponent": "Alchemia Futbolu"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round13/mecz2",
+              "date": "2014-08-30",
+              "result": "3:6",
+              "opponent": "Impet"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round14/mecz1",
+              "date": "2014-09-06",
+              "result": "1:5",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round15/mecz1",
+              "date": "2014-09-13",
+              "result": "0:5",
+              "opponent": "Alabama"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round16/mecz3",
+              "date": "2014-09-21",
+              "result": "2:3",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round17/mecz3",
+              "date": "2014-09-27",
+              "result": "1:5",
+              "opponent": "Nankatsu"
+            },
+            {
+              "source": "II_liga_MLPN_2014.l98",
+              "ref": "Round18/mecz3",
+              "date": "2014-10-05",
+              "result": "2:5",
+              "opponent": "FC Zieloni"
+            }
+          ]
+        },
+        {
+          "holder": "FC Sulejówek",
+          "year": 2005,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round1/mecz3",
+              "date": "2005-04-17",
+              "result": "0:5",
+              "opponent": "Cyganka"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round2/mecz5",
+              "date": "2005-04-24",
+              "result": "0:3",
+              "opponent": "Szakale"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round3/mecz5",
+              "date": "2005-05-01",
+              "result": "0:4",
+              "opponent": "DKL Żurawka"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round4/mecz5",
+              "date": "2005-05-08",
+              "result": "1:6",
+              "opponent": "Hydro Instal Wołomin"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round5/mecz3",
+              "date": "2005-05-15",
+              "result": "0:6",
+              "opponent": "FC Zakręt"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round6/mecz4",
+              "date": "2005-05-22",
+              "result": "0:5",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round8/mecz5",
+              "date": "2005-05-29",
+              "result": "0:0",
+              "opponent": "Inter Trade"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round9/mecz2",
+              "date": "2005-06-04",
+              "result": "0:5",
+              "opponent": "Starszaki"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round10/mecz1",
+              "date": "2005-06-10",
+              "result": "2:12",
+              "opponent": "MKS Halinów"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round11/mecz5",
+              "date": "2005-06-19",
+              "result": "1:5",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round12/mecz3",
+              "date": "2005-06-25",
+              "result": "0:3",
+              "opponent": "Wichura"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round13/mecz6",
+              "date": "2005-07-03",
+              "result": "2:6",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round14/mecz5",
+              "date": "2005-08-30",
+              "result": "0:2",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round15/mecz3",
+              "date": "2005-09-03",
+              "result": "2:2",
+              "opponent": "Inter Trade"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round16/mecz5",
+              "date": "2005-09-10",
+              "result": "1:1",
+              "opponent": "DKL Żurawka"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round17/mecz2",
+              "date": "2005-09-18",
+              "result": "1:2",
+              "opponent": "Szakale"
+            },
+            {
+              "source": "II_liga_MLPN_2005.l98",
+              "ref": "Round18/mecz6",
+              "date": "2005-09-24",
+              "result": "0:1",
+              "opponent": "FC Zakręt"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "archive-streak-unbeaten",
+      "group": "streaks",
+      "label": "Mecze bez porażki w jednym sezonie",
+      "value": 21,
+      "unit": "meczów",
+      "holder": "Ex aequo: 3",
+      "detail": "Długa i Michałów (2013) · Kominki Sim Pianka Kuflew (2016) · Legioholicy (2018)",
+      "season": null,
+      "leagueCode": null,
+      "scope": "Datowane protokoły · 2003–2026",
+      "status": "partial",
+      "sourceLabel": "II_liga_MLPN_2013.l98 · kolejne datowane wyniki",
+      "sourceUrl": "/mecz/622eb02e-ce0c-469e-ac53-aca02649d51a?sezon=2013",
+      "sourceNote": "Porównanie wszystkich dostępnych sezonów, ale każda seria mieści się w jednym sezonie. Liczymy kolejne rozstrzygnięte wyniki według daty, z walkowerami. Pominięto 207 zestawień drużyna–sezon z brakującymi datami, wynikami lub niejednoznaczną kolejnością; dlatego nie jest to bezwarunkowy rekord całej historii. Serie przechodzące pomiędzy sezonami wymagają osobnego audytu ciągłości drużyn.",
+      "ranking": [
+        {
+          "holder": "Długa i Michałów",
+          "value": 21,
+          "detail": "II liga · 2013 · 2013-04-14 – 2013-10-26",
+          "sourceUrl": "/mecz/622eb02e-ce0c-469e-ac53-aca02649d51a?sezon=2013",
+          "season": 2013,
+          "leagueCode": "2nd",
+          "rank": 1
+        },
+        {
+          "holder": "Kominki Sim Pianka Kuflew",
+          "value": 21,
+          "detail": "III liga · 2016 · 2016-04-02 – 2016-11-20",
+          "season": 2016,
+          "leagueCode": "3rd",
+          "rank": 1
+        },
+        {
+          "holder": "Legioholicy",
+          "value": 21,
+          "detail": "I liga · 2018 · 2018-04-08 – 2018-11-11",
+          "sourceUrl": "/mecz/03c1d825-c454-4da0-8235-a33ce59e1425?sezon=2018",
+          "season": 2018,
+          "leagueCode": "1st",
+          "rank": 1
+        },
+        {
+          "holder": "Elo Melo",
+          "value": 20,
+          "detail": "III liga · 2010 · 2010-04-25 – 2010-11-06",
+          "sourceUrl": "/mecz/aac9e264-60ea-4dc1-8583-70db64a61e5f?sezon=2010",
+          "season": 2010,
+          "leagueCode": "3rd",
+          "rank": 4
+        },
+        {
+          "holder": "Legioholicy",
+          "value": 20,
+          "detail": "I liga · 2008 · 2008-04-19 – 2008-11-08",
+          "sourceUrl": "/mecz/7b14744f-ce5b-4833-86f1-d4f3d83600d6?sezon=2008",
+          "season": 2008,
+          "leagueCode": "1st",
+          "rank": 4
+        }
+      ],
+      "evidence": [
+        {
+          "holder": "Długa i Michałów",
+          "year": 2013,
+          "games": [
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round1/mecz5",
+              "date": "2013-04-14",
+              "result": "7:1",
+              "opponent": "Starszaki II"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round2/mecz2",
+              "date": "2013-04-20",
+              "result": "6:2",
+              "opponent": "Alabama"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round3/mecz5",
+              "date": "2013-04-28",
+              "result": "5:1",
+              "opponent": "Promil Czarniecki"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round4/mecz2",
+              "date": "2013-05-11",
+              "result": "5:1",
+              "opponent": "Legioholicy 2003"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round5/mecz4",
+              "date": "2013-05-19",
+              "result": "6:4",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round6/mecz1",
+              "date": "2013-05-25",
+              "result": "3:1",
+              "opponent": "FC Faworyt"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round7/mecz2",
+              "date": "2013-06-01",
+              "result": "3:1",
+              "opponent": "Sfinks"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round8/mecz4",
+              "date": "2013-06-09",
+              "result": "6:0",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round9/mecz2",
+              "date": "2013-06-15",
+              "result": "3:3",
+              "opponent": "Detox"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round10/mecz6",
+              "date": "2013-06-23",
+              "result": "2:1",
+              "opponent": "Stm Team"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round11/mecz3",
+              "date": "2013-06-29",
+              "result": "4:1",
+              "opponent": "Impet"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round12/mecz6",
+              "date": "2013-08-24",
+              "result": "0:0",
+              "opponent": "Nowa Południowa Afryka"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round13/mecz4",
+              "date": "2013-09-01",
+              "result": "3:3",
+              "opponent": "Starszaki II"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round14/mecz2",
+              "date": "2013-09-07",
+              "result": "3:0",
+              "opponent": "Legioholicy 2003"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round15/mecz4",
+              "date": "2013-09-14",
+              "result": "2:0",
+              "opponent": "Detox"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round16/mecz4",
+              "date": "2013-09-22",
+              "result": "3:1",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round17/mecz3",
+              "date": "2013-09-29",
+              "result": "3:1",
+              "opponent": "Alabama"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round18/mecz4",
+              "date": "2013-10-06",
+              "result": "7:1",
+              "opponent": "Promil Czarniecki"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round19/mecz1",
+              "date": "2013-10-12",
+              "result": "3:3",
+              "opponent": "FC Faworyt"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round20/mecz4",
+              "date": "2013-10-19",
+              "result": "7:1",
+              "opponent": "Impet"
+            },
+            {
+              "source": "II_liga_MLPN_2013.l98",
+              "ref": "Round21/mecz3",
+              "date": "2013-10-26",
+              "result": "4:2",
+              "opponent": "Stm Team"
+            }
+          ]
+        },
+        {
+          "holder": "Kominki Sim Pianka Kuflew",
+          "year": 2016,
+          "games": [
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round2/mecz1",
+              "date": "2016-04-02",
+              "result": "5:5",
+              "opponent": "Eurotherm Walencja"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round3/mecz2",
+              "date": "2016-04-10",
+              "result": "8:4",
+              "opponent": "Chaos Team"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round4/mecz1",
+              "date": "2016-04-16",
+              "result": "14:1",
+              "opponent": "DT Galacticos"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round5/mecz4",
+              "date": "2016-04-24",
+              "result": "11:2",
+              "opponent": "EL Brygada"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round6/mecz1",
+              "date": "2016-05-07",
+              "result": "6:1",
+              "opponent": "Młoda Gwardia"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round7/mecz1",
+              "date": "2016-05-15",
+              "result": "1:1",
+              "opponent": "Alchemia Futbolu"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round8/mecz1",
+              "date": "2016-05-21",
+              "result": "5:1",
+              "opponent": "Panika Papryka"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round9/mecz3",
+              "date": "2016-06-05",
+              "result": "18:2",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round10/mecz1",
+              "date": "2016-06-12",
+              "result": "15:0",
+              "opponent": "Hardcore Team"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round11/mecz5",
+              "date": "2016-06-25",
+              "result": "2:2",
+              "opponent": "Multi-Medica Zielonka"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round12/mecz1",
+              "date": "2016-09-11",
+              "result": "4:2",
+              "opponent": "Stankan"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round13/mecz1",
+              "date": "2016-09-17",
+              "result": "7:0",
+              "opponent": "Eurotherm Walencja"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round14/mecz1",
+              "date": "2016-09-24",
+              "result": "11:0",
+              "opponent": "Chaos Team"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round15/mecz3",
+              "date": "2016-10-01",
+              "result": "7:2",
+              "opponent": "DT Galacticos"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round16/mecz1",
+              "date": "2016-10-08",
+              "result": "3:0",
+              "opponent": "EL Brygada"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round17/mecz5",
+              "date": "2016-10-16",
+              "result": "2:2",
+              "opponent": "Młoda Gwardia"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round18/mecz1",
+              "date": "2016-10-23",
+              "result": "7:3",
+              "opponent": "Alchemia Futbolu"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round19/mecz2",
+              "date": "2016-10-30",
+              "result": "3:0",
+              "opponent": "Panika Papryka"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round20/mecz1",
+              "date": "2016-11-05",
+              "result": "7:0",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round21/mecz4",
+              "date": "2016-11-16",
+              "result": "4:2",
+              "opponent": "Hardcore Team"
+            },
+            {
+              "source": "III_liga_MLPN_2016.l98",
+              "ref": "Round22/mecz1",
+              "date": "2016-11-20",
+              "result": "3:0",
+              "opponent": "Multi-Medica Zielonka"
+            }
+          ]
+        },
+        {
+          "holder": "Legioholicy",
+          "year": 2018,
+          "games": [
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1326",
+              "date": "2018-04-08",
+              "result": "5:3",
+              "opponent": "Lider"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1333",
+              "date": "2018-04-15",
+              "result": "6:1",
+              "opponent": "Elo Melo"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1339",
+              "date": "2018-04-21",
+              "result": "11:3",
+              "opponent": "Starszaki"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1344",
+              "date": "2018-04-29",
+              "result": "7:2",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1349",
+              "date": "2018-05-12",
+              "result": "3:0",
+              "opponent": "Detox"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1354",
+              "date": "2018-05-27",
+              "result": "3:0",
+              "opponent": "Sparta"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1359",
+              "date": "2018-06-02",
+              "result": "7:1",
+              "opponent": "GOLD-DENT.P.T"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1364",
+              "date": "2018-06-10",
+              "result": "6:3",
+              "opponent": "Fanatycy"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1371",
+              "date": "2018-06-16",
+              "result": "11:4",
+              "opponent": "KOMINKI SIM – Pianka Kuflew"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1378",
+              "date": "2018-06-24",
+              "result": "1:1",
+              "opponent": "Fc Zieloni"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1385",
+              "date": "2018-09-02",
+              "result": "13:3",
+              "opponent": "Magnatt.eu"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1392",
+              "date": "2018-09-08",
+              "result": "8:2",
+              "opponent": "Lider"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1399",
+              "date": "2018-09-15",
+              "result": "3:3",
+              "opponent": "Elo Melo"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1405",
+              "date": "2018-09-23",
+              "result": "7:5",
+              "opponent": "Starszaki"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1410",
+              "date": "2018-09-30",
+              "result": "5:3",
+              "opponent": "Joga Finito"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1415",
+              "date": "2018-10-06",
+              "result": "13:4",
+              "opponent": "Detox"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1420",
+              "date": "2018-10-13",
+              "result": "3:0",
+              "opponent": "Sparta"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1425",
+              "date": "2018-10-20",
+              "result": "5:3",
+              "opponent": "GOLD-DENT.P.T"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1430",
+              "date": "2018-10-28",
+              "result": "14:2",
+              "opponent": "Fanatycy"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1437",
+              "date": "2018-11-04",
+              "result": "7:1",
+              "opponent": "KOMINKI SIM – Pianka Kuflew"
+            },
+            {
+              "source": "Kopia WordPress MLPN 2018–2025",
+              "ref": "mecz 1444",
+              "date": "2018-11-11",
+              "result": "7:2",
+              "opponent": "Fc Zieloni"
+            }
+          ]
+        },
+        {
+          "holder": "Elo Melo",
+          "year": 2010,
+          "games": [
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round3/mecz5",
+              "date": "2010-04-25",
+              "result": "4:0",
+              "opponent": "Legioholicy 2003"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round4/mecz2",
+              "date": "2010-05-08",
+              "result": "7:0",
+              "opponent": "Bałtyk Miłosna"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round6/mecz2",
+              "date": "2010-05-22",
+              "result": "4:0",
+              "opponent": "Wichura"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round7/mecz3",
+              "date": "2010-05-30",
+              "result": "9:5",
+              "opponent": "Detox"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round8/mecz1",
+              "date": "2010-06-05",
+              "result": "1:0",
+              "opponent": "Lider"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round9/mecz5",
+              "date": "2010-06-13",
+              "result": "7:1",
+              "opponent": "MDT Sulejówek"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round10/mecz1",
+              "date": "2010-06-19",
+              "result": "1:1",
+              "opponent": "Repra"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round11/mecz5",
+              "date": "2010-06-27",
+              "result": "1:0",
+              "opponent": "Impet"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round1/mecz3",
+              "date": "2010-07-04",
+              "result": "8:1",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round2/mecz1",
+              "date": "2010-08-21",
+              "result": "7:0",
+              "opponent": "Samogray"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round12/mecz4",
+              "date": "2010-08-28",
+              "result": "7:0",
+              "opponent": "PKKL Sulejówek"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round13/mecz1",
+              "date": "2010-09-05",
+              "result": "6:1",
+              "opponent": "Samogray"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round14/mecz5",
+              "date": "2010-09-11",
+              "result": "3:3",
+              "opponent": "Legioholicy 2003"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round15/mecz3",
+              "date": "2010-09-19",
+              "result": "8:1",
+              "opponent": "Bałtyk Miłosna"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round17/mecz2",
+              "date": "2010-10-03",
+              "result": "6:2",
+              "opponent": "Wichura"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round18/mecz3",
+              "date": "2010-10-09",
+              "result": "2:2",
+              "opponent": "Detox"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round19/mecz1",
+              "date": "2010-10-17",
+              "result": "3:1",
+              "opponent": "Lider"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round20/mecz5",
+              "date": "2010-10-23",
+              "result": "3:0",
+              "opponent": "MDT Sulejówek"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round21/mecz1",
+              "date": "2010-10-31",
+              "result": "2:2",
+              "opponent": "Repra"
+            },
+            {
+              "source": "III_liga_MLPN_2010.l98",
+              "ref": "Round22/mecz5",
+              "date": "2010-11-06",
+              "result": "2:2",
+              "opponent": "Impet"
+            }
+          ]
+        },
+        {
+          "holder": "Legioholicy",
+          "year": 2008,
+          "games": [
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round3/mecz2",
+              "date": "2008-04-19",
+              "result": "4:1",
+              "opponent": "Starszaki"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round4/mecz4",
+              "date": "2008-04-27",
+              "result": "3:1",
+              "opponent": "MBM Kebab"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round5/mecz5",
+              "date": "2008-05-11",
+              "result": "3:2",
+              "opponent": "Inter Trade"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round6/mecz3",
+              "date": "2008-05-17",
+              "result": "7:2",
+              "opponent": "KERAM Los Torpedos"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round7/mecz3",
+              "date": "2008-05-24",
+              "result": "3:3",
+              "opponent": "Derejn"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round8/mecz6",
+              "date": "2008-06-01",
+              "result": "2:0",
+              "opponent": "FC Faworyt Anwa-Tech"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round9/mecz1",
+              "date": "2008-06-07",
+              "result": "6:0",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round10/mecz4",
+              "date": "2008-06-15",
+              "result": "3:1",
+              "opponent": "Devils Wołomin"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round11/mecz1",
+              "date": "2008-06-21",
+              "result": "1:1",
+              "opponent": "Dziadki"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round12/mecz6",
+              "date": "2008-08-24",
+              "result": "8:1",
+              "opponent": "Colgate Palmolive"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round13/mecz4",
+              "date": "2008-08-31",
+              "result": "8:1",
+              "opponent": "FIFA Squad"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round15/mecz4",
+              "date": "2008-09-14",
+              "result": "4:3",
+              "opponent": "MBM Kebab"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round16/mecz5",
+              "date": "2008-09-21",
+              "result": "4:2",
+              "opponent": "Inter Trade"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round17/mecz3",
+              "date": "2008-09-27",
+              "result": "6:0",
+              "opponent": "KERAM Los Torpedos"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round18/mecz3",
+              "date": "2008-10-04",
+              "result": "2:1",
+              "opponent": "Derejn"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round14/mecz2",
+              "date": "2008-10-10",
+              "result": "6:2",
+              "opponent": "Starszaki"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round19/mecz6",
+              "date": "2008-10-12",
+              "result": "1:1",
+              "opponent": "FC Faworyt Anwa-Tech"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round20/mecz1",
+              "date": "2008-10-18",
+              "result": "8:4",
+              "opponent": "Gosuansa"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round21/mecz4",
+              "date": "2008-10-26",
+              "result": "6:2",
+              "opponent": "Devils Wołomin"
+            },
+            {
+              "source": "I_liga_MLPN_2008.l98",
+              "ref": "Round22/mecz1",
+              "date": "2008-11-08",
+              "result": "1:1",
+              "opponent": "Dziadki"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
