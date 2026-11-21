@@ -1,4 +1,4 @@
-import { drawGraphic, getBestEightHeaderLayout, getSponsorPanelLayout } from "./graphicsRenderer";
+import { drawGraphic, drawSponsorCell, getBestEightHeaderLayout, getSponsorPanelLayout } from "./graphicsRenderer";
 
 const CATEGORIES = ["round-typer", "round-preview", "round-results", "best-eight", "player-award", "player-vote", "table-summary"];
 const FORMATS = [
@@ -126,6 +126,16 @@ describe("partner logos across complete graphic categories", () => {
     canvasContext = jest.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() => recordingContext());
   });
   afterEach(() => canvasContext.mockRestore());
+
+  test("renders clean partner artwork even when a saved frame enables heavy shadows", () => {
+    const ctx = recordingContext();
+    const logo = { naturalWidth: 220, naturalHeight: 100 };
+    expect(drawSponsorCell(ctx, logo, { glow: true, glowStrength: 1, glowBlur: 16, glowDensity: 24 },
+      220, 100, { forceBg: "light", outline: false })).toBe(true);
+    expect(ctx.images).toHaveLength(1);
+    expect(ctx.images[0].image).toBe(logo);
+    expect(ctx.shadowBlur || 0).toBe(0);
+  });
 
   test.each(CASES)("draws all sixteen partners once below the content in %s %s with %i rows", (format, category, rows, layout) => {
     const { form, data, markers } = contentFixture(category, rows);

@@ -9,6 +9,7 @@ import {
 } from "./utils/graphicsTableRange";
 import { formatWeekendRange, sortMatchesChronologically, sortMatchesForGraphic } from "./utils/graphicsWeekend";
 import { getGraphicTeamAbbreviation } from "./utils/graphicsTeamAbbreviations";
+import { getLightBackgroundSponsorArtwork } from "./utils/graphicsSponsorArtwork";
 import { getLeagueRules } from "../../lib/leagueRules";
 
 // Full brand lockup (eagle + "MLPN SULEJÓWEK" + "isola RISTORANTE"), white version for dark art.
@@ -207,6 +208,9 @@ function isCompletedStatus(status) {
 }
 
 function getPeriodLabel(form) {
+  if (["season-best-eight", "season-awards"].includes(form.category)) {
+    return `Sezon ${form.seasonHonours?.year || form.seasonYear || ""}`.trim();
+  }
   if (form.category === "table-summary") return "Sezon";
   if (form.periodLabel && form.periodLabel.trim()) return form.periodLabel.trim();
   if (form.periodType === "round") return "Runda";
@@ -229,6 +233,8 @@ function titleForForm(form) {
       : roundText;
   }
   if (form.category === "best-eight") return `Ósemka ${form.periodType === "season" ? "sezonu" : form.periodType === "round" ? "rundy" : "miesiąca"}`;
+  if (form.category === "season-best-eight") return "Ósemka sezonu";
+  if (form.category === "season-awards") return "Wyróżnienia sezonu";
   if (form.category === "player-award") return "Zawodnik okresu";
   if (form.category === "player-vote") return "Głosowanie kibiców";
   if (form.category === "table-summary") return "Tabela ligi";
@@ -252,7 +258,7 @@ function subtitleForForm(form) {
     }
     return "Wyniki";
   }
-  if (["best-eight", "player-award", "player-vote", "table-summary"].includes(form.category)) {
+  if (["best-eight", "season-best-eight", "season-awards", "player-award", "player-vote", "table-summary"].includes(form.category)) {
     return `${getLeague(form.leagueCode).label} · ${getPeriodLabel(form)}`;
   }
   return "";
@@ -481,7 +487,7 @@ export function defaultFrame() {
     y: 0,
     bg: "light",
     mode: "fit",
-    glow: true,
+    glow: false,
     glowAutoColor: false,
     glowColor: "#858585",
     glowSize: 0.016,
@@ -515,7 +521,7 @@ export function normalizeSponsorFrame(frame) {
     y: clamp(Number.isFinite(y) ? y : 0, -0.6, 0.6),
     bg,
     mode,
-    glow: true,
+    glow: source.glow === true,
     glowAutoColor: source.glowAutoColor === true,
     glowColor: normalizeColor(source.glowColor, "#858585"),
     glowSize: clamp(Number.isFinite(glowSize) ? glowSize : 0.016, 0.004, 0.09),
@@ -706,7 +712,7 @@ function drawBestEightHeader(ctx, form, images, layout) {
     drawText(ctx, "ÓSEMKA", cx, title.y + title.h * 0.36, {
       size: layout.isStory ? 96 : 82, weight: 900, color: layout.t.text, maxWidth: title.w,
     });
-    const period = form.periodType === "season" ? "SEZONU" : form.periodType === "round" ? "RUNDY" : "MIESIĄCA";
+    const period = form.category === "season-best-eight" || form.periodType === "season" ? "SEZONU" : form.periodType === "round" ? "RUNDY" : "MIESIĄCA";
     drawText(ctx, period, cx, title.y + title.h * 0.81, {
       size: layout.isStory ? 54 : 43, weight: 800, color: dark ? BRAND.goldSoft : BRAND.navy,
       maxWidth: title.w, tracking: 3,
@@ -721,7 +727,7 @@ function drawBestEightHeader(ctx, form, images, layout) {
     color: form.leagueCode === "2nd" ? BRAND.ink : BRAND.white, maxWidth: context.w - 16,
   });
   const period = getPeriodLabel(form);
-  const year = String(form.seasonYear || "").trim();
+  const year = String((form.category === "season-best-eight" && form.seasonHonours?.year) || form.seasonYear || "").trim();
   const date = form.subtitle?.trim() || [period, year && !period.includes(year) ? year : ""].filter(Boolean).join(" ");
   const dateBox = { x: context.x, y: badgeY + badgeH + 12, w: context.w, h: context.h * 0.36 };
   drawBestEightName(ctx, getBestEightNameLayout(ctx, date.toUpperCase(), dateBox, layout.isStory ? 25 : 21), dateBox, layout.t.textSoft);
@@ -729,7 +735,7 @@ function drawBestEightHeader(ctx, form, images, layout) {
 }
 
 function drawHeader(ctx, form, images, layout) {
-  if (form.category === "best-eight") return drawBestEightHeader(ctx, form, images, layout);
+  if (["best-eight", "season-best-eight"].includes(form.category)) return drawBestEightHeader(ctx, form, images, layout);
   const { width, M, t } = layout;
   const top = layout.headerTop;
   const isStory = layout.isStory;
@@ -972,7 +978,8 @@ function drawImageFramed(ctx, image, x, y, w, h, frame, pad, cellBg = "dark") {
 
 // One sponsor logo inside its cell — shared by the graphic and the cropping preview.
 export function drawSponsorCell(ctx, image, frame, w, h, opts = {}) {
-  const f = normalizeSponsorFrame(frame);
+  // Export partner artwork cleanly, including frames saved before shadows were removed.
+  const f = { ...normalizeSponsorFrame(frame), glow: false };
   const r = Math.min(h * 0.2, 16);
   if (opts.drawBand) {
     ctx.fillStyle = opts.forceBg === "light" ? "#f4f6f9" : "#0a1e37";
@@ -993,7 +1000,8 @@ export function drawSponsorCell(ctx, image, frame, w, h, opts = {}) {
     ctx.fillStyle = "rgba(255,255,255,0.045)";
     ctx.fillRect(0, 0, w, h);
   }
-  const drawn = drawImageFramed(ctx, image, 0, 0, w, h, f, Math.min(w, h) * 0.06, bg === "light" ? "light" : "dark");
+  const artwork = bg === "light" ? getLightBackgroundSponsorArtwork(image, opts.name) : image;
+  const drawn = drawImageFramed(ctx, artwork, 0, 0, w, h, f, Math.min(w, h) * 0.06, bg === "light" ? "light" : "dark");
   ctx.restore();
   if (opts.outline !== false || opts.guide) {
     const outline = opts.guide
@@ -1013,7 +1021,7 @@ function fallbackSponsorList() {
 
 function sponsorRowsForForm(form, list) {
   const automatic = Math.ceil(list.length / 6) || 1;
-  const requested = Number(form.category === "best-eight" ? form.bestEightSponsorRows : form.sponsorRows);
+  const requested = Number(["best-eight", "season-best-eight"].includes(form.category) ? form.bestEightSponsorRows : form.sponsorRows);
   const rows = Number.isFinite(requested) && requested > 0 ? requested : automatic;
   return clamp(Math.round(rows), 1, Math.min(4, Math.max(1, list.length)));
 }
@@ -1085,7 +1093,7 @@ function drawSponsorRow(ctx, items, sponsorImages, x, y, w, h) {
     const img = getImage(sponsorImages, item.id);
     ctx.save();
     ctx.translate(cellX, cellY);
-    const drawn = drawSponsorCell(ctx, img, item.frame, cellW, cellH, { forceBg: "light", outline: false });
+    const drawn = drawSponsorCell(ctx, img, item.frame, cellW, cellH, { forceBg: "light", outline: false, name: item.name });
     ctx.restore();
     if (!drawn) {
       drawText(ctx, item.name, cellX + cellW / 2, cellY + cellH / 2, {
@@ -1420,7 +1428,8 @@ export function getBestEightLayout(form, layout, top, bottom) {
       const y = pitch.y + inset + rowIndex * rowH + (rowH - groupH) / 2;
       const nameW = Math.min(layout.isStory ? 310 : 292, cellW - 14);
       players.push({
-        index: slot.index, label: slot.label,
+        index: slot.index,
+        label: (form.category === "season-best-eight" && form.lineup?.[slot.index]?.positionLabel) || slot.label,
         position: { x: cx - 36, y, w: 72, h: positionH },
         logo: { x: cx - logoSize / 2, y: y + positionH + gap, w: logoSize, h: logoSize },
         name: { x: cx - nameW / 2, y: y + positionH + gap + logoSize + gap, w: nameW, h: nameH },
@@ -1528,6 +1537,7 @@ function drawBestEight(ctx, form, images, layout, top, bottom) {
       color: layout.t.dark ? BRAND.goldSoft : BRAND.navy, maxWidth: position.w,
     });
     const image = getImage(images.teamLogos, slot.logoUrl);
+    if (form.category === "season-best-eight") drawSeasonCrestBackdrop(ctx, image, logo, layout);
     const drawn = drawImageFramed(ctx, image, logo.x, logo.y, logo.w, logo.h, { mode: "fit", glow: false }, 0);
     if (!drawn) {
       fillRoundRect(ctx, logo.x + logo.w * 0.15, logo.y, logo.w * 0.7, logo.h, 8, layout.t.panel, layout.t.panelLine);
@@ -1541,6 +1551,136 @@ function drawBestEight(ctx, form, images, layout, top, bottom) {
     const displayName = formatBestEightPlayerName(slot.name);
     drawBestEightName(ctx, getBestEightNameLayout(ctx, displayName, textBox, player.nameSize), textBox, layout.t.text);
   });
+}
+
+/* ============================== OFFICIAL SEASON HONOURS ============================== */
+
+// A soft halo stays entirely inside the reserved crest box, so dark details
+// remain readable without adding a tile or touching the name/position labels.
+function drawSeasonCrestBackdrop(ctx, image, box, layout) {
+  if (!layout.t.dark || !image?.naturalWidth) return;
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+  const radius = Math.min(box.w, box.h) / 2;
+  const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+  halo.addColorStop(0, "rgba(244,246,249,0.7)");
+  halo.addColorStop(0.55, "rgba(244,246,249,0.38)");
+  halo.addColorStop(1, "rgba(244,246,249,0)");
+  ctx.save();
+  ctx.fillStyle = halo;
+  ctx.fillRect(box.x, box.y, box.w, box.h);
+  ctx.restore();
+}
+
+// The season adapter supplies the confirmed selections. These templates never
+// infer an MVP, a goalkeeper, a champion or a lineup from live statistics.
+export function getSeasonChampionLayout(layout, top) {
+  const band = { x: layout.width * 0.045, y: top, w: layout.width * 0.91, h: layout.isStory ? 104 : 62 };
+  const pad = layout.isStory ? 16 : 10;
+  const logoSize = band.h - pad * 2;
+  const labelX = band.x + pad + logoSize + (layout.isStory ? 24 : 18);
+  const labelW = layout.isStory ? 226 : 208;
+  const nameX = labelX + labelW + (layout.isStory ? 24 : 18);
+  return {
+    band,
+    logo: { x: band.x + pad, y: top + pad, w: logoSize, h: logoSize },
+    label: { x: labelX, y: top + pad, w: labelW, h: logoSize },
+    name: { x: nameX, y: top + pad, w: band.x + band.w - pad - nameX, h: logoSize },
+    contentTop: top + band.h + (layout.isStory ? 24 : 14),
+  };
+}
+
+function drawSeasonChampion(ctx, form, images, layout, top) {
+  const { band, logo, label, name, contentTop } = getSeasonChampionLayout(layout, top);
+  const honours = form.seasonHonours || {};
+  fillRoundRect(ctx, band.x, band.y, band.w, band.h, layout.isStory ? 18 : 12,
+    layout.t.dark ? "rgba(231,178,60,0.15)" : "rgba(231,178,60,0.22)", "rgba(231,178,60,0.65)", 1.5);
+  const image = getImage(images.teamLogos, honours.championLogo);
+  drawSeasonCrestBackdrop(ctx, image, logo, layout);
+  if (!drawImageFramed(ctx, image, logo.x, logo.y, logo.w, logo.h, { mode: "fit", glow: false }, 0)) {
+    // A drawn star is also legible when a club crest is unavailable.
+    drawSparkle(ctx, logo.x + logo.w / 2, logo.y + logo.h / 2, logo.w * 0.35, BRAND.gold);
+  }
+  const accent = layout.t.dark ? BRAND.goldSoft : BRAND.navy;
+  drawBestEightName(ctx, getBestEightNameLayout(ctx, `MISTRZ ${getLeague(form.leagueCode).label.toUpperCase().replace(/LIGA$/u, "LIGI")}`, label,
+    layout.isStory ? 27 : 23), label, accent);
+  drawBestEightName(ctx, getBestEightNameLayout(ctx, honours.champion || "Nie wskazano mistrza", name,
+    layout.isStory ? 38 : 29), name, layout.t.text);
+  return contentTop;
+}
+
+export function getSeasonAwardsLayout(layout, top, bottom) {
+  const area = { x: layout.width * 0.045, y: top, w: layout.width * 0.91, h: bottom - top };
+  const gap = layout.isStory ? 26 : 18;
+  const cardW = (area.w - gap) / 2;
+  const cardH = (area.h - gap) / 2;
+  const pad = layout.isStory ? 28 : 18;
+  const categoryH = layout.isStory ? 48 : 26;
+  const nameH = layout.isStory ? 80 : 48;
+  const teamH = layout.isStory ? 48 : 28;
+  const statH = layout.isStory ? 38 : 24;
+  const minGap = layout.isStory ? 16 : 6;
+  const logoSize = Math.min(layout.isStory ? 204 : 100,
+    cardH - pad * 2 - categoryH - nameH - teamH - statH - minGap * 4);
+  const innerGap = (cardH - pad * 2 - categoryH - logoSize - nameH - teamH - statH) / 4;
+  const cards = Array.from({ length: 4 }, (_, index) => {
+    const card = { x: area.x + (index % 2) * (cardW + gap), y: top + Math.floor(index / 2) * (cardH + gap), w: cardW, h: cardH };
+    const textX = card.x + pad;
+    const textW = card.w - pad * 2;
+    const category = { x: textX, y: card.y + pad, w: textW, h: categoryH };
+    const logo = { x: card.x + (card.w - logoSize) / 2, y: category.y + category.h + innerGap, w: logoSize, h: logoSize };
+    const name = { x: textX, y: logo.y + logo.h + innerGap, w: textW, h: nameH };
+    const team = { x: textX, y: name.y + name.h + innerGap, w: textW, h: teamH };
+    const stat = { x: textX, y: team.y + team.h + innerGap, w: textW, h: statH };
+    return { index, card, category, logo, name, team, stat };
+  });
+  return { area, cards };
+}
+
+function drawSeasonAwards(ctx, form, images, layout, top, bottom) {
+  const awards = form.seasonHonours?.awards;
+  if (!Array.isArray(awards) || awards.length !== 4 || awards.some((award) => !award?.name || !award?.category)) {
+    drawEmpty(ctx, "Brak kompletu zatwierdzonych wyróżnień", layout, top, bottom);
+    return;
+  }
+  const { cards } = getSeasonAwardsLayout(layout, top, bottom);
+  cards.forEach(({ index, card, category, logo, name, team, stat }) => {
+    const award = awards[index];
+    fillRoundRect(ctx, card.x, card.y, card.w, card.h, layout.isStory ? 26 : 18,
+      layout.t.dark ? "rgba(5,18,33,0.64)" : "rgba(255,255,255,0.86)", layout.t.panelLine, 1.5);
+    fillRoundRect(ctx, card.x + card.w * 0.35, card.y, card.w * 0.3, 3, 1.5, BRAND.gold);
+    drawBestEightName(ctx, getBestEightNameLayout(ctx, award.category, category, layout.isStory ? 30 : 23),
+      category, layout.t.dark ? BRAND.goldSoft : BRAND.navy);
+    const image = getImage(images.teamLogos, award.logoUrl || award.logo);
+    drawSeasonCrestBackdrop(ctx, image, logo, layout);
+    if (!drawImageFramed(ctx, image, logo.x, logo.y, logo.w, logo.h, { mode: "fit", glow: false }, 0)) {
+      fillRoundRect(ctx, logo.x, logo.y, logo.w, logo.h, 12, layout.t.panel, layout.t.panelLine);
+      drawText(ctx, "MLPN", logo.x + logo.w / 2, logo.y + logo.h / 2, {
+        size: logo.w * 0.22, color: layout.t.textSoft, maxWidth: logo.w * 0.8,
+      });
+    }
+    drawBestEightName(ctx, getBestEightNameLayout(ctx, formatBestEightPlayerName(award.name), name,
+      layout.isStory ? 44 : 33), name, layout.t.text);
+    if (award.team) {
+      drawBestEightName(ctx, getBestEightNameLayout(ctx, award.team, team, layout.isStory ? 25 : 20), team, layout.t.textSoft);
+    }
+    if (award.stat != null && String(award.stat).trim()) {
+      const badge = { x: stat.x + stat.w * 0.1, y: stat.y, w: stat.w * 0.8, h: stat.h };
+      fillRoundRect(ctx, badge.x, badge.y, badge.w, badge.h, badge.h / 2,
+        layout.t.dark ? "rgba(231,178,60,0.14)" : "rgba(231,178,60,0.19)");
+      const textBox = { ...badge, x: badge.x + 10, w: badge.w - 20 };
+      drawBestEightName(ctx, getBestEightNameLayout(ctx, String(award.stat), textBox, layout.isStory ? 28 : 19),
+        textBox, layout.t.dark ? BRAND.goldSoft : BRAND.navy);
+    }
+  });
+}
+
+function drawSeasonBestEight(ctx, form, images, layout, top, bottom) {
+  if (!Array.isArray(form.lineup) || form.lineup.length !== 8 || form.lineup.some((player) => !player?.name)) {
+    drawEmpty(ctx, "Brak zatwierdzonej ósemki sezonu", layout, top, bottom);
+    return;
+  }
+  drawBestEight(ctx, form, images, layout, top, bottom);
 }
 
 // Large, faint team crest woven into the background.
@@ -1751,15 +1891,20 @@ export function drawGraphic(ctx, form, data, images, width, height) {
   };
 
   drawBackground(ctx, width, height, form, layout);
-  const contentTop = drawHeader(ctx, form, images, layout);
+  let contentTop = drawHeader(ctx, form, images, layout);
   const contentBottom = drawSponsorPanel(ctx, form, images, layout) - (isStory ? 30 : 22);
   drawFooter(ctx, form, layout);
 
   const c = form.category;
+  if (["season-best-eight", "season-awards"].includes(c)) {
+    contentTop = drawSeasonChampion(ctx, form, images, layout, contentTop);
+  }
   if (c === "round-typer") drawTyper(ctx, form, data.matches, images, layout, contentTop, contentBottom);
   else if (c === "round-preview") drawRoundList(ctx, form, data.matches, images, layout, contentTop, contentBottom, "preview");
   else if (c === "round-results") drawRoundList(ctx, form, data.matches, images, layout, contentTop, contentBottom, "results");
   else if (c === "best-eight") drawBestEight(ctx, form, images, layout, contentTop, contentBottom);
+  else if (c === "season-best-eight") drawSeasonBestEight(ctx, form, images, layout, contentTop, contentBottom);
+  else if (c === "season-awards") drawSeasonAwards(ctx, form, images, layout, contentTop, contentBottom);
   else if (c === "player-award") drawPlayerAward(ctx, form, images, layout, contentTop, contentBottom);
   else if (c === "player-vote") drawPlayerVote(ctx, form, images, layout, contentTop, contentBottom);
   else if (c === "table-summary") drawTable(ctx, form, data.standings, images, layout, contentTop, contentBottom);
