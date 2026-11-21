@@ -73,6 +73,7 @@ test.each([
 
   const pitchRows = Array.from(host.querySelectorAll('.season-honours__pitch-row'));
   expect(Array.from(pitchRows[1].querySelectorAll('abbr'), position => position.textContent)).toEqual(['LP', 'ŚP', 'PP']);
+  expect(Array.from(pitchRows[0].querySelectorAll('abbr'), position => position.textContent)).toEqual(leagueId === '1st' ? ['LN', 'PN'] : ['ŚN']);
   pitchRows.forEach((row, index) => {
     expect(row.style.gridTemplateColumns).toBe(`repeat(${expectedRows[index].length}, minmax(0, 1fr))`);
   });
@@ -85,8 +86,8 @@ test('keeps Kucharek on the right midfield and Orzoł in attack after the final 
   const rows = host.querySelectorAll('.season-honours__pitch-row');
   const attacker = rows[0].querySelector('.season-honours__player');
   expect(attacker.querySelector('.season-honours__player-name').textContent).toBe('S. Orzoł');
-  expect(attacker.querySelector('abbr').title).toBe('Napastnik');
-  expect(attacker.querySelector('abbr').textContent).toBe('NAP');
+  expect(attacker.querySelector('abbr').title).toBe('Środkowy napastnik');
+  expect(attacker.querySelector('abbr').textContent).toBe('ŚN');
   expect(attacker.querySelector('[data-team-logo]').dataset.teamLogo).toBe('FC Faworyt');
 
   const rightMidfielder = rows[1].querySelectorAll('.season-honours__player')[2];
