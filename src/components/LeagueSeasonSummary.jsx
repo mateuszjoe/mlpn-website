@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { Award, Crosshair, Goal, ShieldCheck, Trophy } from 'lucide-react';
 import './LeagueSeasonSummary.css';
 
@@ -39,19 +39,60 @@ function pitchRows(summary) {
   }).reverse();
 }
 
-export default function LeagueSeasonSummary({ summary, leagueName, darkMode, TeamLogo, openTeam }) {
-  const titleId = `season-honours-${summary.year}`;
-  const pitchTitleId = `season-eight-${summary.year}`;
+export default function LeagueSeasonSummary({ summary, leagueName, darkMode, TeamLogo, openTeam, showHeading = true }) {
+  const instanceId = useId();
+  const titleId = `season-honours-${instanceId}`;
+  const pitchTitleId = `season-eight-${instanceId}`;
+  const awardsId = `season-awards-${instanceId}`;
+  const [activePanel, setActivePanel] = useState('awards');
+  const tabRefs = useRef({});
+
+  const handleTabKeyDown = (event) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const nextPanel = event.key === 'Home' ? 'awards' : event.key === 'End' ? 'eight' : activePanel === 'awards' ? 'eight' : 'awards';
+    setActivePanel(nextPanel);
+    tabRefs.current[nextPanel]?.focus();
+  };
 
   return (
-    <section className={`season-honours${darkMode ? ' season-honours--dark' : ''}`} aria-labelledby={titleId}>
-      <header className="season-honours__header">
+    <section className={`season-honours${darkMode ? ' season-honours--dark' : ''}`} aria-labelledby={showHeading ? titleId : undefined} aria-label={showHeading ? undefined : `${leagueName} — wyróżnienia sezonu ${summary.year}`}>
+      {showHeading && <header className="season-honours__header">
         <span className="season-honours__eyebrow">{leagueName} · sezon {summary.year}</span>
         <h2 id={titleId}>Wyróżnienia sezonu</h2>
-      </header>
+      </header>}
+
+      <div className="season-honours__champion">
+        <TeamLogo team={summary.champion} darkMode={darkMode} size={48} onClick={() => openTeam(summary.champion)} />
+        <div className="season-honours__champion-copy">
+          <div className="season-honours__champion-label">Mistrz {leagueName.replace('Liga', 'ligi')} · {summary.year}</div>
+          <button type="button" className="season-honours__champion-team" onClick={() => openTeam(summary.champion)}>{summary.champion}</button>
+        </div>
+        <Trophy className="season-honours__champion-trophy" size={30} aria-hidden="true" />
+      </div>
+
+      <div className="season-honours__tabs" role="tablist" aria-label={`${leagueName} — rodzaj wyróżnień`} onKeyDown={handleTabKeyDown}>
+        {[
+          { key: 'awards', label: 'Nagrody', panelId: awardsId },
+          { key: 'eight', label: 'Najlepsza ósemka', panelId: pitchTitleId },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            ref={node => { tabRefs.current[tab.key] = node; }}
+            type="button"
+            role="tab"
+            id={`${tab.panelId}-tab`}
+            aria-selected={activePanel === tab.key}
+            aria-controls={tab.panelId}
+            tabIndex={activePanel === tab.key ? 0 : -1}
+            onClick={() => setActivePanel(tab.key)}
+          >{tab.label}</button>
+        ))}
+      </div>
 
       <div className="season-honours__layout">
-        <div className="season-honours__awards">
+        <div id={awardsId} className={`season-honours__awards${activePanel !== 'awards' ? ' season-honours__panel--inactive' : ''}`} role="tabpanel" aria-label="Nagrody indywidualne">
           {summary.awards.map(award => {
             const Icon = AWARD_ICONS[award.category] || Award;
             return (
@@ -71,9 +112,9 @@ export default function LeagueSeasonSummary({ summary, leagueName, darkMode, Tea
           })}
         </div>
 
-        <section className="season-honours__eight" aria-labelledby={pitchTitleId}>
+        <section id={pitchTitleId} className={`season-honours__eight${activePanel !== 'eight' ? ' season-honours__panel--inactive' : ''}`} role="tabpanel" aria-label="Najlepsza ósemka">
           <header className="season-honours__eight-heading">
-            <h3 id={pitchTitleId}>Najlepsza ósemka</h3>
+            <h3>Najlepsza ósemka</h3>
             <span>{summary.formation}</span>
           </header>
           <div className="season-honours__pitch">

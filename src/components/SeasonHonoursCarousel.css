@@ -1,0 +1,31 @@
+.mlpn-shell .mlpn-home-season-summary.e3d-card { padding: 0 !important; }
+.season-carousel { min-width: 0; color: #f7f9fd; }
+.season-carousel__heading { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.season-carousel__eyebrow { color: #e7cb87; font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.season-carousel__heading h2 { margin: 4px 0 0; font-family: var(--mlpn-display-font); font-size: clamp(30px, 3vw, 42px); font-weight: 800; line-height: 1.05; }
+.season-carousel__controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.season-carousel__count { padding-right: 6px; color: #fff; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.season-carousel__count > span { color: #b9c7dd; font-weight: 500; }
+.season-carousel__controls button { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #ffffff30; border-radius: 50%; background: #ffffff0d; color: #fff; }
+.season-carousel__controls button:hover { background: #ffffff1a; }
+.season-carousel__leagues { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 5px; margin-bottom: 16px; border: 1px solid #ffffff20; border-radius: 13px; background: #081a325c; }
+.season-carousel__leagues button { min-width: 0; min-height: 40px; padding: 8px; border: 1px solid transparent; border-radius: 9px; color: #bdcbe0; font-size: 14px; font-weight: 800; }
+.season-carousel__leagues button:hover { background: #ffffff0c; color: #fff; }
+.season-carousel__leagues button[aria-selected="true"] { background: #f1cf86; border-color: #f6db9e; color: #202b3b; box-shadow: 0 2px 9px #00000020; }
+.season-carousel__panel { min-width: 0; touch-action: pan-y pinch-zoom; }
+.season-carousel__footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 14px; margin-top: 14px; }
+.season-carousel__hint { color: #c1cee0; font-size: 10px; line-height: 1.5; }
+.season-carousel__footer > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; color: #f4dca7; font-size: 12px; font-weight: 700; text-align: left; }
+.season-carousel__footer > button:hover { text-decoration: underline; }
+.season-carousel button:focus-visible { outline: 2px solid #f1cf86; outline-offset: 3px; }
+
+@media (max-width: 479px) {
+  .mlpn-shell .mlpn-home-season-summary > .relative { padding: 14px 10px !important; }
+  .season-carousel__heading { gap: 10px; margin-bottom: 12px; }
+  .season-carousel__heading h2 { font-size: 30px; }
+  .season-carousel__controls { margin-left: auto; }
+  .season-carousel__controls button { width: 36px; height: 36px; }
+  .season-carousel__leagues { margin-bottom: 12px; padding: 4px; gap: 4px; }
+  .season-carousel__leagues button { min-height: 40px; font-size: 13px; }
+  .season-carousel__footer { margin-top: 10px; }
+}

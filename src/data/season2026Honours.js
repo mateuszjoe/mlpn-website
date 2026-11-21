@@ -4,6 +4,7 @@
 export const season2026Honours = {
   '1st': {
     year: 2026,
+    champion: 'Al Mar Wołomin',
     formation: '1-2-3-2',
     awards: [
       { category: 'Najlepszy zawodnik', name: 'Damian Zajdowski', team: 'Al Mar Wołomin', stat: 'MVP' },
@@ -24,6 +25,7 @@ export const season2026Honours = {
   },
   '2nd': {
     year: 2026,
+    champion: 'Faludża',
     formation: '1-3-3-1',
     awards: [
       { category: 'Najlepszy zawodnik', name: 'Maks Kardas', team: 'Detox', stat: 'MVP' },
@@ -44,6 +46,7 @@ export const season2026Honours = {
   },
   '3rd': {
     year: 2026,
+    champion: 'FC Faworyt',
     formation: '1-3-3-1',
     awards: [
       { category: 'Najlepszy zawodnik', name: 'Sebastian Orzoł', team: 'FC Faworyt', stat: 'MVP' },
