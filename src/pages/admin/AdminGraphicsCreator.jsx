@@ -18,6 +18,7 @@ import {
 import { supabase } from "../../lib/supabase";
 import AdminAlert from "./components/AdminAlert";
 import AdminFormField from "./components/AdminFormField";
+import { getGraphicsSeasonHonours } from "./utils/graphicsSeasonHonours";
 import {
   getTablePositionOptions,
   resolveTableRange,
@@ -68,6 +69,20 @@ const SPONSOR_ROW_OPTIONS = [
 ];
 
 const CATEGORY_OPTIONS = [
+  {
+    id: "season-best-eight",
+    scope: "league",
+    label: "Ósemka sezonu",
+    subtitle: "Oficjalna drużyna sezonu",
+    icon: Users,
+  },
+  {
+    id: "season-awards",
+    scope: "league",
+    label: "Wyróżnienia sezonu",
+    subtitle: "Cztery nagrody indywidualne",
+    icon: Trophy,
+  },
   {
     id: "round-typer",
     scope: "all",
@@ -162,14 +177,6 @@ const LEAGUE_OPTIONS = [
   { value: "2nd", label: "II Liga", accent: "#f8fafc" },
   { value: "3rd", label: "III Liga", accent: "#76c879" },
 ];
-
-const DEFAULT_SPONSOR_OUTLINE = {
-  color: "#858585",
-  strength: 1,
-  density: 24,
-  blur: 12,
-  thickness: 0.016,
-};
 
 const GRAPHICS_FORM_DRAFT_KEY = "mlpn_admin_graphics_creator_form_draft_v1";
 const GRAPHICS_COLLAPSED_DRAFT_KEY = "mlpn_admin_graphics_creator_collapsed_draft_v1";
@@ -555,6 +562,10 @@ function collectLogoUrls(form, matches) {
   });
   if (form.playerPhotoUrl) urls.add(form.playerPhotoUrl);
   if (form.playerLogoUrl) urls.add(form.playerLogoUrl);
+  if (form.seasonHonours?.championLogo) urls.add(form.seasonHonours.championLogo);
+  form.seasonHonours?.awards.forEach((award) => {
+    if (award.logoUrl) urls.add(award.logoUrl);
+  });
   return Array.from(urls);
 }
 
@@ -593,6 +604,8 @@ export default function AdminGraphicsCreator({ darkMode }) {
   const selectedLeague = useMemo(() => getLeague(form.leagueCode), [form.leagueCode]);
   const isLeagueCategory = selectedCategory.scope === "league";
   const isTableSummaryCategory = form.category === "table-summary";
+  const isSeasonHonoursCategory = ["season-best-eight", "season-awards"].includes(form.category);
+  const isBestEightCategory = ["best-eight", "season-best-eight"].includes(form.category);
   const isWeekendPreview = form.category === "round-preview" && form.previewScope === "weekend";
   const isWeekendResults = form.category === "round-results" && form.resultsScope === "weekend";
   const isWeekendTyper = form.category === "round-typer";
@@ -697,6 +710,26 @@ export default function AdminGraphicsCreator({ darkMode }) {
     return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, "pl"));
   }, [matches]);
 
+  const seasonHonours = useMemo(
+    () => getGraphicsSeasonHonours(form.seasonYear, form.leagueCode, matchesReady ? seasonTeams : []),
+    [form.seasonYear, form.leagueCode, matchesReady, seasonTeams]
+  );
+  // Keep the editable lineup draft intact when switching to an official season graphic.
+  const renderForm = useMemo(
+    () => isSeasonHonoursCategory && seasonHonours
+      ? {
+          ...form,
+          periodType: "season",
+          periodLabel: String(seasonHonours.year),
+          formation: seasonHonours.formation,
+          lineup: seasonHonours.lineup,
+          seasonHonours,
+        }
+      : form,
+    [form, isSeasonHonoursCategory, seasonHonours]
+  );
+  const seasonHonoursReady = Boolean(seasonHonours) && matchesReady && !matchesLoading;
+
   // Per-league awards use only the chosen league's teams; otherwise every season team.
   const scopedTeams = useMemo(
     () => (isLeagueCategory ? seasonTeams.filter((team) => team.leagueCode === form.leagueCode) : seasonTeams),
@@ -733,12 +766,13 @@ export default function AdminGraphicsCreator({ darkMode }) {
   );
 
   const previewIsCurrent =
-    renderedPreview?.form === form &&
+    renderedPreview?.form === renderForm &&
     renderedPreview?.matches === renderMatches &&
     renderedPreview?.standings === standings &&
     renderedPreview?.sponsors === availableSponsorSources;
   const downloadDisabled =
-    !previewIsCurrent || previewLoading || (isRoundCategory && (matchesLoading || !matchesReady));
+    !previewIsCurrent || previewLoading || (isRoundCategory && (matchesLoading || !matchesReady)) ||
+    (isSeasonHonoursCategory && !seasonHonoursReady);
 
   const loadReferenceData = useCallback(async () => {
     setLoading(true);
@@ -992,17 +1026,20 @@ export default function AdminGraphicsCreator({ darkMode }) {
     let cancelled = false;
     async function renderPreview() {
       const canvas = canvasRef.current;
-      if (!canvas) return;
-      const format = getFormat(form.format);
+      if (!canvas || loading || (isSeasonHonoursCategory && !seasonHonoursReady)) {
+        setPreviewLoading(false);
+        return;
+      }
+      const format = getFormat(renderForm.format);
       const renderSize = getRenderSize(format);
       setPreviewLoading(true);
 
       // Partners: selected in the creator.
-      const selectedSponsorIds = new Set(form.selectedSponsorIds || []);
+      const selectedSponsorIds = new Set(renderForm.selectedSponsorIds || []);
       const partnerSources = availableSponsorSources.filter((sponsor) => selectedSponsorIds.has(sponsor.id));
       const storedFrames = loadAllFrames();
 
-      const logoUrls = collectLogoUrls(form, renderMatches);
+      const logoUrls = collectLogoUrls(renderForm, renderMatches);
       standings.forEach((row) => {
         if (row.team_logo_url) logoUrls.push(row.team_logo_url);
       });
@@ -1024,13 +1061,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
           ...defaultFrame(),
           ...(storedFrames[partner.id] || {}),
           ...(partner.frame || {}),
-          glow: true,
-          glowAutoColor: false,
-          glowColor: DEFAULT_SPONSOR_OUTLINE.color,
-          glowStrength: DEFAULT_SPONSOR_OUTLINE.strength,
-          glowDensity: DEFAULT_SPONSOR_OUTLINE.density,
-          glowBlur: DEFAULT_SPONSOR_OUTLINE.blur,
-          glowSize: DEFAULT_SPONSOR_OUTLINE.thickness,
+          glow: false,
         }),
       }));
 
@@ -1043,7 +1074,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
       ctx.setTransform(EXPORT_SCALE, 0, 0, EXPORT_SCALE, 0, 0);
       drawGraphic(
         ctx,
-        form,
+        renderForm,
         { matches: renderMatches, standings },
         {
           sponsors: new Map(sponsorImages),
@@ -1055,7 +1086,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
         format.height
       );
       setRenderedPreview({
-        form,
+        form: renderForm,
         matches: renderMatches,
         standings,
         sponsors: availableSponsorSources,
@@ -1063,11 +1094,16 @@ export default function AdminGraphicsCreator({ darkMode }) {
       setPreviewLoading(false);
     }
 
-    renderPreview();
+    renderPreview().catch(() => {
+      if (cancelled) return;
+      setPreviewLoading(false);
+      setRenderedPreview(null);
+      setAlert({ type: "error", message: "Nie udało się przygotować podglądu. Spróbuj ponownie." });
+    });
     return () => {
       cancelled = true;
     };
-  }, [form, renderMatches, standings, availableSponsorSources]);
+  }, [renderForm, renderMatches, standings, availableSponsorSources, loading, isSeasonHonoursCategory, seasonHonoursReady]);
 
   const updateForm = (patch) => {
     setForm((current) => ({ ...current, ...patch }));
@@ -1277,7 +1313,9 @@ export default function AdminGraphicsCreator({ darkMode }) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        const selectedPeriod = isWeekendTyper
+        const selectedPeriod = isSeasonHonoursCategory
+          ? form.leagueCode
+          : isWeekendTyper
           ? `weekend-${form.typerWeekendStart}`
           : isWeekendList
           ? `weekend-${form[weekendField]}`
@@ -1449,9 +1487,9 @@ export default function AdminGraphicsCreator({ darkMode }) {
             </div>
             <AdminFormField
               label="Wiersze sponsorów"
-              name={form.category === "best-eight" ? "bestEightSponsorRows" : "sponsorRows"}
+              name={isBestEightCategory ? "bestEightSponsorRows" : "sponsorRows"}
               type="select"
-              value={String(form.category === "best-eight" ? form.bestEightSponsorRows : form.sponsorRows)}
+              value={String(isBestEightCategory ? form.bestEightSponsorRows : form.sponsorRows)}
               onChange={handleInputChange}
               darkMode={darkMode}
               includeEmptyOption={false}
@@ -1507,7 +1545,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
                   label: season.name || `Sezon ${season.year}`,
                 }))}
               />
-              {isLeagueCategory && !isTableSummaryCategory && (
+              {isLeagueCategory && !isTableSummaryCategory && !isSeasonHonoursCategory && (
                 <AdminFormField
                   label="Okres"
                   name="periodType"
@@ -1577,7 +1615,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
                   includeEmptyOption={false}
                   options={LEAGUE_OPTIONS.map((league) => ({ value: league.value, label: league.label }))}
                 />
-                {!isTableSummaryCategory && form.periodType === "month" && (
+                {!isTableSummaryCategory && !isSeasonHonoursCategory && form.periodType === "month" && (
                   <AdminFormField
                     label="Miesiąc"
                     name="periodLabel"
@@ -1589,7 +1627,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
                     options={MONTH_OPTIONS}
                   />
                 )}
-                {!isTableSummaryCategory && form.periodType === "round" && (
+                {!isTableSummaryCategory && !isSeasonHonoursCategory && form.periodType === "round" && (
                   <AdminFormField
                     label="Runda"
                     name="periodLabel"
@@ -1601,7 +1639,7 @@ export default function AdminGraphicsCreator({ darkMode }) {
                     options={ROUND_PERIOD_OPTIONS}
                   />
                 )}
-                {!isTableSummaryCategory && form.periodType === "season" && (
+                {!isTableSummaryCategory && !isSeasonHonoursCategory && form.periodType === "season" && (
                   <AdminFormField
                     label="Rok okresu"
                     name="periodLabel"
@@ -1611,6 +1649,31 @@ export default function AdminGraphicsCreator({ darkMode }) {
                     darkMode={darkMode}
                     placeholder="np. 2026"
                   />
+                )}
+              </div>
+            )}
+
+            {isSeasonHonoursCategory && (
+              <div className={`space-y-3 rounded-xl border p-3 ${softPanel}`} role="status">
+                {seasonHonours ? (
+                  <>
+                    <p className="text-sm font-semibold">Oficjalne podsumowanie · {selectedLeague.label} · {seasonHonours.year}</p>
+                    <p className={`text-xs ${textMuted}`}>
+                      Skład i wyróżnienia z gali uzupełniają się automatycznie. Wybierz ligę, format i pobierz PNG na Facebooka lub Instagram.
+                    </p>
+                    <p className="text-sm">Mistrz: <strong>{seasonHonours.champion}</strong></p>
+                    {form.category === "season-awards" ? (
+                      <ul className="space-y-2 text-sm">
+                        {seasonHonours.awards.map((award) => (
+                          <li key={award.category}><strong>{award.category}:</strong> {award.name} · {award.team}{award.stat ? ` · ${award.stat}` : ""}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className={`text-xs ${textMuted}`}>Osiem zatwierdzonych nazwisk · ustawienie 1-{seasonHonours.formation} · inicjały imion na grafice.</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm">Brak zatwierdzonego podsumowania dla tego sezonu. Grafiki z gali są dostępne dla sezonu 2026.</p>
                 )}
               </div>
             )}
@@ -1969,12 +2032,17 @@ export default function AdminGraphicsCreator({ darkMode }) {
             )}
           </div>
           <div className={`overflow-auto rounded-2xl border p-3 ${darkMode ? "border-white/10 bg-black/20" : "border-gray-200 bg-gray-100"}`}>
+            {isSeasonHonoursCategory && !seasonHonoursReady && (
+              <p className={`py-16 text-center text-sm ${textMuted}`} role="status">
+                {!seasonHonours ? "Wybierz sezon z zatwierdzonym podsumowaniem." : matchesLoading ? "Wczytywanie herbów drużyn…" : "Brak danych drużyn. Odśwież stronę, aby ponowić wczytywanie."}
+              </p>
+            )}
             <canvas
               ref={canvasRef}
               width={selectedRenderSize.width}
               height={selectedRenderSize.height}
               className="block h-auto w-full rounded-xl shadow-2xl"
-              style={{ maxHeight: "72vh", objectFit: "contain" }}
+              style={{ maxHeight: "72vh", objectFit: "contain", display: isSeasonHonoursCategory && !seasonHonoursReady ? "none" : undefined }}
             />
           </div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
