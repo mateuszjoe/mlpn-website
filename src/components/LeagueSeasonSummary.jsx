@@ -13,7 +13,9 @@ const POSITION_LABELS = {
   'Lewy pomocnik': 'LP',
   'Prawy skrzydłowy': 'PS',
   'Lewy skrzydłowy': 'LS',
-  'Napastnik': 'NAP',
+  'Środkowy napastnik': 'ŚN',
+  'Prawy napastnik': 'PN',
+  'Lewy napastnik': 'LN',
 };
 
 const AWARD_ICONS = {

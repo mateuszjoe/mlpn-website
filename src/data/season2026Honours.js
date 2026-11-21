@@ -20,8 +20,8 @@ export const season2026Honours = {
       { position: 'Prawy pomocnik', name: 'Damian Zajdowski', playerId: '12d4cdf8-c3b6-46da-905a-816d04ac5666', team: 'Al Mar Wołomin' },
       { position: 'Środkowy pomocnik', name: 'Adam Wosiek', playerId: 'f5257f25-ea10-4d24-87c1-300f0d7cc168', team: '1 Warszawska Brygada Pancerna' },
       { position: 'Lewy pomocnik', name: 'Damian Bąk', playerId: '404f95bc-0494-45fb-b813-451e80d1411c', team: 'Rebelianci' },
-      { position: 'Napastnik', name: 'Mateusz Trąbiński', playerId: 'cfc991df-fa83-46b2-9c38-531bed477337', team: 'Starszaki' },
-      { position: 'Napastnik', name: 'Karol Sochocki', playerId: 'e1393a08-8263-41be-9e43-259463cbf5c3', team: 'Al Mar Wołomin' },
+      { position: 'Prawy napastnik', name: 'Mateusz Trąbiński', playerId: 'cfc991df-fa83-46b2-9c38-531bed477337', team: 'Starszaki' },
+      { position: 'Lewy napastnik', name: 'Karol Sochocki', playerId: 'e1393a08-8263-41be-9e43-259463cbf5c3', team: 'Al Mar Wołomin' },
     ],
   },
   '2nd': {
@@ -42,7 +42,7 @@ export const season2026Honours = {
       { position: 'Prawy pomocnik', name: 'Maciej Boguszewski', playerId: '1e2cd742-7a43-471b-9766-c627623f2b1e', team: 'PJM' },
       { position: 'Środkowy pomocnik', name: 'Mateusz Skowroński', playerId: '73a68c54-a0bc-44d9-bd7f-217f62f40af8', team: 'STM FC' },
       { position: 'Lewy pomocnik', name: 'Maks Kardas', playerId: '31dda7f6-b8f4-45dc-a585-e17029d0d4cc', team: 'Detox' },
-      { position: 'Napastnik', name: 'Olaf Orełko', playerId: '3e71bd47-1923-4927-989d-0de85e25accc', team: 'RKS Pendrachy' },
+      { position: 'Środkowy napastnik', name: 'Olaf Orełko', playerId: '3e71bd47-1923-4927-989d-0de85e25accc', team: 'RKS Pendrachy' },
     ],
   },
   '3rd': {
@@ -63,7 +63,7 @@ export const season2026Honours = {
       { position: 'Prawy pomocnik', name: 'Kacper Kucharek', playerId: 'c2925274-de46-4e1d-ad3d-4af367ea0f7e', team: 'RMB Bulls' },
       { position: 'Środkowy pomocnik', name: 'Piotr Wąsowski', playerId: 'ed938039-59cf-4d72-ae7d-3c9a7ad294fe', team: 'AL-Komat' },
       { position: 'Lewy pomocnik', name: 'Szymon Tomaszewski', playerId: 'c28133f9-b5c0-47be-bd1a-f54e5c1f3431', team: 'Alchemia Futbolu' },
-      { position: 'Napastnik', name: 'Sebastian Orzoł', playerId: '1eb6de1e-aeaa-443f-a361-2cd86cfbfeec', team: 'FC Faworyt' },
+      { position: 'Środkowy napastnik', name: 'Sebastian Orzoł', playerId: '1eb6de1e-aeaa-443f-a361-2cd86cfbfeec', team: 'FC Faworyt' },
     ],
   },
 };
