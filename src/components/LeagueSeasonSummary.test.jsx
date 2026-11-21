@@ -135,3 +135,34 @@ test('updates all honours on league changes without mutating the shared season s
   expect(host.querySelectorAll('.season-honours__player')).toHaveLength(8);
   expect(JSON.stringify(season2026Honours)).toBe(before);
 });
+
+test('switches mobile panels with buttons and keyboard and retains the panel across leagues', async () => {
+  await renderSummary(season2026Honours['1st']);
+  const tabs = host.querySelectorAll('[role="tab"]');
+  expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+  expect(host.querySelector('.season-honours__eight').classList.contains('season-honours__panel--inactive')).toBe(true);
+
+  await act(async () => Simulate.click(tabs[1]));
+  expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+  expect(host.querySelector('.season-honours__awards').classList.contains('season-honours__panel--inactive')).toBe(true);
+  await renderSummary(season2026Honours['3rd'], 'III Liga');
+  expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+  expect(host.querySelector('.season-honours__eight').classList.contains('season-honours__panel--inactive')).toBe(false);
+
+  await act(async () => Simulate.keyDown(tabs[1], { key: 'Home' }));
+  expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+  expect(document.activeElement).toBe(tabs[0]);
+});
+
+test('keeps label and panel references unique when summaries share a page', async () => {
+  await act(async () => root.render(<>
+    <LeagueSeasonSummary summary={season2026Honours['1st']} leagueName="I Liga" TeamLogo={TestTeamLogo} openTeam={openTeam} />
+    <LeagueSeasonSummary summary={season2026Honours['2nd']} leagueName="II Liga" TeamLogo={TestTeamLogo} openTeam={openTeam} showHeading={false} />
+  </>));
+  const ids = Array.from(host.querySelectorAll('[id]'), element => element.id);
+  expect(new Set(ids).size).toBe(ids.length);
+  host.querySelectorAll('[role="tab"]').forEach(tab => {
+    expect(document.getElementById(tab.getAttribute('aria-controls'))).not.toBeNull();
+  });
+  expect(host.querySelectorAll('h2')).toHaveLength(1);
+});

@@ -33,6 +33,7 @@ import { useAuth } from "./contexts/AuthContext";
 import AdminPanel from "./pages/admin/AdminPanel";
 import ContactForm from "./components/ContactForm";
 import LeagueSeasonSummary from "./components/LeagueSeasonSummary";
+import SeasonHonoursCarousel from "./components/SeasonHonoursCarousel";
 import { season2026Honours } from "./data/season2026Honours";
 import { useMLPNData } from "./hooks/useMLPNData";
 import { getLeagueRules, getPromotionRowsForLeague, getRelegationRowsForLeague } from "./lib/leagueRules";
@@ -13254,6 +13255,7 @@ function HomeSponsorCarousel({ sponsors = [], openSponsorLink }) {
 
 function HomeDashboardFeatureCard({
   darkMode,
+  currentSeason,
   featuredMatchData,
   featuredMatchLive,
   featuredMatchPlayed,
@@ -13296,6 +13298,7 @@ function HomeDashboardFeatureCard({
   const featuredPlayedDetails = featuredMatchData?.id ? matchById?.[featuredMatchData.id] : null;
   const featuredDetailsMatch = featuredPlayedDetails || featuredMatchData;
   const featuredExpanded = !!featuredMatchData?.id && expandedMatchId === featuredMatchData.id;
+  const showSeasonHonours = Number(currentSeason) === 2026;
   const openSponsorLink = (sponsor) => {
     if (!sponsor) return;
     if (sponsorRouteId(sponsor)) {
@@ -13310,11 +13313,16 @@ function HomeDashboardFeatureCard({
       darkMode={darkMode}
       className={classNames(
         "mlpn-home-hero mlpn-navy-surface self-start p-0 overflow-hidden",
-        featuredMatchLive && "mlpn-live-frame"
+        showSeasonHonours && "mlpn-home-season-summary",
+        !showSeasonHonours && featuredMatchLive && "mlpn-live-frame"
       )}
     >
       <div className="relative overflow-hidden p-4 sm:p-5 lg:p-6">
         <div className="relative z-[1] space-y-4 lg:space-y-5">
+          {showSeasonHonours ? (
+            <SeasonHonoursCarousel TeamLogo={TeamLogo} openTeam={openTeam} goToLeague={goToLeague} />
+          ) : (
+          <>
           <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
@@ -13663,6 +13671,9 @@ function HomeDashboardFeatureCard({
               </div>
             </button>
           </div>
+
+          </>
+          )}
 
           {visibleSponsors.length > 0 && (
             <div className="flex flex-col gap-2 rounded-[22px] border border-white/10 bg-black/10 px-3 py-3 md:flex-row md:items-center md:justify-between">
@@ -15323,6 +15334,7 @@ function HomeDashboard({
           <div className="grid gap-3">
             <HomeDashboardFeatureCard
               darkMode={darkMode}
+              currentSeason={currentSeason}
               featuredMatchData={featuredMatchData}
               featuredMatchLive={featuredMatchLive}
               featuredMatchPlayed={featuredMatchPlayed}
