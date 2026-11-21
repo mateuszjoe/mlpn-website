@@ -72,6 +72,7 @@ test.each([
   expect(host.querySelector('.season-honours__eyebrow').textContent).toBe(`${leagueName} · sezon 2026`);
 
   const pitchRows = Array.from(host.querySelectorAll('.season-honours__pitch-row'));
+  expect(Array.from(pitchRows[1].querySelectorAll('abbr'), position => position.textContent)).toEqual(['LP', 'ŚP', 'PP']);
   pitchRows.forEach((row, index) => {
     expect(row.style.gridTemplateColumns).toBe(`repeat(${expectedRows[index].length}, minmax(0, 1fr))`);
   });
