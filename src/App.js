@@ -7359,6 +7359,8 @@ function LeagueHomePage({
           darkMode={darkMode}
           TeamLogo={TeamLogo}
           openTeam={openTeam}
+          openPlayer={openPlayer}
+          playerHref={playerId => buildRouteUrl({ activeContext: leagueId, activeSection: "home", selectedPlayerId: playerId, currentSeason })}
         />
       )}
 
@@ -13320,7 +13322,13 @@ function HomeDashboardFeatureCard({
       <div className="relative overflow-hidden p-4 sm:p-5 lg:p-6">
         <div className="relative z-[1] space-y-4 lg:space-y-5">
           {showSeasonHonours ? (
-            <SeasonHonoursCarousel TeamLogo={TeamLogo} openTeam={openTeam} goToLeague={goToLeague} />
+            <SeasonHonoursCarousel
+              TeamLogo={TeamLogo}
+              openTeam={openTeam}
+              openPlayer={openPlayer}
+              playerHref={playerId => buildRouteUrl({ activeContext: "home", activeSection: "home", selectedPlayerId: playerId, currentSeason })}
+              goToLeague={goToLeague}
+            />
           ) : (
           <>
           <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">

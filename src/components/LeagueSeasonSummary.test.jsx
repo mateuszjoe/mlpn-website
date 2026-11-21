@@ -166,3 +166,44 @@ test('keeps label and panel references unique when summaries share a page', asyn
   });
   expect(host.querySelectorAll('h2')).toHaveLength(1);
 });
+
+test.each(['1st', '2nd', '3rd'])('links every official %s award and best-eight name to its player profile', async leagueId => {
+  const summary = season2026Honours[leagueId];
+  await renderSummary(summary);
+  expect(host.querySelectorAll('a.season-honours__winner')).toHaveLength(4);
+  expect(host.querySelectorAll('a.season-honours__player-name')).toHaveLength(8);
+  [...summary.awards, ...summary.bestEight].forEach(player => {
+    expect(player.playerId).toMatch(/^[0-9a-f]{8}-[0-9a-f-]{27}$/i);
+    expect(host.querySelector(`a[href="/zawodnik/${player.playerId}?sezon=2026"]`)).not.toBeNull();
+  });
+});
+
+test('opens the correct player in-app while retaining native modified-click links and league context', async () => {
+  const summary = season2026Honours['3rd'];
+  const openPlayer = jest.fn();
+  const playerHref = id => `/zawodnik/${id}?sezon=2026&ctx=3rd&sekcja=home`;
+  await act(async () => root.render(<LeagueSeasonSummary summary={summary} leagueName="III Liga" TeamLogo={TestTeamLogo} openTeam={openTeam} openPlayer={openPlayer} playerHref={playerHref} />));
+  const winner = host.querySelector('a.season-honours__winner');
+  expect(winner.getAttribute('href')).toBe(playerHref(summary.awards[0].playerId));
+  await act(async () => Simulate.click(winner, { button: 0 }));
+  expect(openPlayer).toHaveBeenCalledWith(summary.awards[0].playerId);
+  openPlayer.mockClear();
+
+  for (const modifier of [{ ctrlKey: true }, { metaKey: true }, { shiftKey: true }, { button: 1 }]) {
+    const preventDefault = jest.fn();
+    await act(async () => Simulate.click(winner, { button: 0, ...modifier, preventDefault }));
+    expect(preventDefault).not.toHaveBeenCalled();
+  }
+  expect(openPlayer).not.toHaveBeenCalled();
+
+  const attacker = host.querySelector('a.season-honours__player-name');
+  await act(async () => Simulate.click(attacker, { button: 0 }));
+  expect(openPlayer).toHaveBeenCalledWith(summary.bestEight[7].playerId);
+});
+
+test('uses the canonical FC KSS route without changing its gala label', async () => {
+  await renderSummary(season2026Honours['3rd'], 'III Liga');
+  const crest = host.querySelector('.season-honours__pitch [data-team-logo="FC KSS"]');
+  await act(async () => Simulate.click(crest));
+  expect(openTeam).toHaveBeenCalledWith('Fc KSS');
+});

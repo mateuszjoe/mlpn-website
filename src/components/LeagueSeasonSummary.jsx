@@ -28,6 +28,22 @@ function shortName(name) {
   return surname.length ? `${first[0]}. ${surname.join(' ')}` : first;
 }
 
+function PlayerProfileLink({ player, year, playerHref, openPlayer, className, children, title }) {
+  if (!player.playerId) return <span className={className} title={title}>{children}</span>;
+  return (
+    <a
+      className={className}
+      title={title}
+      href={playerHref?.(player.playerId) || `/zawodnik/${encodeURIComponent(player.playerId)}?sezon=${year}`}
+      onClick={event => {
+        if (!openPlayer || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        openPlayer(player.playerId);
+      }}
+    >{children}</a>
+  );
+}
+
 // Data follows the gala's order: goalkeeper, defence, midfield, attack.
 // Rotate the gala's left-facing pitch so attack is at the top.
 function pitchRows(summary) {
@@ -39,7 +55,7 @@ function pitchRows(summary) {
   }).reverse();
 }
 
-export default function LeagueSeasonSummary({ summary, leagueName, darkMode, TeamLogo, openTeam, showHeading = true }) {
+export default function LeagueSeasonSummary({ summary, leagueName, darkMode, TeamLogo, openTeam, openPlayer, playerHref, showHeading = true }) {
   const instanceId = useId();
   const titleId = `season-honours-${instanceId}`;
   const pitchTitleId = `season-eight-${instanceId}`;
@@ -102,10 +118,10 @@ export default function LeagueSeasonSummary({ summary, leagueName, darkMode, Tea
                   <h3>{award.category}</h3>
                 </div>
                 <div className="season-honours__award-crest">
-                  <TeamLogo team={award.team} darkMode={darkMode} size={56} onClick={() => openTeam(award.team)} />
+                  <TeamLogo team={award.team} darkMode={darkMode} size={56} onClick={() => openTeam(award.teamRouteName || award.team)} />
                 </div>
-                <div className="season-honours__winner">{award.name}</div>
-                <button type="button" className="season-honours__club" onClick={() => openTeam(award.team)}>{award.team}</button>
+                <PlayerProfileLink player={award} year={summary.year} playerHref={playerHref} openPlayer={openPlayer} className="season-honours__winner" title={`Profil zawodnika: ${award.name}`}>{award.name}</PlayerProfileLink>
+                <button type="button" className="season-honours__club" onClick={() => openTeam(award.teamRouteName || award.team)}>{award.team}</button>
                 {award.stat && <span className="season-honours__stat">{award.stat}</span>}
               </article>
             );
@@ -129,8 +145,8 @@ export default function LeagueSeasonSummary({ summary, leagueName, darkMode, Tea
                 {row.map(player => (
                   <div className="season-honours__player" key={player.name}>
                     <abbr className="season-honours__position" title={player.position}>{POSITION_LABELS[player.position] || player.position}</abbr>
-                    <TeamLogo team={player.team} darkMode={true} size={40} onClick={() => openTeam(player.team)} />
-                    <span className="season-honours__player-name" title={`${player.name} · ${player.team}`}>{shortName(player.name)}</span>
+                    <TeamLogo team={player.team} darkMode={true} size={40} onClick={() => openTeam(player.teamRouteName || player.team)} />
+                    <PlayerProfileLink player={player} year={summary.year} playerHref={playerHref} openPlayer={openPlayer} className="season-honours__player-name" title={`${player.name} · ${player.team}`}>{shortName(player.name)}</PlayerProfileLink>
                   </div>
                 ))}
               </div>
