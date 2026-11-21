@@ -9,7 +9,7 @@ import {
 } from "./utils/graphicsTableRange";
 import { formatWeekendRange, sortMatchesChronologically, sortMatchesForGraphic } from "./utils/graphicsWeekend";
 import { getGraphicTeamAbbreviation } from "./utils/graphicsTeamAbbreviations";
-import { getLightBackgroundSponsorArtwork } from "./utils/graphicsSponsorArtwork";
+import { getSponsorContrastMask } from "./utils/graphicsSponsorArtwork";
 import { getLeagueRules } from "../../lib/leagueRules";
 
 // Full brand lockup (eagle + "MLPN SULEJÓWEK" + "isola RISTORANTE"), white version for dark art.
@@ -901,7 +901,7 @@ function opaqueBBox(image) {
 // Auto-trim the transparent margin, then let the frame zoom/pan within that content,
 // and CONTAIN-fit the result into the cell — so a logo always fills its cell nicely
 // and never spills past the edges, whatever the cell size.
-function drawImageFramed(ctx, image, x, y, w, h, frame, pad, cellBg = "dark") {
+function drawImageFramed(ctx, image, x, y, w, h, frame, pad, cellBg = "dark", contrastMask = null) {
   if (!image || !image.naturalWidth) return false;
   const iw = image.naturalWidth;
   const ih = image.naturalHeight;
@@ -940,6 +940,18 @@ function drawImageFramed(ctx, image, x, y, w, h, frame, pad, cellBg = "dark") {
   const dy = y + pad + (bh - dh) / 2 - (overflowY / 2) * panY;
 
   try {
+    if (contrastMask) {
+      // A sub-pixel contour follows only low-contrast details. Draw in project
+      // coordinates so the 2x PNG export retains crisp edges and the same weight.
+      const radius = clamp(Math.min(w, h) * 0.015, 0.55, 0.9);
+      const mw = contrastMask.naturalWidth;
+      const mh = contrastMask.naturalHeight;
+      for (let index = 0; index < 8; index += 1) {
+        const angle = Math.PI * 2 * index / 8;
+        ctx.drawImage(contrastMask, box.x * mw, box.y * mh, box.w * mw, box.h * mh,
+          dx + Math.cos(angle) * radius, dy + Math.sin(angle) * radius, dw, dh);
+      }
+    }
     if (f.glow && frame?.glow !== false) {
       const glowColor = f.glowAutoColor ? (cellBg === "light" ? "#000000" : "#ffffff") : f.glowColor;
       const outline = Math.max(0.5, Math.min(8, Math.min(w, h) * f.glowSize));
@@ -978,7 +990,7 @@ function drawImageFramed(ctx, image, x, y, w, h, frame, pad, cellBg = "dark") {
 
 // One sponsor logo inside its cell — shared by the graphic and the cropping preview.
 export function drawSponsorCell(ctx, image, frame, w, h, opts = {}) {
-  // Export partner artwork cleanly, including frames saved before shadows were removed.
+  // Keep legacy heavy glows disabled; contrast is chosen from the actual pixels.
   const f = { ...normalizeSponsorFrame(frame), glow: false };
   const r = Math.min(h * 0.2, 16);
   if (opts.drawBand) {
@@ -988,6 +1000,10 @@ export function drawSponsorCell(ctx, image, frame, w, h, opts = {}) {
   let bg = opts.forceBg || f.bg;
   if (!bg || bg === "auto") bg = isLightLogo(image) ? "none" : "light";
   ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0)";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
   roundRect(ctx, 0, 0, w, h, r);
   ctx.clip();
   if (bg === "light") {
@@ -1000,8 +1016,9 @@ export function drawSponsorCell(ctx, image, frame, w, h, opts = {}) {
     ctx.fillStyle = "rgba(255,255,255,0.045)";
     ctx.fillRect(0, 0, w, h);
   }
-  const artwork = bg === "light" ? getLightBackgroundSponsorArtwork(image, opts.name) : image;
-  const drawn = drawImageFramed(ctx, artwork, 0, 0, w, h, f, Math.min(w, h) * 0.06, bg === "light" ? "light" : "dark");
+  const backing = bg === "light" ? "light" : "dark";
+  const contrastMask = getSponsorContrastMask(image, backing);
+  const drawn = drawImageFramed(ctx, image, 0, 0, w, h, f, Math.min(w, h) * 0.06, backing, contrastMask);
   ctx.restore();
   if (opts.outline !== false || opts.guide) {
     const outline = opts.guide
