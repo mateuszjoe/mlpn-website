@@ -1,0 +1,25 @@
+{
+  "id": "/podglad-turniejow-374f7be279092729e80f1568/",
+  "name": "Turnieje MLPN — podgląd",
+  "short_name": "Turnieje MLPN",
+  "lang": "pl",
+  "start_url": "/podglad-turniejow-374f7be279092729e80f1568/",
+  "scope": "/podglad-turniejow-374f7be279092729e80f1568/",
+  "display": "standalone",
+  "theme_color": "#163c78",
+  "background_color": "#f4f7fb",
+  "icons": [
+    {
+      "src": "/logo1.png",
+      "sizes": "500x500",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo1big.webp",
+      "sizes": "5000x5000",
+      "type": "image/webp",
+      "purpose": "any"
+    }
+  ]
+}
