@@ -37,6 +37,7 @@ import SeasonHonoursCarousel from "./components/SeasonHonoursCarousel";
 import { season2026Honours } from "./data/season2026Honours";
 import { useMLPNData } from "./hooks/useMLPNData";
 import { BOOK_PREVIEW_SLUG, BOOK_PREVIEW_SECTION, syncBookPreviewMetadata } from "./lib/bookPreview";
+import { TOURNAMENT_PREVIEW_SLUG, TOURNAMENT_PREVIEW_CONTEXT, TOURNAMENT_PREVIEW_BASE, normalizeTournamentPreviewRoute, tournamentPreviewPath, syncTournamentPreviewManifest } from "./lib/tournamentPreview";
 import { getLeagueRules, getPromotionRowsForLeague, getRelegationRowsForLeague } from "./lib/leagueRules";
 import { applyLiveFixturesToTable, sortStandingsForDisplay } from "./lib/standingsRanking";
 import "./components/LeagueTableLayout.css";
@@ -53,6 +54,7 @@ import {
 } from "./services/supabaseQueries";
 
 const MLPNBookPage = React.lazy(() => import("./pages/MLPNBookPage"));
+const TournamentCenter = React.lazy(() => import("./pages/TournamentCenter"));
 
 /* =========================================
    DRUŻYNY (legacy - dane teraz z Supabase)
@@ -634,6 +636,7 @@ const ADMIN_SECTIONS = new Set(Object.keys(ADMIN_SECTION_TO_SLUG));
 const APP_CONTEXTS = new Set([
   "home",
   "tournaments",
+  TOURNAMENT_PREVIEW_CONTEXT,
   "info",
   "admin",
   ...Object.keys(LEAGUE_CONTEXT_TO_SLUG),
@@ -649,6 +652,7 @@ function normalizeStatsTab(tab) {
 }
 
 function normalizeSectionForContext(context, section) {
+  if (context === TOURNAMENT_PREVIEW_CONTEXT) return normalizeTournamentPreviewRoute(section);
   if (context === "home") return HOME_SECTIONS.has(section) ? section : "home";
   if (context === "info") return INFO_SECTIONS.has(section) ? section : "about";
   if (LEAGUE_SECTIONS.has(section) && LEAGUE_CONTEXT_TO_SLUG[context]) return section;
@@ -735,10 +739,20 @@ function parseRouteString(route) {
   const season = parseRoundParam(params.get("sezon") || params.get("season"));
   const round = parseRoundParam(params.get("kolejka") || params.get("round"));
   const inlineMatchId = params.get("mecz") || params.get("match") || null;
-  const rawContext = params.get("ctx");
+  const requestedContext = params.get("ctx");
+  const rawContext = requestedContext === TOURNAMENT_PREVIEW_CONTEXT ? null : requestedContext;
   const requestedSection = params.get("sekcja") || params.get("section");
   // The unlisted preview is entered through its full path, never a return hint.
-  const rawSection = requestedSection === BOOK_PREVIEW_SECTION ? null : requestedSection;
+  const rawSection = [BOOK_PREVIEW_SECTION, TOURNAMENT_PREVIEW_CONTEXT].includes(requestedSection) ? null : requestedSection;
+
+  if (segments[0] === TOURNAMENT_PREVIEW_SLUG) {
+    return {
+      activeContext: TOURNAMENT_PREVIEW_CONTEXT,
+      activeSection: normalizeTournamentPreviewRoute(segments.slice(1).join("/")),
+      selectedTeam: null, selectedMatchId: null, selectedPlayerId: null, selectedSponsorId: null,
+      matchViewMode: "inline", round: null, season,
+    };
+  }
 
   if (segments[0] === "druzyna" && segments[1]) {
     const context = normalizeContext(rawContext || "home");
@@ -877,7 +891,7 @@ function parseRouteString(route) {
 function parseHashRoute(hash) {
   const route = parseRouteString(hash);
   // The preview uses its dedicated HTML entry point rather than a hash alias.
-  return route.activeSection === BOOK_PREVIEW_SECTION ? parseRouteString("/") : route;
+  return route.activeSection === BOOK_PREVIEW_SECTION || route.activeContext === TOURNAMENT_PREVIEW_CONTEXT ? parseRouteString("/") : route;
 }
 
 function parseBrowserRoute() {
@@ -918,8 +932,8 @@ function buildRouteUrl({
     params.set("kolejka", String(round));
   }
 
-  const detailContext = baseContext;
-  const detailSection = baseSection === BOOK_PREVIEW_SECTION ? "home" : baseSection;
+  const detailContext = baseContext === TOURNAMENT_PREVIEW_CONTEXT ? "home" : baseContext;
+  const detailSection = baseSection === BOOK_PREVIEW_SECTION || baseContext === TOURNAMENT_PREVIEW_CONTEXT ? "home" : baseSection;
   const isDetailRoute =
     selectedSponsorId ||
     selectedPlayerId ||
@@ -942,6 +956,8 @@ function buildRouteUrl({
     path = `/mecz/${encodeURIComponent(selectedMatchId)}`;
   } else if (baseContext === "tournaments") {
     path = "/turnieje";
+  } else if (baseContext === TOURNAMENT_PREVIEW_CONTEXT) {
+    path = tournamentPreviewPath(baseSection);
   } else if (baseContext === "info") {
     path = `/info/${INFO_SECTION_TO_SLUG[baseSection] || INFO_SECTION_TO_SLUG.about}`;
   } else if (baseContext === "admin") {
@@ -4893,10 +4909,11 @@ export default function App() {
   const [matchViewMode, setMatchViewMode] = useState("inline");
 
   useEffect(() => {
-    const isPreview = activeContext === "home" && activeSection === BOOK_PREVIEW_SECTION &&
+    const isPreview = ((activeContext === "home" && activeSection === BOOK_PREVIEW_SECTION) || activeContext === TOURNAMENT_PREVIEW_CONTEXT) &&
       !selectedTeam && !selectedMatchId && !selectedPlayerId && !selectedSponsorId;
     syncBookPreviewMetadata(isPreview);
-    return () => syncBookPreviewMetadata(false);
+    syncTournamentPreviewManifest(isPreview && activeContext === TOURNAMENT_PREVIEW_CONTEXT);
+    return () => { syncBookPreviewMetadata(false); syncTournamentPreviewManifest(false); };
   }, [activeContext, activeSection, selectedTeam, selectedMatchId, selectedPlayerId, selectedSponsorId]);
 
   // Historia nawigacji - stos poprzednich widoków
@@ -5348,7 +5365,7 @@ export default function App() {
   const menu =
     activeContext === "home"
       ? homeMenu
-      : activeContext === "tournaments"
+      : activeContext === "tournaments" || activeContext === TOURNAMENT_PREVIEW_CONTEXT
       ? []
       : activeContext === "info"
       ? infoMenu
@@ -5944,6 +5961,16 @@ export default function App() {
           activeSection={activeSection}
           setActiveSection={setActiveSection}
         />
+      );
+    }
+
+    if (activeContext === TOURNAMENT_PREVIEW_CONTEXT) {
+      return (
+        <React.Suspense fallback={<div className="p-6" role="status">Ładowanie turniejów…</div>}>
+          <TournamentCenter darkMode={darkMode} route={activeSection}
+            onNavigate={(section) => navigateToSection(TOURNAMENT_PREVIEW_CONTEXT, section)}
+            basePath={TOURNAMENT_PREVIEW_BASE} />
+        </React.Suspense>
       );
     }
 

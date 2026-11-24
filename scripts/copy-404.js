@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { createBookPreviewHtml, config } = require("./lib/bookPreviewHtml.cjs");
+const { createTournamentPreviewHtml, createTournamentPreviewManifest, getTournamentPreviewRoutes, config: tournamentPreviewConfig } = require("./lib/tournamentPreviewHtml.cjs");
 
 const buildDir = path.resolve(__dirname, "..", "build");
 const indexPath = path.join(buildDir, "index.html");
@@ -19,3 +20,23 @@ const previewDir = path.join(buildDir, config.slug);
 fs.mkdirSync(previewDir, { recursive: true });
 fs.writeFileSync(path.join(previewDir, "index.html"), createBookPreviewHtml(fs.readFileSync(indexPath, "utf8")));
 console.log("Created the unlisted book preview with static noindex metadata.");
+
+// Keep public /turnieje and the global SPA fallback unchanged. Each known
+// preview deep link receives HTTP 200 + noindex without relying on JavaScript.
+const demoRoutes = require("../src/data/tournamentDemoRoutes.json");
+const archivePath = path.resolve(__dirname, "..", "src", "data", "tournamentArchives.json");
+const archives = fs.existsSync(archivePath) ? JSON.parse(fs.readFileSync(archivePath, "utf8")) : [];
+if (!Array.isArray(archives)) throw new Error("Tournament archives must be an array.");
+const tournamentRoutes = getTournamentPreviewRoutes([...demoRoutes, ...archives]);
+const tournamentHtml = createTournamentPreviewHtml(fs.readFileSync(indexPath, "utf8"));
+for (const route of tournamentRoutes) {
+  const directory = path.join(buildDir, route);
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, "index.html"), tournamentHtml);
+}
+fs.copyFileSync(
+  path.resolve(__dirname, "..", "public", "turnieje", "tournament-notifications-sw.js"),
+  path.join(buildDir, tournamentPreviewConfig.slug, "tournament-notifications-sw.js")
+);
+fs.writeFileSync(path.join(buildDir, tournamentPreviewConfig.slug, "manifest.webmanifest"), JSON.stringify(createTournamentPreviewManifest(), null, 2));
+console.log(`Created ${tournamentRoutes.length} unlisted tournament entry points and a scoped notification worker.`);

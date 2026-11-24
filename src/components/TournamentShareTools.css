@@ -1,0 +1,31 @@
+.tour-share { display:grid; gap:10px; color:inherit; min-width:0; }
+.tour-share-section { border:1px solid var(--tc-border,#d9e2eb); border-radius:14px; background:var(--tc-surface,#fff); color:var(--tc-text,#14263e); min-width:0; }
+.tour-share-section > summary { display:flex; align-items:center; gap:9px; padding:14px 16px; cursor:pointer; font-size:13px; font-weight:700; list-style:none; }
+.tour-share-section > summary::-webkit-details-marker { display:none; }
+.tour-share-section > summary::after { content:'+'; margin-left:auto; font-size:20px; font-weight:400; }
+.tour-share-section[open] > summary::after { content:'−'; }
+.tour-share-content { padding:0 16px 16px; min-width:0; }
+.tour-share-content p { font-size:12px; line-height:1.6; color:var(--tc-muted,#52647b); margin:0 0 12px; }
+.tour-share-link-content { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+.tour-share-qr { background:#fff; border-radius:10px; width:176px; min-height:176px; flex:none; display:grid; place-items:center; color:#14263e; font-size:12px; }
+.tour-share-qr img { width:176px; height:176px; border-radius:10px; }
+.tour-share-copy { flex:1 1 220px; min-width:0; }
+.tour-share-copy > label { font-size:12px; font-weight:700; display:block; margin-bottom:8px; }
+.tour-share-copy input { width:100%; border:1px solid var(--tc-border,#d9e2eb); background:var(--tc-bg,#f5f7fa); color:var(--tc-text,#14263e); border-radius:8px; padding:10px; font-size:16px; box-sizing:border-box; }
+.tour-share-actions { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+.tour-share button,.tour-share-actions a { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:40px; border-radius:9px; padding:9px 12px; font-size:12px; font-weight:700; border:1px solid var(--tc-border,#d9e2eb); background:var(--tc-bg,#f5f7fa); color:var(--tc-text,#14263e); text-decoration:none; }
+.tour-share button:hover,.tour-share-actions a:hover { border-color:#ad8b3d; }
+.tour-share button:disabled { opacity:.55; cursor:not-allowed; }
+.tour-share :is(button,a,summary,input):focus-visible { outline:3px solid #b88b24; outline-offset:3px; }
+.tour-share-status:empty { display:none; }
+.tour-share-count { font-size:10px; padding:3px 7px; border-radius:20px; background:#f4e6c2; color:#594715; }
+.tour-share-follow { display:flex; align-items:center; gap:9px; font-size:13px; font-weight:700; margin:14px 0; }
+.tour-share input[type=checkbox] { width:17px; height:17px; flex:none; accent-color:#a9801c; }
+.tour-share-teams { border:0; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); gap:7px; }
+.tour-share-teams legend { font-size:12px; font-weight:700; margin-bottom:9px; }
+.tour-share-teams label { display:flex; align-items:center; gap:7px; font-size:12px; padding:7px 0; min-width:0; }
+.tour-share-teams label span { min-width:0; overflow-wrap:anywhere; }
+.tour-share-teams label svg { margin-left:auto; flex:none; color:#927017; }
+.tour-share-test { margin-top:18px; padding-top:14px; border-top:1px solid var(--tc-border,#d9e2eb); }
+.tour-share-test p { margin-top:8px; }
+@media(max-width:480px) { .tour-share-section > summary { padding:12px; flex-wrap:wrap; } .tour-share-content { padding:0 12px 14px; } .tour-share-link-content { gap:12px; } .tour-share-count { font-size:9px; } }
