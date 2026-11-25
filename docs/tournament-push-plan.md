@@ -1,13 +1,13 @@
 # Turnieje MLPN — link, QR i powiadomienia
 
-Stan: 24 listopada 2026. Prototyp początkowo lokalny, następnie przeznaczony do udostępnienia pod niepodlinkowanym adresem podglądu, zgodnie z decyzją właściciela.
+Stan: 25 listopada 2026. Podgląd jest udostępniony pod niepodlinkowanym adresem. Widoczne są tylko funkcje udostępniania linku i QR. Kontrolki obserwowania i demonstracyjnego powiadomienia usunięto przy uproszczeniu interfejsu; poniższe elementy powiadomień opisują zachowany kod pomocniczy, a nie dostępne obecnie funkcje ekranu.
 
-## Działające elementy prototypu
+## Udostępnianie i zachowany kod pomocniczy
 
 - Bezpośredni link do turnieju zachowuje bieżącą domenę i przekazany `basePath`, również ukryty prefiks podglądu. Nie zastępuje go publicznym `/turnieje` ani pozornym adresem produkcyjnym.
-- QR jest generowany w przeglądarce przez `qrcode`; adres nie trafia do zewnętrznego generatora. PNG można pobrać. Na localhost informujemy, że adres tego komputera nie stanie się adresem osiągalnym z telefonu przez samo zeskanowanie QR.
+- QR jest generowany w przeglądarce przez `qrcode`; adres nie trafia do zewnętrznego generatora. PNG można pobrać. Na localhost link pozostaje lokalny; do udostępniania telefonem służy wdrożony podgląd.
 - Obserwowanie turnieju/drużyn zapisuje wyłącznie preferencje na bieżącym urządzeniu. Nie jest subskrypcją push i nie przesyła danych do serwera.
-- Przycisk testowy uruchamia pytanie o zgodę oraz jedno lokalne powiadomienie systemowe. Samo otwarcie strony ani wybranie drużyny nie pyta o zgodę. Zablokowanie zgody pozostaje respektowane.
+- Funkcja testowa w bibliotece potrafi uruchomić pytanie o zgodę oraz jedno lokalne powiadomienie systemowe. Nie jest obecnie wywoływana przez interfejs. Zablokowanie zgody pozostaje respektowane.
 - Service worker ma zakres ograniczony do bazowej ścieżki turniejów. Skrypt jest kopiowany do folderu ukrytego podglądu w postbuild; nie przejmuje pozostałych sekcji strony i nie buforuje żądań. Kliknięcie powiadomienia otwiera tylko adres z jego własnego zakresu i domeny.
 - Podgląd ma osobny manifest aplikacji z własnym identyfikatorem i adresem startowym. Po dodaniu do ekranu początkowego otwiera katalog podglądu. Publiczna strona zachowuje swój manifest; przejście poza podgląd przywraca poprzedni link. To nie dodaje trybu offline ani serwerowej wysyłki. [MDN: start_url](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/start_url), [scope](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/scope), [id](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/id).
 

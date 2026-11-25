@@ -31,7 +31,13 @@ Osobny turniej demonstracyjny ma fikcyjne zdarzenia do testowania. Zapowiedź Ha
 
 ## Powiadomienia
 
-Obserwowane drużyny zapisują się lokalnie. Przycisk testowy może wyświetlić pojedyncze powiadomienie po zgodzie użytkownika. Wersja podglądowa nie rozsyła automatycznych powiadomień o meczach; plan podłączenia wysyłki jest w `tournament-push-plan.md`. Worker i manifest pod ukrytym adresem powstają podczas `npm run build`, dlatego ich test wymaga serwowania gotowego katalogu `build`, nie samego serwera developerskiego CRA.
+Wysyłka powiadomień nie jest dostępna w widoku. Po uproszczeniu interfejsu 25 listopada usunięto demonstracyjne powiadomienie i ustawienia obserwowania; poprzednie preferencje użytkowników pozostają zapisane. Kod pomocniczy, worker i plan podłączenia wysyłki (`tournament-push-plan.md`) zostały zachowane do następnego etapu. W podglądzie pozostaje tylko sekcja Udostępnij z linkiem i QR.
+
+## Nawigacja
+
+Zmiana podstrony rozpoczyna widok od góry, także przy użyciu Wstecz/Dalej. Automatyczne przywracanie przewinięcia i kotwiczenie przeglądarki są wyłączone wyłącznie na czas przeglądania turniejów. Zwykłe aktualizacje wyniku i formularza nie zmieniają położenia strony. Wyjście do publicznej strony przywraca wcześniejsze ustawienia przeglądarki.
+
+Zakładki pozostają widoczne pod głównym paskiem; na telefonie mieszczą się w dwóch rzędach. Grupy pokazują jedną fazę naraz, a wybór fazy pozostaje zachowany przy przechodzeniu między zakładkami i profilami. Katalog i podstrony zawierają nazwy, daty i dane bez promocyjnych nagłówków oraz opisów importowania.
 
 ## Odtworzenie importu
 

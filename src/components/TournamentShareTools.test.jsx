@@ -17,15 +17,12 @@ let host, root;
 beforeEach(async () => {
   jest.clearAllMocks();
   global.IS_REACT_ACT_ENVIRONMENT = true;
-  getTournamentNotificationSupport.mockReturnValue({ supported: true, permission: "default" });
-  loadTournamentFollowing.mockReturnValue({ following: false, teamIds: [] });
-  saveTournamentFollowing.mockReturnValue(true);
-  showTournamentTestNotification.mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
   QRCode.toDataURL.mockResolvedValue("data:image/png;base64,test");
   host = document.createElement("div"); document.body.appendChild(host); root = createRoot(host);
   await act(async () => root.render(<TournamentShareTools tournament={tournament} basePath="/podglad-turniejow-abc" />));
 });
-afterEach(async () => { await act(async () => root.unmount()); host.remove(); });
+afterEach(async () => { await act(async () => root.unmount()); host.remove(); delete navigator.clipboard; localStorage.clear(); });
 
 const button = label => [...host.querySelectorAll("button")].find(element => element.textContent === label);
 
@@ -37,23 +34,31 @@ test("renders no permission prompt or external QR request and only encodes the u
   expect(QRCode.toDataURL).toHaveBeenCalledWith("http://localhost/podglad-turniejow-abc/puchar-testowy", expect.objectContaining({ margin: 4 }));
   expect(host.querySelector("img").src).toBe("data:image/png;base64,test");
   expect(host.querySelector("a[download]").getAttribute("href")).toBe("data:image/png;base64,test");
-  expect(host.textContent).toContain("To adres lokalny");
+  expect(host.querySelector("summary").textContent).toBe("Udostępnij");
 });
 
-test("following teams saves only preferences and never asks for notification consent", async () => {
-  const team = host.querySelectorAll('input[type="checkbox"]')[1];
-  await act(async () => Simulate.change(team, { target: { checked: true } }));
-  expect(saveTournamentFollowing).toHaveBeenCalledWith(tournament, { following: false, teamIds: ["a"] });
-  expect(host.textContent).toContain("Wybór zapisany na tym urządzeniu");
+test("hides unfinished notification features and preserves existing following preferences", async () => {
+  const key = "mlpn:tournament-follow:v1:demo";
+  const saved = JSON.stringify({ following: true, teamIds: ["a"] });
+  localStorage.setItem(key, saved);
+  const details = host.querySelector("details");
+  await act(async () => { details.open = true; Simulate.toggle(details); });
+  expect(host.querySelectorAll("details")).toHaveLength(1);
+  expect(host.querySelector('input[type="checkbox"]')).toBeNull();
+  expect(host.textContent).not.toMatch(/obserwuj|powiadomieni|push|testowe|przeglądarka|kolejnym etapie/i);
+  expect(getTournamentNotificationSupport).not.toHaveBeenCalled();
+  expect(loadTournamentFollowing).not.toHaveBeenCalled();
+  expect(saveTournamentFollowing).not.toHaveBeenCalled();
   expect(showTournamentTestNotification).not.toHaveBeenCalled();
+  expect(localStorage.getItem(key)).toBe(saved);
 });
 
-test("the explicit test button forwards the hidden base and reports browser permission errors", async () => {
-  showTournamentTestNotification.mockRejectedValue(new Error("Powiadomienia są zablokowane."));
-  await act(async () => Simulate.click(button("Pokaż powiadomienie testowe")));
-  expect(showTournamentTestNotification).toHaveBeenCalledWith(tournament, "/podglad-turniejow-abc");
-  expect(host.textContent).toContain("Powiadomienia są zablokowane.");
-  expect(button("Pokaż powiadomienie testowe").disabled).toBe(false);
+test("copies the complete unlisted tournament link", async () => {
+  const writeText = jest.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+  await act(async () => Simulate.click(button("Kopiuj link")));
+  expect(writeText).toHaveBeenCalledWith("http://localhost/podglad-turniejow-abc/puchar-testowy");
+  expect(host.textContent).toContain("Link skopiowany.");
 });
 
 test("clipboard denial leaves a selected visible URL that can be copied manually", async () => {
@@ -61,12 +66,15 @@ test("clipboard denial leaves a selected visible URL that can be copied manually
   const field = host.querySelector("input[readonly]");
   expect(document.activeElement).toBe(field);
   expect(field.selectionEnd - field.selectionStart).toBe(field.value.length);
-  expect(host.textContent).toContain("Skopiuj go z pola ręcznie");
+  expect(host.textContent).toContain("Skopiuj zaznaczony link.");
 });
 
-test("blocked storage is not reported as a successful save", async () => {
-  saveTournamentFollowing.mockReturnValue(false);
-  await act(async () => Simulate.change(host.querySelector('input[type="checkbox"]'), { target: { checked: true } }));
-  expect(host.textContent).toContain("nie pozwoliła go zapisać");
-  expect(host.textContent).not.toContain("Wybór zapisany na tym urządzeniu");
+test("keeps the copy action available if QR generation fails", async () => {
+  QRCode.toDataURL.mockRejectedValue(new Error("QR failure"));
+  const details = host.querySelector("details");
+  await act(async () => { details.open = true; Simulate.toggle(details); });
+  expect(host.textContent).toContain("Kod QR niedostępny");
+  expect(host.querySelector("a[download]")).toBeNull();
+  expect(button("Kopiuj link")).toBeTruthy();
+  expect(host.textContent).not.toContain("Ładowanie…");
 });

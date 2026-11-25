@@ -23,6 +23,7 @@ function Wrapper({ initialRoute = 'home' }) {
 
 beforeEach(() => {
   global.IS_REACT_ACT_ENVIRONMENT = true;
+  window.scrollTo = jest.fn();
   localStorage.clear();
   host = document.createElement('div'); document.body.appendChild(host); root = createRoot(host);
   archive = { ...JSON.parse(JSON.stringify(demo)), id: 'archive-test', slug: 'archiwum-test', isDemo: false, isImported: true,
@@ -38,12 +39,15 @@ const button = text => [...host.querySelectorAll('button, a')].find(element => e
 const click = async element => act(async () => Simulate.click(element, { button: 0 }));
 const change = async (element, value) => act(async () => Simulate.change(element, { target: { value } }));
 
-test('catalog separates confirmed upcoming event, imported archive and the simulation', async () => {
+test('catalog is a compact list with direct links and clear example status', async () => {
   await render('home');
-  expect(host.querySelector('.tc-upcoming').textContent).toContain('Halinów');
-  expect(host.querySelector('.tc-upcoming').textContent).toContain('Format, lista drużyn i godzina startu w przygotowaniu');
-  expect(host.querySelector('.tc-demo-entry').textContent).toContain('PLAC TESTOWY');
-  const link = [...host.querySelectorAll('.tc-archive-row a')].find(element => element.textContent === archive.name);
+  expect(host.querySelector('h1').textContent).toBe('Turnieje');
+  const links = [...host.querySelectorAll('.tc-catalog-item a')];
+  expect(links).toHaveLength(tournamentCatalog.length);
+  expect(links[0].textContent).toContain('Wkrótce');
+  expect(links[links.length - 1].textContent).toContain('Przykład');
+  expect(host.querySelector('.tc-catalog-hero')).toBeNull();
+  const link = links.find(element => element.querySelector('h2').textContent === archive.name);
   expect(link.getAttribute('href')).toBe(`${basePath}/${archive.slug}`);
 });
 
@@ -52,12 +56,12 @@ test('team and player hyperlinks stay inside the unlisted preview and open usefu
   const link = host.querySelector('.tc-group tbody a');
   expect(link.getAttribute('href')).toMatch(new RegExp(`^${basePath}/${demo.slug}/druzyna/`));
   await click(link);
-  expect(host.querySelector('.tc-profile-heading').textContent).toContain('Profil drużyny');
+  expect(host.querySelector('.tc-profile-heading').textContent).toContain('Drużyna');
   const playerLink = host.querySelector('.tc-profile-roster .tc-player-link');
   expect(playerLink.getAttribute('href')).toContain(`${basePath}/${demo.slug}/zawodnik/`);
   await click(playerLink);
-  expect(host.querySelector('.tc-profile-heading').textContent).toContain('Profil zawodnika');
-  expect(host.textContent).toContain('meczów ze zdarzeniem zawodnika');
+  expect(host.querySelector('.tc-profile-heading').textContent).toContain('Zawodnik');
+  expect(host.textContent).toContain('meczów ze zdarzeniem');
   expect(host.querySelector('[data-share]').getAttribute('href')).toBe(`${basePath}/${demo.slug}`);
 });
 
@@ -69,7 +73,7 @@ test('saving a local score updates statistics and survives a reload', async () =
   await change(host.querySelector('.tc-editor-score select'), 'finished');
   await change(host.querySelectorAll('.tc-editor-score input')[0], String(selected.homeScore + 1));
   await act(async () => Simulate.submit(host.querySelector('.tc-editor')));
-  expect(host.querySelector('[role=status]').textContent).toContain('Mecz zapisany lokalnie');
+  expect(host.querySelector('[role=status]').textContent).toContain('Zapisano mecz');
   const restored = loadTournamentDraft(demo);
   expect(restored.matches.find(match => match.id === selectedId).homeScore).toBe(selected.homeScore + 1);
   expect(getTournamentStats(restored).goals).toBe(before + 1);
@@ -91,7 +95,7 @@ test('reset requires a second explicit action and restores the original draft', 
   const original = demo.matches.find(match => match.id === matchId).homeScore;
   await change(host.querySelectorAll('.tc-editor-score input')[0], String(original + 2));
   await act(async () => Simulate.submit(host.querySelector('.tc-editor')));
-  await click(button('Przywróć przykład'));
+  await click(button('Przywróć dane'));
   expect(loadTournamentDraft(demo).matches.find(match => match.id === matchId).homeScore).toBe(original + 2);
   await click(button('Tak, przywróć dane'));
   expect(loadTournamentDraft(demo).matches.find(match => match.id === matchId).homeScore).toBe(original);
@@ -100,10 +104,10 @@ test('reset requires a second explicit action and restores the original draft', 
 test('archive remains read-only until a separate local copy is created', async () => {
   await render(`${archive.slug}/organizator`);
   expect(host.querySelector('.tc-editor')).toBeNull();
-  expect(host.querySelector('.tc-source a').getAttribute('href')).toBe(archive.sourceUrl);
+  expect(host.querySelector('.tc-organizer-notice').textContent).toBe('Zmiany w kopii zapisują się tylko na tym urządzeniu.');
   await click(button('Utwórz kopię do testów'));
   expect(host.querySelector('.tc-editor')).not.toBeNull();
-  expect(host.querySelector('.tc-local-banner').textContent).toContain('KOPIA TESTOWA');
+  expect(host.querySelector('.tc-status-badge').textContent).toBe('Kopia');
   expect(loadTournamentDraft(archive).isLocalCopy).toBe(true);
   expect(archive.isLocalCopy).toBeUndefined();
 });
@@ -162,7 +166,7 @@ test('missing historical match score is described honestly in the match profile'
   const historical = tournamentCatalog.find(item => item.slug === 'halinowcup2025');
   const final = historical.matches.find(match => match.stage === 'final');
   await render(`${historical.slug}/mecz/${final.id}`);
-  expect(host.textContent).toContain('W archiwum brakuje wyniku i szczegółowego protokołu tego meczu');
+  expect(host.textContent).toContain('Brak wyniku i protokołu');
   expect(host.textContent).not.toContain('Dostępny jest wynik meczu');
 });
 
@@ -173,4 +177,62 @@ test('champion is shown only when the source confirms the final winner', async (
   expect(host.querySelector('.tc-champion .tc-team-name').getAttribute('href')).toContain('/druzyna/');
   await act(async () => root.render(<TournamentCenter route="halinowcup2025" basePath={basePath} />));
   expect(host.querySelector('.tc-champion')).toBeNull();
+});
+
+test('group phase selection shows only its groups and survives a team-profile visit', async () => {
+  const historical = tournamentCatalog.find(item => item.slug === 'halinowcup2025');
+  const phases = [...new Set(historical.groups.map(group => group.phaseName))];
+  await render(`${historical.slug}/grupy`);
+  const selector = host.querySelector('select[aria-label="Faza grupowa"]');
+  expect(selector.value).toBe(phases[0]);
+  await change(selector, phases[1]);
+  const expected = historical.groups.filter(group => group.phaseName === phases[1]).map(group => group.name);
+  expect([...host.querySelectorAll('.tc-group-heading h3')].map(el => el.textContent)).toEqual(expected);
+  await click(host.querySelector('.tc-group tbody a'));
+  await click(button('Grupy'));
+  expect(host.querySelector('select[aria-label="Faza grupowa"]').value).toBe(phases[1]);
+  expect([...host.querySelectorAll('.tc-group-heading h3')].map(el => el.textContent)).toEqual(expected);
+});
+
+test('tournament views omit source explanations and promotional slogans', async () => {
+  await render('halinowcup2025');
+  expect(host.querySelector('.tc-local-banner')).toBeNull();
+  expect(host.querySelector('.tc-source')).toBeNull();
+  expect(host.querySelector('.tc-source-notes')).toBeNull();
+  expect(host.textContent).not.toMatch(/Tournify|import|Jeden puchar|Historia turniejów|źródł/);
+  await click(button('Drabinka'));
+  expect(host.textContent).not.toMatch(/Tournify|import|źródł/);
+});
+
+test('archival status filter uses the same missing-result label as the match card', async () => {
+  await render('halinowcup2025/mecze');
+  const status = host.querySelectorAll('.tc-filters select')[2];
+  expect(status.querySelector('option[value=scheduled]').textContent).toBe('Brak wyniku');
+  await change(status, 'scheduled');
+  expect(host.querySelectorAll('.tc-match')).toHaveLength(2);
+  expect([...host.querySelectorAll('.tc-match-status')].every(element => element.textContent === 'Brak wyniku')).toBe(true);
+});
+
+test('unknown rosters and missing team assignments are distinct from empty rosters', async () => {
+  archive.teams[0].players = [];
+  archive.unassignedPlayers = [{ id: 'unassigned-player', name: 'Jan Testowy' }];
+  await render(`${archive.slug}/druzyny`);
+  expect(host.querySelector('.tc-team-card-meta').textContent).toContain('Brak danych o kadrze');
+  expect(host.textContent).not.toContain('0 zawodników w kadrze');
+  expect(host.querySelector('.tc-unassigned h2').textContent).toBe('Drużyna nieustalona');
+  await click(host.querySelector('.tc-unassigned a'));
+  expect(host.querySelector('.tc-profile-heading p').textContent).toBe('Drużyna nieustalona');
+});
+
+test('multi-phase copies explain fixed later groups only in the organizer', async () => {
+  const text = 'Obsada kolejnych grup pozostaje bez zmian.';
+  await render('halinowcup2025/organizator');
+  expect(host.textContent).not.toContain(text);
+  await click(button('Utwórz kopię do testów'));
+  expect(host.querySelector('.tc-organizer-notice').textContent).toContain(text);
+  await click(button('Grupy'));
+  expect(host.textContent).not.toContain(text);
+  await act(async () => root.render(<TournamentCenter route={`${archive.slug}/organizator`} basePath={basePath} />));
+  await click(button('Utwórz kopię do testów'));
+  expect(host.textContent).not.toContain(text);
 });
