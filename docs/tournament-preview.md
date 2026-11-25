@@ -27,7 +27,7 @@ Archiwum można otworzyć w zakładce Organizator i utworzyć jego kopię. Zmian
 
 49 potwierdzonych powiązań fazy pucharowej aktualizuje uczestników kolejnych meczów. Zmiana uczestnika usuwa wynik i zdarzenia, które dotyczyły poprzedniej pary. Jedna niejednoznaczna obsada barażu oraz przejścia pomiędzy kolejnymi fazami grupowymi pozostają zgodne z archiwum. Ograniczenie jest opisane także na stronie.
 
-Osobny turniej demonstracyjny ma fikcyjne zdarzenia do testowania. Zapowiedź Halinowa 20 grudnia 2026 zawiera jedynie potwierdzoną datę i miejscowość, bez fikcyjnych zgłoszeń lub wyników.
+Turniej demonstracyjny usunięto z katalogu i wdrożenia. Fikcyjne dane są wyłącznie materiałem do automatycznych testów. Zapowiedź Halinowa 20 grudnia 2026 zawiera jedynie potwierdzoną datę i miejscowość, bez fikcyjnych zgłoszeń lub wyników.
 
 ## Powiadomienia
 
