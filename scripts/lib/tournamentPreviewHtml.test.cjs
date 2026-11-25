@@ -48,3 +48,15 @@ test('creates static noindex entry points for players preserved without an assig
   const routes = getTournamentPreviewRoutes([{ slug: 'archive', teams: [], unassignedPlayers: [{ id: 'orphan-1' }, { id: 'orphan-1' }] }]);
   assert.equal(routes.filter(route => route === `${config.slug}/archive/zawodnik/orphan-1`).length, 1);
 });
+
+test('new partial historical archives have direct tournament, team and confirmed-match routes', () => {
+  const archives = require('../../src/data/tournamentHistorical.json');
+  const routes = getTournamentPreviewRoutes(archives);
+  for (const tournament of archives) {
+    const base = `${config.slug}/${tournament.slug}`;
+    assert.ok(routes.includes(base));
+    assert.ok(routes.includes(`${base}/grupy`));
+    for (const team of tournament.teams) assert.ok(routes.includes(`${base}/druzyna/${team.id}`));
+    for (const match of tournament.matches) assert.ok(routes.includes(`${base}/mecz/${match.id}`));
+  }
+});

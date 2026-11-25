@@ -25,6 +25,26 @@ describe('managed tournament validation and settings', () => {
     expect(validateManagedTournament(tournament)).toEqual(tournament);
   });
 
+  test.each(['archived', 'completed'])('keeps an explicitly unknown historical date with a verified year: %s', status => {
+    const historical = { ...create(), date: null, year: 2023, isPartialArchive: true, status };
+    const before = JSON.stringify(historical);
+    expect(validateManagedTournament(historical)).toMatchObject({ date: null, year: 2023, isPartialArchive: true, status });
+    expect(updateTournamentSettings(historical, { description: 'Potwierdzono klasyfikację końcową.' }).date).toBeNull();
+    expect(JSON.stringify(historical)).toBe(before);
+  });
+
+  test.each([
+    { isPartialArchive: false }, { isPartialArchive: 'true' }, { status: 'upcoming' }, { status: 'live' },
+    { year: undefined }, { year: null }, { year: '2023' }, { year: 2023.5 }, { year: 1899 }, { year: 2101 },
+    { date: undefined }, { date: '' }, { date: '2023' }, { date: '2023-02-30' },
+  ])('does not use the historical date exception for malformed or ordinary tournaments: %j', patch => {
+    expect(() => validateManagedTournament({ ...create(), date: null, year: 2023, isPartialArchive: true, status: 'archived', ...patch })).toThrow();
+  });
+
+  test('still requires a real date when creating a new tournament', () => {
+    expect(() => createManagedTournament({ name: 'Nowy turniej', date: null, year: 2023, isPartialArchive: true })).toThrow(/datę/);
+  });
+
   test.each([
     { name: '' }, { name: 'x'.repeat(181) }, { date: '2026-02-30' }, { timezone: 'Not/AZone' }, { slug: '../admin' }, { rules: { pointsWin: -1 } },
     { rules: { pointsDraw: true } }, { rules: { tiebreakers: ['goalDifference', 'points'] } },
@@ -72,19 +92,60 @@ describe('managed tournament validation and settings', () => {
     expect(updated.groups.map(group => [group.id, group.phase, group.teamIds])).toEqual(archive.groups.map(group => [group.id, group.phase, group.teamIds]));
   });
 
-  test('validates all six live catalog entries including the curated final goal without losing data', () => {
-    expect(tournamentCatalog).toHaveLength(6);
+  test('validates all live catalog entries including partial archives and the curated final goal without losing data', () => {
+    expect(tournamentCatalog).toHaveLength(8);
     for (const entry of tournamentCatalog) {
       const tournament = validateManagedTournament(entry);
       expect(tournament.matches).toEqual(entry.matches);
       expect(tournament.awards).toEqual(entry.awards);
       expect(tournament.corrections).toEqual(entry.corrections);
       expect(tournament.championTeamId).toBe(entry.championTeamId);
+      expect(tournament.finalStandings).toEqual(entry.finalStandings);
+      expect(tournament.participantCount).toBe(entry.participantCount);
+      expect(tournament.date).toBe(entry.date);
+      expect(tournament.year).toBe(entry.year);
       if (entry.matches.length) expect(setTournamentGroups(tournament, tournament.groups).matches).toEqual(entry.matches);
     }
     const corrected = tournamentCatalog.find(entry => entry.corrections?.length);
     expect(corrected).toBeDefined();
     expect(validateManagedTournament(corrected).matches.find(match => match.stage === 'final').events.filter(event => event.type === 'goal')).toHaveLength(1);
+  });
+
+  test('historical classifications link only known teams and never claim a complete fixture list', () => {
+    const historical = tournamentCatalog.filter(entry => entry.isPartialArchive);
+    expect(historical).toHaveLength(2);
+    for (const entry of historical) {
+      const teamIds = new Set(entry.teams.map(team => team.id));
+      expect(entry.status).toBe('archived');
+      expect(entry.scheduleComplete).toBe(false);
+      expect(entry.individualStatsComplete).toBe(false);
+      expect(entry.rulesConfirmed).toBe(false);
+      expect(Number.isInteger(entry.participantCount)).toBe(true);
+      expect(entry.participantCount).toBeGreaterThanOrEqual(teamIds.size);
+      expect(new Set(entry.finalStandings.map(row => row.teamId)).size).toBe(entry.finalStandings.length);
+      expect(new Set(entry.finalStandings.map(row => row.position)).size).toBe(entry.finalStandings.length);
+      for (const row of entry.finalStandings) {
+        expect(teamIds.has(row.teamId)).toBe(true);
+        expect(Number.isInteger(row.position)).toBe(true);
+        expect(row.position).toBeGreaterThan(0);
+        expect(row.position).toBeLessThanOrEqual(entry.participantCount);
+      }
+      for (const group of entry.groups) {
+        expect(group.standingsComplete).toBe(false);
+        expect(new Set(group.reportedStandings.map(row => row.teamId)).size).toBe(group.reportedStandings.length);
+        expect(new Set(group.reportedStandings.map(row => row.position)).size).toBe(group.reportedStandings.length);
+        for (const row of group.reportedStandings) {
+          expect(group.teamIds).toContain(row.teamId);
+          expect(Number.isInteger(row.position)).toBe(true);
+          expect(row.position).toBeGreaterThan(0);
+          expect(row.position).toBeLessThanOrEqual(group.teamIds.length);
+          expect(Number.isInteger(row.points)).toBe(true);
+          expect(row.points).toBeGreaterThanOrEqual(0);
+        }
+      }
+      const final = resolveTournamentMatches(entry).find(match => match.stage === 'final');
+      if (final) expect(getMatchWinner(final)).toBe(entry.finalStandings.find(row => row.position === 1).teamId);
+    }
   });
 });
 

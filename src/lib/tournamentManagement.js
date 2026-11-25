@@ -85,7 +85,11 @@ export function validateManagedTournament(input) {
   tournament.slug = text(tournament.slug, 'adres turnieju', true, 100);
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(tournament.slug)) fail('Adres turnieju może zawierać małe litery, cyfry i myślniki.');
   tournament.name = text(tournament.name, 'nazwa turnieju', true, 180);
-  tournament.date = checkedDate(tournament.date);
+  if (tournament.date === null && tournament.isPartialArchive === true && ['archived', 'completed'].includes(tournament.status)) {
+    if (!Number.isInteger(tournament.year) || tournament.year < 1900 || tournament.year > 2100) fail('Podaj prawidłowy rok archiwalnego turnieju (1900–2100).');
+  } else {
+    tournament.date = checkedDate(tournament.date);
+  }
   tournament.location = text(tournament.location ?? '', 'miejsce turnieju', false, 250);
   tournament.description = text(tournament.description ?? '', 'opis turnieju', false, 10000);
   tournament.timezone = tournament.timezone || 'Europe/Warsaw';

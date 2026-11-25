@@ -97,3 +97,16 @@
 .tc-awards .tc-team-name { font-size: 14px; }
 .tc-editor fieldset[disabled] { opacity: .65; }
 .tc-editor-score, .tc-editor-penalties { align-items: end; }
+.tc-archive-summary { margin: 0 0 20px; color: var(--tc-muted); font-size: 11px; line-height: 1.6; }
+.tc-final-standings { margin-bottom: 24px; }
+.tc-final-standings ol { margin: 0; padding: 0; list-style: none; border: 1px solid var(--tc-line); border-radius: 6px; }
+.tc-final-standings li { display: flex; align-items: center; gap: 16px; padding: 12px 16px; }
+.tc-final-standings li + li { border-top: 1px solid var(--tc-line); }
+.tc-final-standings li > b { flex: 0 0 22px; color: var(--tc-muted); font-size: 12px; }
+.tc-final-standings .tc-team-name { font-size: 13px; }
+.tc-reported-group th:nth-child(3) { width: 46px; }
+.tc-confirmed-advance { display: block; margin: 4px 0 0 30px; font-size: 10px; color: var(--tc-muted); }
+.tc-stat-bar[hidden] { display: none; }
+.tc-bracket { grid-template-columns: repeat(var(--tc-round-count, 3), minmax(242px, 1fr)); min-width: calc(var(--tc-round-count, 3) * 270px - 28px); }
+@container(max-width:480px) { .tc-bracket { grid-template-columns: repeat(var(--tc-round-count, 3), minmax(235px, 1fr)); min-width: calc(var(--tc-round-count, 3) * 257px - 22px); } }
+@container(max-width:480px) { .tc-catalog-status { max-width: 88px; text-align: center; line-height: 1.5; } }

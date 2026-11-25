@@ -1,4 +1,4 @@
-// Emits idempotent SQL for the six curated archives/upcoming tournaments.
+// Emits idempotent SQL for the curated archives and upcoming tournaments.
 // Does not connect to a database; existing administrator changes are preserved.
 const path = require('node:path');
 const fs = require('node:fs');

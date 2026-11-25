@@ -4,7 +4,7 @@ import { act, Simulate } from 'react-dom/test-utils';
 import TournamentCenter from './TournamentCenter';
 import { tournamentCatalog } from '../data/tournamentDemo';
 import { demoTournament as demo } from '../lib/__fixtures__/tournamentDemo';
-import { getTournamentStats } from '../lib/tournamentEngine';
+import { getTournamentStats, updateTournamentMatch } from '../lib/tournamentEngine';
 
 jest.mock('../components/TournamentShareTools', () => function MockShare({ tournament, basePath }) {
   return <a data-share href={basePath + '/' + tournament.slug}>Link do turnieju</a>;
@@ -154,10 +154,9 @@ test('section links support direct URLs and leave modified clicks to the browser
   expect(host.querySelector('.tc-tabs a[aria-current=page]').textContent).toBe('Drabinka');
 });
 
-test('missing historical third-place score is described honestly in its profile', async () => {
-  const historical = tournamentCatalog.find(item => item.slug === 'halinowcup2025');
-  const match = historical.matches.find(item => item.stage === 'third');
-  await render(historical.slug + '/mecz/' + match.id);
+test('missing historical score is described honestly in its profile', async () => {
+  const match = archive.matches.find(item => item.status === 'scheduled');
+  await render(archive.slug + '/mecz/' + match.id);
   expect(host.textContent).toContain('Brak wyniku i protokołu');
 });
 
@@ -195,11 +194,13 @@ test('tournament views omit source explanations and promotional slogans', async 
 });
 
 test('archival status filter uses the same missing-result label as the match card', async () => {
-  await render('halinowcup2025/mecze');
+  const missing = archive.matches.filter(match => match.status === 'scheduled');
+  expect(missing.length).toBeGreaterThan(0);
+  await render(archive.slug + '/mecze');
   const status = host.querySelectorAll('.tc-filters select')[2];
   expect(status.querySelector('option[value=scheduled]').textContent).toBe('Brak wyniku');
   await change(status, 'scheduled');
-  expect(host.querySelectorAll('.tc-match')).toHaveLength(1);
+  expect(host.querySelectorAll('.tc-match')).toHaveLength(missing.length);
   expect([...host.querySelectorAll('.tc-match-status')].every(element => element.textContent === 'Brak wyniku')).toBe(true);
 });
 
@@ -220,4 +221,73 @@ test('round-of-16 appears before quarterfinals in the bracket and schedule filte
   expect(host.querySelector('.tc-bracket-stage h3').textContent).toContain('1/8 finału');
   await click(button('Mecze'));
   expect(host.querySelector('.tc-filters option[value=round16]').textContent).toBe('1/8 finału');
+});
+
+test('partial catalogue uses verified participant totals and sorts unknown dates by known year', async () => {
+  await render('home');
+  const items = [...host.querySelectorAll('.tc-catalog-item')];
+  const old = items.find(item => item.textContent.includes('Puchar Ligi MLPN 2023'));
+  const recent = items.find(item => item.textContent.includes('Puchar Ligi MLPN 2026'));
+  expect(old.textContent).toContain('2023 · data nieznana');
+  expect(old.textContent).toContain('12 drużyn');
+  expect(old.textContent).toContain('Archiwum częściowe');
+  expect(old.textContent).not.toMatch(/4 drużyn|0 meczów|Wkrótce/);
+  expect(recent.textContent).toContain('13 drużyn');
+  expect(recent.textContent).toContain('2 znane mecze');
+  expect(items.indexOf(old)).toBeGreaterThan(items.indexOf(recent));
+});
+
+test('historical podium remains useful without inventing a schedule or exact date', async () => {
+  await render('puchar-ligi-mlpn-2023');
+  expect(host.querySelector('.tc-status-badge').textContent).toBe('Archiwum częściowe');
+  expect(host.querySelector('.tc-title-meta').textContent).toBe('2023 · data nieznana');
+  expect(host.querySelector('.tc-champion').textContent).toContain('GREEN Team');
+  expect(host.querySelectorAll('.tc-final-standings li')).toHaveLength(4);
+  expect([...host.querySelectorAll('.tc-final-standings li .tc-team-name > span:last-child')].map(item => item.textContent)).toEqual(['GREEN Team', 'Netservis Dobczyn', 'Rebelianci', 'Joga Finito']);
+  expect(host.textContent).toContain('Uczestnicy: 12 · znane drużyny: 4');
+  expect(host.textContent).toContain('Brak danych o meczach');
+  expect(host.textContent).not.toMatch(/Turniej w przygotowaniu|Najbliższy mecz|października/);
+  await click(host.querySelector('.tc-final-standings a'));
+  expect(host.querySelector('.tc-profile-heading h2').textContent).toBe('GREEN Team');
+  expect(host.querySelector('.tc-stat-bar').hidden).toBe(true);
+  await click(button('Drużyny'));
+  expect(host.querySelector('.tc-section-heading').textContent).toContain('Znane drużyny: 4 z 12');
+  await click(button('Statystyki'));
+  expect(host.querySelector('.tc-stat-bar')).toBeNull();
+  expect(host.textContent).toContain('Brak danych o meczach');
+});
+
+test('partial group tables show reported points and leave unknown results empty', async () => {
+  await render('puchar-ligi-mlpn-2026/grupy');
+  expect(host.querySelector('.tc-section-heading h2').textContent).toBe('II faza grupowa');
+  const tables = [...host.querySelectorAll('.tc-reported-group table')];
+  expect(tables).toHaveLength(2);
+  expect(tables.map(table => [...table.querySelectorAll('tbody tr')].map(row => row.querySelector('td:last-child').textContent))).toEqual([['7', '4', '—', '—'], ['9', '6', '—', '—']]);
+  expect(host.querySelectorAll('.tc-confirmed-advance')).toHaveLength(4);
+  expect([...host.querySelectorAll('thead th')].map(item => item.textContent)).toEqual(['#', 'Drużyna', 'PKT', '#', 'Drużyna', 'PKT']);
+  expect(host.textContent).not.toContain('0:0');
+});
+
+test('partial 2026 bracket contains only confirmed games and preserves final penalties', async () => {
+  await render('puchar-ligi-mlpn-2026/drabinka');
+  expect(host.querySelectorAll('.tc-match')).toHaveLength(2);
+  expect([...host.querySelectorAll('.tc-score strong')].map(item => item.textContent)).toEqual(['2 : 4', '0 : 0']);
+  expect(host.querySelector('.tc-score small').textContent).toBe('k. 4 : 3');
+  expect(host.querySelectorAll('.tc-bracket-stage')).toHaveLength(2);
+  expect(host.querySelector('.tc-bronze')).toBeNull();
+  await click(button('Przegląd'));
+  expect(host.querySelector('.tc-champion').textContent).toContain('Rebelianci');
+  expect(host.querySelectorAll('.tc-final-standings li')).toHaveLength(2);
+  expect([...host.querySelectorAll('.tc-stat-bar b')].map(item => item.textContent)).toEqual(['13', '2', '6']);
+  expect(host.querySelector('.tc-stat-bar').textContent).toContain('goli w znanych meczach');
+  await click(button('Statystyki'));
+  expect(host.querySelector('.tc-stat-bar').textContent).toContain('znanych meczów');
+});
+
+test('a changed semifinal does not retain the archived champion when its final is unresolved', async () => {
+  const original = tournamentCatalog.find(item => item.slug === 'puchar-ligi-mlpn-2026');
+  const changed = updateTournamentMatch(original, 'puchar-ligi-2026-semifinal-1', { homeScore: 4, awayScore: 2 });
+  await render(changed.slug, { initialCatalog: [changed] });
+  expect(host.querySelector('.tc-champion')).toBeNull();
+  expect(host.querySelector('.tc-final-standings')).toBeNull();
 });
