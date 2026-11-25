@@ -1,0 +1,19 @@
+html.mlpn-tournament-navigation {
+  overflow-anchor: none;
+  scroll-behavior: auto;
+}
+
+/* Hidden horizontal overflow on an ancestor otherwise traps sticky tabs in a
+   non-scrolling container. Clip horizontal content without creating one. */
+html.mlpn-tournament-navigation,
+html.mlpn-tournament-navigation body,
+html.mlpn-tournament-navigation #root,
+html.mlpn-tournament-navigation .mlpn-shell,
+html.mlpn-tournament-navigation .mlpn-shell main {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+html.mlpn-tournament-navigation .mlpn-mobile-motion-frame--active {
+  animation: none;
+}
