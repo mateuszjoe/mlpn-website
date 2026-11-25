@@ -1,10 +1,11 @@
-import { tournamentCatalog, demoTournamentSlug } from "../data/tournamentDemo";
+import { tournamentCatalog } from "../data/tournamentDemo";
+import { demoTournament } from "./__fixtures__/tournamentDemo";
 import { getGroupStandings, resolveTournamentMatches, getTournamentStats, updateTournamentMatch, getMatchWinner } from "./tournamentEngine";
 import { loadTournamentDraft, saveTournamentDraft, resetTournamentDraft } from "./tournamentStorage";
 import archives from "../data/tournamentArchives.json";
 
 const copy = value => JSON.parse(JSON.stringify(value));
-const demo = () => copy(tournamentCatalog.find(tournament => tournament.slug === demoTournamentSlug));
+const demo = () => copy(demoTournament);
 const player = team => ({ id: `${team}-player`, name: `Zawodnik ${team}` });
 const team = id => ({ id, name: id, players: [player(id)] });
 const match = (id, homeTeamId, awayTeamId, homeScore, awayScore, extra = {}) => ({

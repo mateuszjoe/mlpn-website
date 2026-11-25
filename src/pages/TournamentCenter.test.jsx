@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { act, Simulate } from 'react-dom/test-utils';
 import TournamentCenter from './TournamentCenter';
-import { tournamentCatalog, demoTournamentSlug } from '../data/tournamentDemo';
+import { tournamentCatalog } from '../data/tournamentDemo';
+import { demoTournament as demo } from '../lib/__fixtures__/tournamentDemo';
 import { loadTournamentDraft } from '../lib/tournamentStorage';
 import { getTournamentStats } from '../lib/tournamentEngine';
 
@@ -11,7 +12,6 @@ jest.mock('../components/TournamentShareTools', () => function MockShare({ tourn
 });
 
 const basePath = '/podglad-turniejow-test-secret';
-const demo = tournamentCatalog.find(item => item.slug === demoTournamentSlug);
 let host;
 let root;
 let archive;
@@ -28,24 +28,27 @@ beforeEach(() => {
   host = document.createElement('div'); document.body.appendChild(host); root = createRoot(host);
   archive = { ...JSON.parse(JSON.stringify(demo)), id: 'archive-test', slug: 'archiwum-test', isDemo: false, isImported: true,
     name: 'Rzeczywisty turniej archiwalny', status: 'completed', sourceUrl: 'https://www.tournify.pl/live/archive-test', sourceLabel: 'Tournify' };
-  tournamentCatalog.push(archive);
+  tournamentCatalog.push(demo, archive);
 });
 afterEach(async () => {
   await act(async () => root.unmount()); host.remove(); localStorage.clear();
   const index = tournamentCatalog.indexOf(archive); if (index >= 0) tournamentCatalog.splice(index, 1);
+  const demoIndex = tournamentCatalog.indexOf(demo); if (demoIndex >= 0) tournamentCatalog.splice(demoIndex, 1);
 });
 const render = async route => act(async () => root.render(<Wrapper initialRoute={route} />));
 const button = text => [...host.querySelectorAll('button, a')].find(element => element.textContent.trim() === text);
 const click = async element => act(async () => Simulate.click(element, { button: 0 }));
 const change = async (element, value) => act(async () => Simulate.change(element, { target: { value } }));
 
-test('catalog is a compact list with direct links and clear example status', async () => {
+test('catalog is a compact list of real tournaments with direct links', async () => {
+  tournamentCatalog.splice(tournamentCatalog.indexOf(demo), 1);
   await render('home');
   expect(host.querySelector('h1').textContent).toBe('Turnieje');
   const links = [...host.querySelectorAll('.tc-catalog-item a')];
   expect(links).toHaveLength(tournamentCatalog.length);
   expect(links[0].textContent).toContain('Wkrótce');
-  expect(links[links.length - 1].textContent).toContain('Przykład');
+  expect(host.textContent).not.toContain('Turniej testowy MLPN');
+  expect(host.querySelector(`a[href*="/${demo.slug}"]`)).toBeNull();
   expect(host.querySelector('.tc-catalog-hero')).toBeNull();
   const link = links.find(element => element.querySelector('h2').textContent === archive.name);
   expect(link.getAttribute('href')).toBe(`${basePath}/${archive.slug}`);
