@@ -83,3 +83,17 @@
 .tc-content>.tc-stat-bar:first-child{margin-top:0}
 @container(max-width:720px){.tc-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:0;overflow:visible}.tc-tabs a{text-align:center;padding:11px 4px;font-size:10px}.tc-section-heading:has(.tc-phase-select){flex-direction:row;align-items:center}.tc-detail-title h1{font-size:31px}}
 @container(max-width:480px){.tc-catalog-heading{padding:18px 15px}.tc-catalog-heading h1{font-size:32px}.tc-catalog-item>a{padding:17px 15px;gap:10px;grid-template-columns:minmax(0,1fr) auto 14px}.tc-catalog-item h2{font-size:23px}.tc-catalog-meta{font-size:10px;gap:4px 12px}.tc-catalog-status{font-size:9px;padding:3px 5px}.tc-phase-select{gap:6px}.tc-phase-select select{width:110px;font-size:16px}.tc-detail-header{padding:15px}.tc-detail-title{gap:9px}.tc-detail-title h1{font-size:29px}.tc-back{padding-bottom:12px}.tc-title-meta{font-size:11px}.tc-section-heading h2{font-size:26px}}
+.tc-create-form { padding: 20px; }
+.tc-create-form fieldset { display: grid; gap: 14px; border: 1px solid var(--tc-line, #d6dfe9); border-radius: 12px; min-width: 0; padding: 18px; }
+.tc-create-form label { display: grid; gap: 5px; }
+.tc-create-form input { width: 100%; box-sizing: border-box; min-width: 0; padding: 11px; border: 1px solid #aab8c9; border-radius: 7px; color: inherit; background: transparent; }
+.tc-create-form fieldset > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.tc-reload { margin-top: 24px; }
+.tc-awards { margin: 24px 0; }
+.tc-awards > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 14px; }
+.tc-awards article { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; border: 1px solid #aebdcd55; border-radius: 12px; padding: 18px; min-width: 0; }
+.tc-awards article > span { font-size: 13px; }
+.tc-awards article > strong { font-size: 20px; }
+.tc-awards .tc-team-name { font-size: 14px; }
+.tc-editor fieldset[disabled] { opacity: .65; }
+.tc-editor-score, .tc-editor-penalties { align-items: end; }

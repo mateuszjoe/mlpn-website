@@ -27,6 +27,11 @@ const demoRoutes = require("../src/data/tournamentDemoRoutes.json");
 const archivePath = path.resolve(__dirname, "..", "src", "data", "tournamentArchives.json");
 const archives = fs.existsSync(archivePath) ? JSON.parse(fs.readFileSync(archivePath, "utf8")) : [];
 if (!Array.isArray(archives)) throw new Error("Tournament archives must be an array.");
+const corrections = require('../src/data/tournamentCorrections.json');
+for (const correction of corrections) {
+  const archive = archives.find(item => item.slug === correction.tournamentSlug);
+  if (archive) archive.unassignedPlayers = [...(archive.unassignedPlayers || []), ...(correction.players || [])];
+}
 const tournamentRoutes = getTournamentPreviewRoutes([...demoRoutes, ...archives]);
 const tournamentHtml = createTournamentPreviewHtml(fs.readFileSync(indexPath, "utf8"));
 for (const route of tournamentRoutes) {
