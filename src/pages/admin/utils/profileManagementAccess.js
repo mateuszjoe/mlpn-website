@@ -40,5 +40,6 @@ export function getProfileRoleForSave(actor, target, accessMode) {
   if (!isActiveProfileAdmin(actor)) return target?.role || "viewer";
   if (accessMode === "admin") return "admin";
   if (accessMode === "editor" && target?.role === "editor") return "editor";
+  if (accessMode === "custom" && target?.role === "player") return "player";
   return "viewer";
 }

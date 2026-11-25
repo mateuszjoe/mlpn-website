@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useId, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { Ban, Edit3, KeyRound, PauseCircle, Shield, Trash2, Undo2, UserPlus } from "lucide-react";
+import { Ban, Edit3, KeyRound, PauseCircle, Search, Shield, Trash2, Undo2, UserPlus, Users, UserRound } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -14,6 +14,8 @@ import {
 import AdminAlert from "./components/AdminAlert";
 import AdminFormField from "./components/AdminFormField";
 import AdminPermissionTree from "./components/AdminPermissionTree";
+import { countAccountGroups, filterAccountDirectory, getAccountGroup, getAccountRoleLabel } from "../../lib/accountDirectory";
+import "./AdminUsers.css";
 import {
   canChangeProfilePermission,
   canChangeProfileStatus,
@@ -77,6 +79,7 @@ function getStatusBadge(status) {
 }
 
 export default function AdminUsers({ darkMode }) {
+  const directoryId = useId();
   const { profile, can, canAny } = useAuth();
   const isAdmin = isActiveProfileAdmin(profile);
   const [users, setUsers] = useState([]);
@@ -88,6 +91,10 @@ export default function AdminUsers({ darkMode }) {
   const [originalEmail, setOriginalEmail] = useState("");
   const [form, setForm] = useState(createAccountForm);
   const [alert, setAlert] = useState({ type: null, message: null });
+  const [accountGroup, setAccountGroup] = useState("users");
+  const [formGroup, setFormGroup] = useState("users");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const canCreateUsers = isAdmin || can("users.create");
   const canDeleteUsers = isAdmin || can("users.delete");
@@ -103,6 +110,9 @@ export default function AdminUsers({ darkMode }) {
     canSuspendUsers ||
     canEditUsers ||
     canManagePermissions;
+  const accountCounts = countAccountGroups(users);
+  const visibleUsers = filterAccountDirectory(users, { group: accountGroup, query: search, status: statusFilter });
+  const groupLabel = accountGroup === "staff" ? "Obsługa MLPN" : "Użytkownicy";
   const editingUser = users.find((user) => user.id === editId) || null;
   const canEditDetails = canEditProfileDetails(profile, editingUser);
   const canEditSensitiveFields = isAdmin || (editingUser?.id !== profile?.id && canManageProfileTarget(profile, editingUser));
@@ -118,6 +128,10 @@ export default function AdminUsers({ darkMode }) {
     message.includes("Could not find the 'email' column");
 
   const loadUsers = useCallback(async () => {
+    if (!canManageAnyUsers) {
+      setUsers([]); setLoading(false);
+      return;
+    }
     setLoading(true);
 
     const { error: schemaError } = await supabase
@@ -152,7 +166,7 @@ export default function AdminUsers({ darkMode }) {
       account_status: user.account_status || "active",
     })));
     setLoading(false);
-  }, []);
+  }, [canManageAnyUsers]);
 
   useEffect(() => {
     loadUsers();
@@ -163,6 +177,12 @@ export default function AdminUsers({ darkMode }) {
     setOriginalEmail("");
     setEditId(null);
     setShowForm(false);
+  };
+
+  const changeAccountGroup = (group) => {
+    if (saving) return;
+    setAccountGroup(group);
+    resetForm();
   };
 
   const updateField = (event) => {
@@ -312,6 +332,10 @@ export default function AdminUsers({ darkMode }) {
     }
 
     const profilePayload = buildProfilePayload();
+    if (!isEditing && formGroup === "staff" && getAccountGroup(profilePayload) !== "staff") {
+      setAlert({ type: "error", message: "Wybierz zakres uprawnień dla konta obsługi MLPN." });
+      return;
+    }
     const basicFields = ["email", "first_name", "last_name", "display_name"];
     const changes = isEditing && editingUser
       ? Object.fromEntries(Object.entries(profilePayload).filter(([key]) => canEditDetails || !basicFields.includes(key)).filter(([key, value]) =>
@@ -427,6 +451,7 @@ export default function AdminUsers({ darkMode }) {
       }
 
       resetForm();
+      setAccountGroup(getAccountGroup(profilePayload));
       await loadUsers();
     } catch (error) {
       const message = error.message || "Nie udalo sie zapisac konta.";
@@ -449,6 +474,7 @@ export default function AdminUsers({ darkMode }) {
     if (!canManageProfileTarget(profile, user) && user.id !== profile?.id) return;
     setEditId(user.id);
     setOriginalEmail(user.email || "");
+    setFormGroup(getAccountGroup(user));
     setForm({
       email: user.email || "",
       first_name: user.first_name || "",
@@ -533,16 +559,16 @@ export default function AdminUsers({ darkMode }) {
   };
 
   const accessModeOptions = [
-    { value: "custom", label: "Wlasne uprawnienia" },
+    { value: "custom", label: "Użytkownik / wybrane uprawnienia" },
     ...(editingUser?.role === "editor" ? [{ value: "editor", label: "Redaktor" }] : []),
-    { value: "admin", label: "Pelny administrator" },
+    { value: "admin", label: "Pełny administrator" },
   ];
 
   const statusOptions = STATUS_OPTIONS.filter((option) => option.value === form.account_status ||
     canChangeProfileStatus(profile, editingUser, option.value));
 
   return (
-    <div className="space-y-4">
+    <div className={`mlpn-account-directory space-y-4${darkMode ? " is-dark" : ""}`}>
       <AdminAlert
         type={alert.type}
         message={alert.message}
@@ -551,24 +577,41 @@ export default function AdminUsers({ darkMode }) {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className={`text-xl font-bold ${textMain}`}>Zarzadzanie kontami</h2>
+          <h2 className={`text-xl font-bold ${textMain}`}>Zarządzanie kontami</h2>
           <p className={`text-sm ${textMuted}`}>
-            Zarzadzasz danymi logowania, statusem kont i szczegolowymi uprawnieniami do panelu.
+            Użytkownicy strony i osoby zarządzające MLPN.
           </p>
         </div>
-        {canCreateUsers && (
+        {canCreateUsers && (accountGroup === "users" || isAdmin || can("users.permissions.grant")) && (
           <button
             onClick={() => {
               resetForm();
+              setFormGroup(accountGroup);
               setShowForm(true);
             }}
-            disabled={schemaUpdateRequired}
+            disabled={schemaUpdateRequired || saving}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition-colors"
           >
-            <UserPlus size={18} /> Nowe konto
+            <UserPlus size={18} /> {accountGroup === "staff" ? "Nowe konto obsługi" : "Nowy użytkownik"}
           </button>
         )}
       </div>
+
+      {canManageAnyUsers && <div className="mlpn-account-tabs" role="tablist" aria-label="Rodzaj kont">
+        {[["users", "Użytkownicy", Users], ["staff", "Obsługa MLPN", Shield]].map(([group, label, Icon], index) =>
+          <button key={group} type="button" role="tab" id={`${directoryId}-${group}`}
+            aria-selected={accountGroup === group} aria-controls={`${directoryId}-accounts`}
+            tabIndex={accountGroup === group ? 0 : -1} disabled={saving}
+            onClick={() => changeAccountGroup(group)} onKeyDown={event => {
+              if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+              event.preventDefault();
+              const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? 1 : 1 - index;
+              changeAccountGroup(nextIndex === 0 ? "users" : "staff");
+              event.currentTarget.parentElement.querySelectorAll('button')[nextIndex]?.focus();
+            }}>
+            <Icon size={20} aria-hidden="true" /><span>{label} ({accountCounts[group]})</span>
+          </button>)}
+      </div>}
 
       {schemaUpdateRequired && (
         <div className={`rounded-2xl border px-4 py-4 ${darkMode ? "border-yellow-500/30 bg-yellow-500/10" : "border-yellow-200 bg-yellow-50"}`}>
@@ -582,10 +625,11 @@ export default function AdminUsers({ darkMode }) {
         </div>
       )}
 
-      {showForm && (
+      {showForm && canManageAnyUsers && (
         <div className={`rounded-2xl border p-5 ${card}`}>
           <h3 className={`text-lg font-semibold mb-4 ${textMain}`}>
-            {editId ? "Edytuj konto" : "Utworz nowe konto"}
+            {editId ? (formGroup === "staff" ? "Edytuj konto obsługi" : "Edytuj użytkownika")
+              : (formGroup === "staff" ? "Nowe konto obsługi MLPN" : "Nowy użytkownik")}
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -630,16 +674,6 @@ export default function AdminUsers({ darkMode }) {
                 required
                 darkMode={darkMode}
                 placeholder="Kowalski"
-              />
-              <AdminFormField
-                label="Tryb dostepu"
-                name="access_mode"
-                type="select"
-                value={form.access_mode}
-                onChange={updateField}
-                options={accessModeOptions}
-                darkMode={darkMode}
-                disabled={!isAdmin}
               />
               <AdminFormField
                 label="Status konta"
@@ -720,9 +754,18 @@ export default function AdminUsers({ darkMode }) {
               </div>
             )}
 
-            <div className="space-y-3">
+            <details key={`${editId || "new"}-${formGroup}`} className="mlpn-account-access space-y-3" open={formGroup === "staff" ? true : undefined}>
+              <summary>Dostęp do panelu MLPN</summary>
+              <p className={`text-xs ${textMuted}`}>{
+                getAccountGroup({ role: form.access_mode, permissions: form.permissions }) === "staff"
+                  ? "To konto należy do obsługi MLPN."
+                  : "Konto użytkownika — bez dostępu do panelu."
+              }</p>
+              <AdminFormField label="Tryb dostępu" name="access_mode" type="select" value={form.access_mode}
+                onChange={updateField} options={accessModeOptions} darkMode={darkMode} disabled={!isAdmin}
+                includeEmptyOption={false} />
               <div>
-                <h4 className={`text-sm font-semibold ${textMain}`}>Zakres uprawnien</h4>
+                <h4 className={`text-sm font-semibold ${textMain}`}>Zakres uprawnień</h4>
                 <p className={`text-xs mt-1 ${textMuted}`}>
                   Zaznaczenie glownej kategorii wlacza wszystkie czynnosci w tej galezi. Mozesz tez rozwinac kategorie i wybrac tylko pojedyncze akcje.
                 </p>
@@ -740,7 +783,7 @@ export default function AdminUsers({ darkMode }) {
                   Pelny administrator ma dostep do wszystkiego, wiec drzewo uprawnien jest tylko informacyjne.
                 </p>
               )}
-            </div>
+            </details>
 
             <div className="flex flex-wrap gap-3">
               <button
@@ -762,45 +805,64 @@ export default function AdminUsers({ darkMode }) {
         </div>
       )}
 
-      <div className={`rounded-2xl border ${card}`}>
+      <div id={`${directoryId}-accounts`} role={canManageAnyUsers ? "tabpanel" : undefined}
+        aria-labelledby={canManageAnyUsers ? `${directoryId}-${accountGroup}` : undefined}
+        className={`rounded-2xl border ${card}`}>
         <div className={`px-5 py-3 border-b ${darkMode ? "border-white/10" : "border-gray-200"}`}>
-          <h3 className={`font-semibold ${textMain}`}>Konta ({users.length})</h3>
+          <h3 className={`font-semibold ${textMain}`}>{groupLabel}</h3>
+          {canManageAnyUsers && <p className={`text-xs mt-1 ${textMuted}`}>{
+            accountGroup === "staff" ? "Administratorzy, organizatorzy, dyżurni i pozostałe osoby z uprawnieniami do panelu."
+              : "Konta użytkowników strony i gier MLPN bez uprawnień do panelu."
+          }</p>}
         </div>
+
+        {canManageAnyUsers && <div className="mlpn-account-filters">
+          <label className="mlpn-account-search"><span><Search size={16} aria-hidden="true" />Szukaj konta</span>
+            <input type="search" aria-label="Szukaj konta" placeholder="Imię, nazwisko lub e-mail" value={search}
+              onChange={event => setSearch(event.target.value)} /></label>
+          <label><span>Status kont</span><select aria-label="Status kont" value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
+            <option value="all">Wszystkie statusy</option>{STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select></label>
+          {!loading && <p role="status">Wyświetlono {visibleUsers.length} z {accountCounts[accountGroup]}</p>}
+        </div>}
 
         {!canManageAnyUsers ? (
           <div className={`p-8 text-center ${textMuted}`}>Brak uprawnien do przegladania i edycji kont.</div>
         ) : loading ? (
           <div className={`p-8 text-center ${textMuted}`}>Ladowanie...</div>
-        ) : users.length === 0 ? (
-          <div className={`p-8 text-center ${textMuted}`}>Brak kont.</div>
+        ) : visibleUsers.length === 0 ? (
+          <div className={`p-8 text-center ${textMuted}`}>{
+            search || statusFilter !== "all" ? "Brak kont pasujących do filtrów."
+              : accountGroup === "staff" ? "Brak kont obsługi MLPN." : "Brak kont użytkowników."
+          }</div>
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-white/10">
-            {users.map((user) => {
+            {visibleUsers.map((user) => {
               const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
               const status = user.account_status || "active";
 
               return (
-                <div key={user.id} className="flex flex-wrap items-center gap-3 px-5 py-4">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                <div key={user.id} data-account-id={user.id} className="mlpn-account-row px-5 py-4">
+                  <div className="mlpn-account-identity">
+                    <div className={`mlpn-account-avatar w-10 h-10 rounded-full flex items-center justify-center ${
                       user.role === "admin"
                         ? "bg-red-500/20 text-red-400"
                         : "bg-blue-500/20 text-blue-400"
                     }`}>
-                      <Shield size={16} />
+                      {getAccountGroup(user) === "staff" ? <Shield size={16} aria-hidden="true" /> : <UserRound size={16} aria-hidden="true" />}
                     </div>
 
                     <div className="min-w-0">
-                      <div className={`text-sm font-semibold truncate ${textMain}`}>
+                      <div className={`text-sm font-semibold mlpn-account-name ${textMain}`}>
                         {user.display_name || fullName || user.email || user.id.slice(0, 8)}
                       </div>
-                      <div className={`text-xs truncate ${textMuted}`}>
+                      <div className={`text-xs mlpn-account-contact ${textMuted}`}>
                         {user.email || "brak maila"}{fullName ? ` | ${fullName}` : ""}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="mlpn-account-actions flex flex-wrap items-center gap-2">
                     <span className={`px-2 py-0.5 rounded-lg text-xs font-medium border ${getStatusBadge(status)}`}>
                       {status === "banned" ? "Zbanowane" : status === "suspended" ? "Zawieszone" : "Aktywne"}
                     </span>
@@ -809,7 +871,7 @@ export default function AdminUsers({ darkMode }) {
                         ? "bg-red-500/20 text-red-400 border-red-500/30"
                         : "bg-slate-500/15 text-slate-500 border-slate-400/30"
                     }`}>
-                      {user.role === "admin" ? "Pelny admin" : user.role === "editor" ? "Redaktor" : "Wlasne uprawnienia"}
+                      {getAccountRoleLabel(user)}
                     </span>
 
                     {status === "active" && canChangeProfileStatus(profile, user, "suspended") && (

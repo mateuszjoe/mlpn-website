@@ -63,3 +63,16 @@ test("active admins retain management access and legacy editor roles are preserv
   expect(canChangeProfilePermission(blocked, viewer, "schedule.edit", true)).toBe(false);
   expect(canChangeProfileStatus(blocked, viewer, "banned")).toBe(false);
 });
+
+test("editing ordinary player details preserves the player role without changing viewer or staff behavior", () => {
+  const admin = actor({}, { role: "admin" });
+  const player = { ...viewer, role: "player" };
+  expect(getProfileRoleForSave(admin, player, "custom")).toBe("player");
+  expect(getProfileRoleForSave(admin, viewer, "custom")).toBe("viewer");
+  expect(getProfileRoleForSave(admin, null, "custom")).toBe("viewer");
+  expect(getProfileRoleForSave(admin, { ...viewer, role: "editor" }, "custom")).toBe("viewer");
+  expect(getProfileRoleForSave(admin, player, "admin")).toBe("admin");
+  const manager = actor({ users: { edit: true } });
+  expect(getProfileRoleForSave(manager, player, "custom")).toBe("player");
+  expect(getProfileRoleForSave(manager, player, "admin")).toBe("player");
+});
