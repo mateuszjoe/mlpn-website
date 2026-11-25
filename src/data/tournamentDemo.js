@@ -1,4 +1,5 @@
 import tournamentArchives from './tournamentArchives.json';
+import tournamentHistorical from './tournamentHistorical.json';
 import { applyTournamentCorrections } from './tournamentCorrections';
 
 export const tournamentCatalog = [
@@ -6,4 +7,5 @@ export const tournamentCatalog = [
     description: "Gramy 20 grudnia w Halinowie. Uczestników, format, dokładne miejsce i godziny opublikujemy po potwierdzeniu.",
     rules: {}, groups: [], teams: [], matches: [], rulesConfirmed: false },
   ...tournamentArchives.map(applyTournamentCorrections),
+  ...tournamentHistorical,
 ];

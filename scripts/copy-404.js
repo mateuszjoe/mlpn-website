@@ -32,7 +32,9 @@ for (const correction of corrections) {
   const archive = archives.find(item => item.slug === correction.tournamentSlug);
   if (archive) archive.unassignedPlayers = [...(archive.unassignedPlayers || []), ...(correction.players || [])];
 }
-const tournamentRoutes = getTournamentPreviewRoutes([...demoRoutes, ...archives]);
+const historical = require("../src/data/tournamentHistorical.json");
+if (!Array.isArray(historical)) throw new Error("Historical tournaments must be an array.");
+const tournamentRoutes = getTournamentPreviewRoutes([...demoRoutes, ...archives, ...historical]);
 const tournamentHtml = createTournamentPreviewHtml(fs.readFileSync(indexPath, "utf8"));
 for (const route of tournamentRoutes) {
   const directory = path.join(buildDir, route);

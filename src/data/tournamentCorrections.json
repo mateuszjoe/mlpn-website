@@ -8,9 +8,18 @@
       "label": "Zrzut ekranu przekazany przez organizatora"
     },
     "teams": [
-      { "id": "ztTh3SJ3gtam0zXHkG3f", "name": "Pędzący Kombajn" },
-      { "id": "QVLSfLPwlYa7lw0V5ndk", "name": "Offside" },
-      { "id": "0z3ZCklhsSQSRQEJfyvU", "name": "Kick Sport" }
+      {
+        "id": "ztTh3SJ3gtam0zXHkG3f",
+        "name": "Pędzący Kombajn"
+      },
+      {
+        "id": "QVLSfLPwlYa7lw0V5ndk",
+        "name": "Offside"
+      },
+      {
+        "id": "0z3ZCklhsSQSRQEJfyvU",
+        "name": "Kick Sport"
+      }
     ],
     "players": [
       {
@@ -33,7 +42,15 @@
           "playerId": "curated-halinowcup2025-konrad-sliwka",
           "minute": 2
         }
-      ]
+      ],
+      "expected": {
+        "homeScore": null,
+        "awayScore": null,
+        "homePenalties": null,
+        "awayPenalties": null,
+        "reportedWinnerId": null,
+        "status": "scheduled"
+      }
     },
     "awards": [
       {
@@ -52,6 +69,381 @@
         "playerId": "curated-halinowcup2025-konrad-sliwka",
         "value": 10,
         "unit": "goli"
+      }
+    ]
+  },
+  {
+    "id": "halinowcup2024-facebook-2026-11-25",
+    "tournamentSlug": "halinowcup2024",
+    "source": {
+      "type": "official-facebook-post",
+      "url": "https://www.facebook.com/mlpnsulejowek/posts/pfbid02zPwjxU1MxNDtc2AXWb4W8tPJGh7JHmVemLB7isY1htZBxa7vU486hJBYXdqdp8T2l",
+      "publishedAt": "2024-12-21",
+      "verifiedAt": "2026-11-25",
+      "label": "Relacja MLPN z Halinów Cup 2024"
+    },
+    "teams": [
+      {
+        "id": "mkG7VLbw1iznL1UgakAq",
+        "name": "Hazardziści"
+      },
+      {
+        "id": "x1MiWqSavbTUpPaE4X7c",
+        "name": "Bałagan"
+      },
+      {
+        "id": "UpYp1Bp010CuMRJPtF3z",
+        "name": "Wesoła"
+      }
+    ],
+    "players": [
+      {
+        "id": "curated-halinowcup2024-michal-durajczyk",
+        "name": "Michał Durajczyk",
+        "teamId": "mkG7VLbw1iznL1UgakAq"
+      },
+      {
+        "id": "curated-halinowcup2024-przemek-rasinski",
+        "name": "Przemek Rasiński",
+        "teamId": "mkG7VLbw1iznL1UgakAq"
+      },
+      {
+        "id": "curated-halinowcup2024-przemek-niski",
+        "name": "Przemek Niski",
+        "teamId": "mkG7VLbw1iznL1UgakAq"
+      },
+      {
+        "id": "curated-halinowcup2024-piotrek-szymanski",
+        "name": "Piotrek Szymański",
+        "teamId": "mkG7VLbw1iznL1UgakAq"
+      },
+      {
+        "id": "curated-halinowcup2024-mateusz-misztalewski",
+        "name": "Mateusz Misztalewski",
+        "teamId": "mkG7VLbw1iznL1UgakAq"
+      },
+      {
+        "id": "curated-halinowcup2024-wojtek-lisak",
+        "name": "Wojtek Lisak",
+        "teamId": "mkG7VLbw1iznL1UgakAq"
+      },
+      {
+        "id": "curated-halinowcup2024-janek-greloch",
+        "name": "Janek Greloch",
+        "teamId": "mkG7VLbw1iznL1UgakAq"
+      },
+      {
+        "id": "curated-halinowcup2024-eryk-kopczynski",
+        "name": "Eryk Kopczynski",
+        "teamId": "mkG7VLbw1iznL1UgakAq"
+      },
+      {
+        "id": "curated-halinowcup2024-damian-bak",
+        "name": "Damian Bąk",
+        "teamId": "x1MiWqSavbTUpPaE4X7c"
+      }
+    ],
+    "matches": [
+      {
+        "id": "Igw3v3F4lg0JtgCKrcDc",
+        "stage": "semifinal",
+        "homeTeamId": "mkG7VLbw1iznL1UgakAq",
+        "awayTeamId": "UpYp1Bp010CuMRJPtF3z",
+        "expected": {
+          "homeScore": 1,
+          "awayScore": 1,
+          "homePenalties": null,
+          "awayPenalties": null,
+          "reportedWinnerId": "mkG7VLbw1iznL1UgakAq",
+          "status": "finished"
+        },
+        "homePenalties": 3,
+        "awayPenalties": 1,
+        "outcomeNote": null
+      },
+      {
+        "id": "Alpjfp6jNTKM3N5FKP9u",
+        "stage": "final",
+        "homeTeamId": "mkG7VLbw1iznL1UgakAq",
+        "awayTeamId": "x1MiWqSavbTUpPaE4X7c",
+        "expected": {
+          "homeScore": 0,
+          "awayScore": 0,
+          "homePenalties": null,
+          "awayPenalties": null,
+          "reportedWinnerId": "mkG7VLbw1iznL1UgakAq",
+          "status": "finished"
+        },
+        "homePenalties": 8,
+        "awayPenalties": 7,
+        "outcomeNote": null
+      }
+    ],
+    "awards": [
+      {
+        "id": "halinowcup2024-goalkeeper",
+        "type": "goalkeeper",
+        "label": "Najlepszy bramkarz",
+        "playerName": "Wojtek Lisak",
+        "teamId": "mkG7VLbw1iznL1UgakAq",
+        "playerId": "curated-halinowcup2024-wojtek-lisak"
+      },
+      {
+        "id": "halinowcup2024-scorer",
+        "type": "scorer",
+        "label": "Król strzelców",
+        "playerName": "Przemek Niski",
+        "teamId": "mkG7VLbw1iznL1UgakAq",
+        "playerId": "curated-halinowcup2024-przemek-niski"
+      },
+      {
+        "id": "halinowcup2024-mvp",
+        "type": "mvp",
+        "label": "Najlepszy zawodnik",
+        "playerName": "Damian Bąk",
+        "teamId": "x1MiWqSavbTUpPaE4X7c",
+        "playerId": "curated-halinowcup2024-damian-bak"
+      }
+    ]
+  },
+  {
+    "id": "halinowcup2025-facebook-2026-11-25",
+    "tournamentSlug": "halinowcup2025",
+    "source": {
+      "type": "official-facebook-post-photo",
+      "url": "https://www.facebook.com/photo/?fbid=1435909525206126&set=pcb.1435909735206105",
+      "publishedAt": "2025-12-22",
+      "verifiedAt": "2026-11-25",
+      "label": "Zdjęcie w poście MLPN z relacją Halinów Cup 2025"
+    },
+    "teams": [
+      {
+        "id": "ztTh3SJ3gtam0zXHkG3f",
+        "name": "Pędzący Kombajn"
+      },
+      {
+        "id": "0z3ZCklhsSQSRQEJfyvU",
+        "name": "Kick Sport"
+      },
+      {
+        "id": "jxUIzxN8QMkwwqXqA5hQ",
+        "name": "Wesoła"
+      }
+    ],
+    "players": [
+      {
+        "id": "curated-halinowcup2025-lukasz-trabinski",
+        "name": "Łukasz Trąbiński",
+        "teamId": "0z3ZCklhsSQSRQEJfyvU"
+      },
+      {
+        "id": "curated-halinowcup2025-jan-dzwigala",
+        "name": "Jan Dźwigała",
+        "teamId": "ztTh3SJ3gtam0zXHkG3f"
+      },
+      {
+        "id": "curated-halinowcup2025-damian-krzyzewski",
+        "name": "Damian Krzyżewski",
+        "teamId": "ztTh3SJ3gtam0zXHkG3f"
+      }
+    ],
+    "matches": [
+      {
+        "id": "ZlNwJRbEwzLjL2oFqpyD",
+        "stage": "semifinal",
+        "homeTeamId": "ztTh3SJ3gtam0zXHkG3f",
+        "awayTeamId": "jxUIzxN8QMkwwqXqA5hQ",
+        "expected": {
+          "homeScore": 1,
+          "awayScore": 1,
+          "homePenalties": null,
+          "awayPenalties": null,
+          "reportedWinnerId": "ztTh3SJ3gtam0zXHkG3f",
+          "status": "finished"
+        },
+        "homePenalties": 4,
+        "awayPenalties": 3,
+        "outcomeNote": null
+      },
+      {
+        "id": "1ClvDqWEsgGXkIWO5TmN",
+        "stage": "third",
+        "homeTeamId": "jxUIzxN8QMkwwqXqA5hQ",
+        "awayTeamId": "0z3ZCklhsSQSRQEJfyvU",
+        "expected": {
+          "homeScore": null,
+          "awayScore": null,
+          "homePenalties": null,
+          "awayPenalties": null,
+          "reportedWinnerId": null,
+          "status": "scheduled"
+        },
+        "homeScore": 0,
+        "awayScore": 0,
+        "homePenalties": null,
+        "awayPenalties": null,
+        "reportedWinnerId": "0z3ZCklhsSQSRQEJfyvU",
+        "status": "finished",
+        "sourceScoreMissing": false,
+        "outcomeNote": "Kick Sport wygrał w rzutach karnych."
+      }
+    ],
+    "awards": [
+      {
+        "id": "halinowcup2025-goalkeeper",
+        "type": "goalkeeper",
+        "label": "Najlepszy bramkarz",
+        "playerName": "Łukasz Trąbiński",
+        "teamId": "0z3ZCklhsSQSRQEJfyvU",
+        "playerId": "curated-halinowcup2025-lukasz-trabinski"
+      },
+      {
+        "id": "halinowcup2025-mvp",
+        "type": "mvp",
+        "label": "Najlepszy zawodnik",
+        "playerName": "Jan Dźwigała",
+        "teamId": "ztTh3SJ3gtam0zXHkG3f",
+        "playerId": "curated-halinowcup2025-jan-dzwigala"
+      },
+      {
+        "id": "halinowcup2025-final-mvp",
+        "type": "final-mvp",
+        "label": "MVP finału",
+        "playerName": "Damian Krzyżewski",
+        "teamId": "ztTh3SJ3gtam0zXHkG3f",
+        "playerId": "curated-halinowcup2025-damian-krzyzewski"
+      }
+    ]
+  },
+  {
+    "id": "mlpntest-facebook-2026-11-25",
+    "tournamentSlug": "mlpntest",
+    "source": {
+      "type": "official-facebook-post",
+      "url": "https://www.facebook.com/mlpnsulejowek/posts/pfbid0mwCBTfi9H5ZuTqc7CdhFQHxjNbowkH6op1PChfPAkegABae72sJKfHpMAeWEbX5Ll",
+      "publishedAt": "2024-03-19",
+      "verifiedAt": "2026-11-25",
+      "label": "Relacja MLPN z Pucharu Burmistrza 2024"
+    },
+    "teams": [
+      {
+        "id": "ozXcaFja2i1GlPUCAU7R",
+        "name": "Młode Wilki"
+      },
+      {
+        "id": "kCVU7rEHdhRjDaPJ6lFX",
+        "name": "Netservis Dobczyn"
+      }
+    ],
+    "date": {
+      "expected": "2024-03-24",
+      "value": "2024-03-17"
+    },
+    "players": [
+      {
+        "id": "WZIggc7N5YKBVmSVlfnL",
+        "name": "Karol Bienias",
+        "teamId": "ozXcaFja2i1GlPUCAU7R",
+        "expectedName": "K. Bienias"
+      },
+      {
+        "id": "fIbF9gvNVBsm0lLU9xbh",
+        "name": "Dawid Kubuj",
+        "teamId": "kCVU7rEHdhRjDaPJ6lFX",
+        "expectedName": "D. Kubuj"
+      }
+    ],
+    "awards": [
+      {
+        "id": "mlpntest-mvp",
+        "type": "mvp",
+        "label": "Najlepszy zawodnik",
+        "playerName": "Karol Bienias",
+        "teamId": "ozXcaFja2i1GlPUCAU7R",
+        "playerId": "WZIggc7N5YKBVmSVlfnL"
+      },
+      {
+        "id": "mlpntest-goalkeeper",
+        "type": "goalkeeper",
+        "label": "Najlepszy bramkarz",
+        "playerName": "Dawid Kubuj",
+        "teamId": "kCVU7rEHdhRjDaPJ6lFX",
+        "playerId": "fIbF9gvNVBsm0lLU9xbh"
+      },
+      {
+        "id": "mlpntest-scorer",
+        "type": "scorer",
+        "label": "Król strzelców",
+        "playerName": "Piotr Goljasz",
+        "teamId": "ozXcaFja2i1GlPUCAU7R"
+      }
+    ]
+  },
+  {
+    "id": "pucharsulejowka2025-facebook-2026-11-25",
+    "tournamentSlug": "pucharsulejowka2025",
+    "source": {
+      "type": "official-facebook-post",
+      "url": "https://www.facebook.com/reel/751975661155661",
+      "publishedAt": "2025-09-01",
+      "verifiedAt": "2026-11-25",
+      "label": "Relacja MLPN z Pucharu Sulejówka 2025"
+    },
+    "teams": [
+      {
+        "id": "iEjhPiB9YQdVKg4jhnec",
+        "name": "Zielona i Przyjaciele"
+      },
+      {
+        "id": "6Q1L6Vztmq6DoULOUOre",
+        "name": "FC Kebavita"
+      },
+      {
+        "id": "ioN8nGhMX4psSSSlXfXs",
+        "name": "FC Łowcy Warszawa"
+      }
+    ],
+    "players": [
+      {
+        "id": "curated-pucharsulejowka2025-yevhenii-kost",
+        "name": "Yevhenii Kost",
+        "teamId": "ioN8nGhMX4psSSSlXfXs"
+      },
+      {
+        "id": "curated-pucharsulejowka2025-filip-hryniewicz",
+        "name": "Filip Hryniewicz",
+        "teamId": "iEjhPiB9YQdVKg4jhnec"
+      },
+      {
+        "id": "curated-pucharsulejowka2025-przemek-zelazowski",
+        "name": "Przemek Żelazowski",
+        "teamId": "6Q1L6Vztmq6DoULOUOre"
+      }
+    ],
+    "awards": [
+      {
+        "id": "pucharsulejowka2025-goalkeeper",
+        "type": "goalkeeper",
+        "label": "Najlepszy bramkarz",
+        "playerName": "Yevhenii Kost",
+        "teamId": "ioN8nGhMX4psSSSlXfXs",
+        "playerId": "curated-pucharsulejowka2025-yevhenii-kost"
+      },
+      {
+        "id": "pucharsulejowka2025-scorer",
+        "type": "scorer",
+        "label": "Król strzelców",
+        "playerName": "Filip Hryniewicz",
+        "teamId": "iEjhPiB9YQdVKg4jhnec",
+        "playerId": "curated-pucharsulejowka2025-filip-hryniewicz"
+      },
+      {
+        "id": "pucharsulejowka2025-mvp",
+        "type": "mvp",
+        "label": "Najlepszy zawodnik",
+        "playerName": "Przemek Żelazowski",
+        "teamId": "6Q1L6Vztmq6DoULOUOre",
+        "playerId": "curated-pucharsulejowka2025-przemek-zelazowski"
       }
     ]
   }

@@ -106,7 +106,7 @@ describe('live center access and updates', () => {
   test('shows static data on load failure and does not permit saving until reload succeeds', async () => {
     publicSupabase.from.mockReturnValue(chain({ data: null, error: { message: 'private outage details' } }));
     await render();
-    expect(mockCenterProps.catalog).toHaveLength(6);
+    expect(mockCenterProps.catalog).toHaveLength(8);
     expect(mockCenterProps.catalog.every(tournament => tournament._revision === 0)).toBe(true);
     expect(mockCenterProps.storageReady).toBe(false);
     expect(mockCenterProps.loadError).not.toContain('private outage');

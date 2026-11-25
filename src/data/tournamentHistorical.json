@@ -1,0 +1,139 @@
+[
+  {
+    "id": "puchar-ligi-mlpn-2023",
+    "slug": "puchar-ligi-mlpn-2023",
+    "name": "Puchar Ligi MLPN 2023",
+    "date": null,
+    "year": 2023,
+    "location": "",
+    "status": "archived",
+    "isDemo": false,
+    "isImported": true,
+    "isPartialArchive": true,
+    "participantCount": 12,
+    "scheduleComplete": false,
+    "individualStatsComplete": false,
+    "rulesConfirmed": false,
+    "rules": {},
+    "sourceLabel": "MLPN — Facebook",
+    "sourceUrl": "https://www.facebook.com/mlpnsulejowek/posts/pfbid02PT1F6x8HR5N5KsNPsQQa8CqovmcoMseGxi2bJHfSMBTpZAPe6MMa9LWmpoPzKngpl",
+    "sourcePublishedAt": "2023-10-30",
+    "sourceNotes": [
+      "Oficjalna relacja potwierdza 12 uczestników i pierwsze cztery miejsca. Nie podaje pełnej listy drużyn, wyników ani daty turnieju.",
+      "30 października 2023 to data publikacji relacji, a nie potwierdzona data turnieju."
+    ],
+    "teams": [
+      { "id": "green-team", "name": "GREEN Team", "shortName": "GREEN Team", "logo": "", "players": [] },
+      { "id": "netservis-dobczyn", "name": "Netservis Dobczyn", "shortName": "Netservis", "logo": "", "players": [] },
+      { "id": "rebelianci", "name": "Rebelianci", "shortName": "Rebelianci", "logo": "", "players": [] },
+      { "id": "joga-finito", "name": "Joga Finito", "shortName": "Joga Finito", "logo": "", "players": [] }
+    ],
+    "finalStandings": [
+      { "position": 1, "teamId": "green-team" },
+      { "position": 2, "teamId": "netservis-dobczyn" },
+      { "position": 3, "teamId": "rebelianci" },
+      { "position": 4, "teamId": "joga-finito" }
+    ],
+    "groups": [],
+    "matches": []
+  },
+  {
+    "id": "puchar-ligi-mlpn-2026",
+    "slug": "puchar-ligi-mlpn-2026",
+    "name": "Puchar Ligi MLPN 2026",
+    "date": "2026-03-22",
+    "year": 2026,
+    "location": "Boisko SP 2 w Sulejówku",
+    "status": "archived",
+    "isDemo": false,
+    "isImported": true,
+    "isPartialArchive": true,
+    "participantCount": 13,
+    "scheduleComplete": false,
+    "individualStatsComplete": false,
+    "rulesConfirmed": false,
+    "rules": {},
+    "sourceLabel": "MLPN — Facebook",
+    "sourceUrl": "https://www.facebook.com/mlpnsulejowek/posts/pfbid0JXRRyS2tzycMXrtJwhbT13QDnJTaWMUXyht9YnjFc5iKWWa1aDP9sCroxRRksvGsl",
+    "sourcePublishedAt": "2026-03-23",
+    "sourceNotes": [
+      "Data 22 marca 2026 wynika z określenia „wczoraj” w oficjalnej relacji opublikowanej 23 marca.",
+      "Turniej rozpoczęło 13 drużyn w trzech grupach. Znany jest skład ośmiu zespołów drugiej fazy, ale brak pełnego terminarza i wyników grupowych.",
+      "Relacja podaje awans DTZ Mińsk Mazowiecki z drugiego półfinału bez wyniku i bez dosłownego wskazania przeciwnika. Nie utworzono niepotwierdzonego meczu.",
+      "Brak wyniku meczu o trzecie miejsce i wyróżnień indywidualnych."
+    ],
+    "teams": [
+      { "id": "1-warszawska-brygada-pancerna", "name": "1 Warszawska Brygada Pancerna", "shortName": "1 WBPanc", "logo": "", "players": [] },
+      { "id": "al-mar-wolomin", "name": "Al Mar Wołomin", "shortName": "Al Mar", "logo": "", "players": [] },
+      { "id": "elo-melo", "name": "Elo Melo", "shortName": "Elo Melo", "logo": "", "players": [] },
+      { "id": "sportowe-zakapiory", "name": "Sportowe Zakapiory", "shortName": "Zakapiory", "logo": "", "players": [] },
+      { "id": "green-team", "name": "Green Team", "shortName": "Green Team", "logo": "", "players": [] },
+      { "id": "rebelianci", "name": "Rebelianci", "shortName": "Rebelianci", "logo": "", "players": [] },
+      { "id": "huragan-poreby-nowe", "name": "Huragan Poręby Nowe", "shortName": "Huragan", "logo": "", "players": [] },
+      { "id": "dtz-minsk-mazowiecki", "name": "DTZ Mińsk Mazowiecki", "shortName": "DTZ", "logo": "", "players": [] }
+    ],
+    "finalStandings": [
+      { "position": 1, "teamId": "rebelianci" },
+      { "position": 2, "teamId": "dtz-minsk-mazowiecki" }
+    ],
+    "groups": [
+      {
+        "id": "phase-2-group-1",
+        "name": "Grupa 1",
+        "phase": 1,
+        "phaseName": "II faza grupowa",
+        "teamIds": ["1-warszawska-brygada-pancerna", "al-mar-wolomin", "elo-melo", "sportowe-zakapiory"],
+        "advancing": 2,
+        "standingsComplete": false,
+        "reportedStandings": [
+          { "teamId": "1-warszawska-brygada-pancerna", "position": 1, "points": 7, "qualified": true },
+          { "teamId": "elo-melo", "position": 2, "points": 4, "qualified": true }
+        ]
+      },
+      {
+        "id": "phase-2-group-2",
+        "name": "Grupa 2",
+        "phase": 1,
+        "phaseName": "II faza grupowa",
+        "teamIds": ["green-team", "rebelianci", "huragan-poreby-nowe", "dtz-minsk-mazowiecki"],
+        "advancing": 2,
+        "standingsComplete": false,
+        "reportedStandings": [
+          { "teamId": "dtz-minsk-mazowiecki", "position": 1, "points": 9, "qualified": true },
+          { "teamId": "rebelianci", "position": 2, "points": 6, "qualified": true }
+        ]
+      }
+    ],
+    "matches": [
+      {
+        "id": "puchar-ligi-2026-semifinal-1",
+        "stage": "semifinal",
+        "homeTeamId": "1-warszawska-brygada-pancerna",
+        "awayTeamId": "rebelianci",
+        "homeScore": 2,
+        "awayScore": 4,
+        "homePenalties": null,
+        "awayPenalties": null,
+        "status": "finished",
+        "kickoff": null,
+        "court": "",
+        "events": []
+      },
+      {
+        "id": "puchar-ligi-2026-final",
+        "stage": "final",
+        "homeTeamId": "rebelianci",
+        "awayTeamId": "dtz-minsk-mazowiecki",
+        "homeSource": { "type": "winner", "matchId": "puchar-ligi-2026-semifinal-1" },
+        "homeScore": 0,
+        "awayScore": 0,
+        "homePenalties": 4,
+        "awayPenalties": 3,
+        "status": "finished",
+        "kickoff": null,
+        "court": "",
+        "events": []
+      }
+    ]
+  }
+]

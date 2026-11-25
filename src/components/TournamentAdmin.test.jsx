@@ -31,6 +31,22 @@ const submit = async form => act(async () => Simulate.submit(form));
 const button = (text, scope = host) => [...scope.querySelectorAll('button')].find(element => element.textContent.trim() === text);
 const field = (text, scope = host) => [...scope.querySelectorAll('label')].find(element => [...element.childNodes].filter(node => node.nodeType === 3).map(node => node.textContent).join('').trim() === text)?.querySelector('input,select');
 
+test('editing a partial archive preserves an unknown date without inventing a day', async () => {
+  const initial = { ...create(), status: 'archived', date: null, year: 2023, isPartialArchive: true };
+  const save = jest.fn(async () => {});
+  await render(initial, save);
+  expect(field('Data (jeśli znana)').required).toBe(false);
+  await change(field('Nazwa turnieju'), 'Puchar Ligi MLPN 2023');
+  await submit(host.querySelector('form'));
+  expect(save).toHaveBeenCalledTimes(1);
+  expect(latest).toMatchObject({ name: 'Puchar Ligi MLPN 2023', date: null, year: 2023, status: 'archived' });
+});
+
+test('ordinary tournaments still require a complete date in settings', async () => {
+  await render(create());
+  expect(field('Data').required).toBe(true);
+});
+
 test('save waits for persistence, prevents duplicate requests and preserves a rejected draft', async () => {
   let reject;
   const save = jest.fn(() => new Promise((resolve, rejectPromise) => { reject = rejectPromise; }));
