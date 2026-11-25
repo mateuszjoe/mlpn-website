@@ -1,0 +1,58 @@
+[
+  {
+    "id": "halinowcup2025-final-awards-2026-11-25",
+    "tournamentSlug": "halinowcup2025",
+    "source": {
+      "type": "user-supplied-screenshot",
+      "receivedAt": "2026-11-25",
+      "label": "Zrzut ekranu przekazany przez organizatora"
+    },
+    "teams": [
+      { "id": "ztTh3SJ3gtam0zXHkG3f", "name": "Pędzący Kombajn" },
+      { "id": "QVLSfLPwlYa7lw0V5ndk", "name": "Offside" },
+      { "id": "0z3ZCklhsSQSRQEJfyvU", "name": "Kick Sport" }
+    ],
+    "players": [
+      {
+        "id": "curated-halinowcup2025-konrad-sliwka",
+        "name": "Konrad Śliwka",
+        "teamId": "ztTh3SJ3gtam0zXHkG3f"
+      }
+    ],
+    "final": {
+      "id": "Zzp89iiTI286WCrLYH0C",
+      "homeTeamId": "ztTh3SJ3gtam0zXHkG3f",
+      "awayTeamId": "QVLSfLPwlYa7lw0V5ndk",
+      "homeScore": 2,
+      "awayScore": 0,
+      "events": [
+        {
+          "id": "curated-halinowcup2025-final-goal-1",
+          "type": "goal",
+          "teamId": "ztTh3SJ3gtam0zXHkG3f",
+          "playerId": "curated-halinowcup2025-konrad-sliwka",
+          "minute": 2
+        }
+      ]
+    },
+    "awards": [
+      {
+        "id": "halinowcup2025-goalkeeper",
+        "type": "goalkeeper",
+        "label": "Najlepszy bramkarz",
+        "playerName": "Łukasz Trąbiński",
+        "teamId": "0z3ZCklhsSQSRQEJfyvU"
+      },
+      {
+        "id": "halinowcup2025-scorer",
+        "type": "scorer",
+        "label": "Król strzelców",
+        "playerName": "Konrad Śliwka",
+        "teamId": "ztTh3SJ3gtam0zXHkG3f",
+        "playerId": "curated-halinowcup2025-konrad-sliwka",
+        "value": 10,
+        "unit": "goli"
+      }
+    ]
+  }
+]

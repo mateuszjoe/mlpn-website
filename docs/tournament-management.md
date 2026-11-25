@@ -1,0 +1,13 @@
+# Tournament management
+
+The existing unlisted tournament route now loads shared `tournament_documents` records. Public navigation and the legacy `tournaments` tables are unchanged. Viewing still requires only the existing direct link; editing requires an active MLPN administrator in `profiles` (the client and database both enforce this).
+
+Each save validates and replaces one complete tournament with a compare-and-swap revision. A stale save fails instead of overwriting another organizer. Every accepted revision is appended to administrator-only history. There is no browser-local match copy in the production editor. Failed requests preserve the form; the explicit reload action discards unsaved form values after confirmation. Public views refresh every 20 seconds and on focus; automatic refresh is disabled while editing.
+
+The organizer supports teams/rosters, group membership, points and ranking criteria, single/double round-robin schedules, 2/4/8/16-team knockout rounds, bronze matches, kickoff/court edits, results, penalties, goals, assists and cards. Round-robin pairing and generated schedules avoid simultaneous court/team use. Started schedules, groups and ranking rules cannot be regenerated. Changing a qualifier that invalidates a recorded later result requires confirmation. Imported later group phases retain their recorded membership; the original multi-phase tournament is not regenerated.
+
+Seed the six existing tournaments only with `node scripts/exportTournamentSeed.cjs` (optionally pass a slug). This emits SQL for review/execution and does not connect or overwrite existing rows. The deployment already seeded all six documents at revision 1. Raw Tournify exports are never shipped. `tournamentCorrections.json` records the organizer-supplied Halinów 2025 final and awards; it does not invent the unknown second scorer or bronze score.
+
+Validation: 803 Jest checks, 16 Node checks, browser admin flow at 320/390/1280 px, navigation at 320/390/1440 px, and `supabase/tests/tournament_management.sql`. The SQL suite uses a transaction ending in rollback, covers authorization, stale revisions, 19 invalid documents, and acceptance of every existing archive. Browser administrative writes use an isolated API stub, not production records.
+
+GitHub Pages serves static noindex entry points for known archives and profiles. Newly created tournament/player/match paths work through the existing SPA fallback; until a future static build includes them, direct requests can return HTTP 404 before the application renders. They are not added to public menus or sitemaps. This is unlisted access, not confidential read access.

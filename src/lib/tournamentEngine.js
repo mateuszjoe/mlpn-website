@@ -1,4 +1,4 @@
-const scoreIsValid = value => typeof value === "number" && Number.isInteger(value) && value >= 0;
+const scoreIsValid = value => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 999;
 const scored = match => scoreIsValid(match.homeScore) && scoreIsValid(match.awayScore);
 const counts = match => ["finished", "live"].includes(match.status) && scored(match);
 const teamName = (tournament, id) => tournament.teams?.find(team => team.id === id)?.name || id || "";
@@ -10,7 +10,7 @@ function addResult(row, own, other, rules) {
   row.goalDifference = row.goalsFor - row.goalsAgainst;
   if (own > other) { row.won += 1; row.points += rules.pointsWin ?? 3; }
   else if (own === other) { row.drawn += 1; row.points += rules.pointsDraw ?? 1; }
-  else row.lost += 1;
+  else { row.lost += 1; row.points += rules.pointsLoss ?? 0; }
 }
 
 const emptyRow = teamId => ({ teamId, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, live: false });
@@ -76,9 +76,11 @@ function groupIsComplete(tournament, groupId) {
   if (!group || group.teamIds.length < 2) return false;
   const matches = (tournament.matches || []).filter(match => match.stage === "group" && match.groupId === groupId);
   if (!matches.length || matches.some(match => match.status !== "finished" || !scored(match))) return false;
-  const pairs = new Set(matches.filter(match => group.teamIds.includes(match.homeTeamId) && group.teamIds.includes(match.awayTeamId) && match.homeTeamId !== match.awayTeamId)
-    .map(match => [match.homeTeamId, match.awayTeamId].sort().join("|")));
-  return pairs.size === group.teamIds.length * (group.teamIds.length - 1) / 2;
+  const pairs = new Map();
+  matches.filter(match => group.teamIds.includes(match.homeTeamId) && group.teamIds.includes(match.awayTeamId) && match.homeTeamId !== match.awayTeamId)
+    .forEach(match => { const pair = [match.homeTeamId, match.awayTeamId].sort().join("|"); pairs.set(pair, (pairs.get(pair) || 0) + 1); });
+  const encounters = Number(group.numEncounters) || 1;
+  return pairs.size === group.teamIds.length * (group.teamIds.length - 1) / 2 && [...pairs.values()].every(count => count === encounters);
 }
 
 export function getMatchWinner(match) {

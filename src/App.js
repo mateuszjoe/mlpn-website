@@ -54,7 +54,7 @@ import {
 } from "./services/supabaseQueries";
 
 const MLPNBookPage = React.lazy(() => import("./pages/MLPNBookPage"));
-const TournamentCenter = React.lazy(() => import("./pages/TournamentCenter"));
+const TournamentCenter = React.lazy(() => import("./components/TournamentLiveCenter"));
 
 /* =========================================
    DRUŻYNY (legacy - dane teraz z Supabase)
