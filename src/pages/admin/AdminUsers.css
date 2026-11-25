@@ -1,0 +1,34 @@
+.mlpn-account-directory { min-width: 0; }
+.mlpn-account-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 6px; background: #e7edf6; border: 1px solid #d4dfee; border-radius: 14px; }
+.mlpn-account-tabs button { display: flex; gap: 10px; align-items: center; justify-content: center; min-height: 50px; padding: 12px 16px; border: 1px solid transparent; border-radius: 10px; color: #50617b; font: inherit; font-size: 14px; font-weight: 700; }
+.mlpn-account-tabs button[aria-selected="true"] { background: #fff; color: #1f3453; border-color: #c3d1e4; box-shadow: 0 2px 5px #1731570a; }
+.mlpn-account-tabs button:focus-visible,.mlpn-account-filters :is(input,select):focus-visible,.mlpn-account-access summary:focus-visible { outline: 3px solid #bc8c2c; outline-offset: 3px; }
+.mlpn-account-filters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 220px); gap: 12px 16px; padding: 18px 20px; border-bottom: 1px solid #e5e7eb; }
+.mlpn-account-filters label { display: grid; min-width: 0; gap: 7px; color: #596981; font-size: 12px; font-weight: 600; }
+.mlpn-account-filters label > span { display: flex; align-items: center; gap: 7px; }
+.mlpn-account-filters :is(input,select) { width: 100%; min-width: 0; min-height: 44px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 9px; color: #1f3453; background: #fff; font: inherit; }
+.mlpn-account-filters > p { grid-column: 1 / -1; margin: 0; font-size: 12px; color: #64748b; }
+.mlpn-account-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.mlpn-account-identity { display: flex; flex: 1 1 280px; align-items: center; gap: 12px; min-width: 0; }
+.mlpn-account-avatar { flex-shrink: 0; }
+.mlpn-account-name,.mlpn-account-contact { overflow-wrap: anywhere; }
+.mlpn-account-actions { min-width: 0; max-width: 100%; }
+.mlpn-account-actions button { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; }
+.mlpn-account-access { padding: 16px; border: 1px solid #dbe3ef; border-radius: 12px; }
+.mlpn-account-access summary { cursor: pointer; font-size: 14px; font-weight: 700; color: #253b5a; }
+.mlpn-account-directory.is-dark .mlpn-account-tabs { background: #172234; border-color: #34445b; }
+.mlpn-account-directory.is-dark .mlpn-account-tabs button { color: #bcc7d7; }
+.mlpn-account-directory.is-dark .mlpn-account-tabs button[aria-selected="true"] { background: #293c57; color: #fff; border-color: #60738e; }
+.mlpn-account-directory.is-dark .mlpn-account-filters { border-color: #ffffff1a; }
+.mlpn-account-directory.is-dark .mlpn-account-filters :is(input,select) { background: #1a263a; color: #fff; border-color: #40516a; }
+.mlpn-account-directory.is-dark .mlpn-account-filters :is(label,p) { color: #b2c0d2; }
+.mlpn-account-directory.is-dark .mlpn-account-access { border-color: #ffffff26; }
+.mlpn-account-directory.is-dark .mlpn-account-access summary { color: #dce7f7; }
+@media(max-width:600px) {
+  .mlpn-account-tabs button { gap: 6px; padding: 10px 7px; font-size: 12px; }
+  .mlpn-account-tabs svg { width: 17px; flex-shrink: 0; }
+  .mlpn-account-filters { grid-template-columns: minmax(0,1fr); padding: 14px; }
+  .mlpn-account-row { padding: 16px 14px; }
+  .mlpn-account-actions { width: 100%; }
+  .mlpn-account-actions button { min-width: 44px; min-height: 44px; }
+}
