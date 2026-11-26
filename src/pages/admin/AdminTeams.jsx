@@ -24,6 +24,8 @@ export default function AdminTeams({ darkMode }) {
   const [showForm, setShowForm] = useState(false);
   const [hideInactiveTeams, setHideInactiveTeams] = useState(false);
   const [showLogoCreator, setShowLogoCreator] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [editId, setEditId] = useState(null);
   const [dangerTarget, setDangerTarget] = useState(null);
   const [showMergePicker, setShowMergePicker] = useState(false);
@@ -43,7 +45,7 @@ export default function AdminTeams({ darkMode }) {
   const [merging, setMerging] = useState(false);
   const [showDeactivate, setShowDeactivate] = useState(null);
   const [form, setForm] = useState({
-    name: "", short_name: "", abbreviation: "", logo_url: "",
+    name: "", short_name: "", abbreviation: "", logo_url: "", team_photo_url: "",
     founded_year: "", home_venue: "Narutowicza 10, 05-071 Sulejówek",
     description: "", district: "", is_active: true,
   });
@@ -368,11 +370,13 @@ export default function AdminTeams({ darkMode }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (photoUploading || logoUploading) return;
     const payload = {
       name: form.name.trim(),
       short_name: form.short_name.trim() || null,
       abbreviation: form.abbreviation.trim().toUpperCase(),
       logo_url: form.logo_url || null,
+      team_photo_url: form.team_photo_url || null,
       founded_year: form.founded_year ? parseInt(form.founded_year) : null,
       home_venue: form.home_venue || null,
       description: form.description || null,
@@ -401,7 +405,7 @@ export default function AdminTeams({ darkMode }) {
 
   const resetForm = () => {
     setForm({
-      name: "", short_name: "", abbreviation: "", logo_url: "",
+      name: "", short_name: "", abbreviation: "", logo_url: "", team_photo_url: "",
       founded_year: "", home_venue: "Narutowicza 10, 05-071 Sulejówek",
       description: "", district: "", is_active: true,
     });
@@ -413,6 +417,7 @@ export default function AdminTeams({ darkMode }) {
       short_name: team.short_name || "",
       abbreviation: team.abbreviation || "",
       logo_url: team.logo_url || "",
+      team_photo_url: team.team_photo_url || "",
       founded_year: team.founded_year || "",
       home_venue: team.home_venue || "",
       description: team.description || "",
@@ -1052,7 +1057,7 @@ export default function AdminTeams({ darkMode }) {
         </div>
       </AdminModal>
 
-      <AdminModal isOpen={showForm} onClose={() => setShowForm(false)} title={editId ? "Edytuj drużynę" : "Nowa drużyna"} darkMode={darkMode} wide>
+      <AdminModal isOpen={showForm} onClose={() => { if (!photoUploading && !logoUploading) setShowForm(false); }} title={editId ? "Edytuj drużynę" : "Nowa drużyna"} darkMode={darkMode} wide>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <AdminFormField label="Nazwa" name="name" value={form.name} onChange={handleChange} required darkMode={darkMode} placeholder="np. Starszaki" />
@@ -1067,9 +1072,25 @@ export default function AdminTeams({ darkMode }) {
           <AdminFormField label="Opis" name="description" type="textarea" value={form.description} onChange={handleChange} darkMode={darkMode} />
           <AdminImageUpload
             bucket="team-logos"
+            folder="team-photos"
+            currentUrl={form.team_photo_url}
+            onUpload={(url) => setForm(f => ({ ...f, team_photo_url: url }))}
+            onRemove={() => setForm(f => ({ ...f, team_photo_url: "" }))}
+            onUploadingChange={setPhotoUploading}
+            darkMode={darkMode}
+            label="Zdjęcie drużyny"
+            previewClassName="w-36 h-24"
+            maxFileSizeMB={8}
+            convertToWebp
+            webpMaxSide={1920}
+            helperText="Zdjęcie grupowe widoczne na stronie drużyny. Maks. 8 MB. Po wybraniu, zmianie lub usunięciu zdjęcia zapisz formularz."
+          />
+          <AdminImageUpload
+            bucket="team-logos"
             folder="logos"
             currentUrl={form.logo_url}
             onUpload={(url) => setForm(f => ({ ...f, logo_url: url }))}
+            onUploadingChange={setLogoUploading}
             darkMode={darkMode}
             label="Logo drużyny"
             maxFileSizeMB={8}
@@ -1111,9 +1132,9 @@ export default function AdminTeams({ darkMode }) {
           </div>
           <AdminFormField label="Aktywna" name="is_active" type="checkbox" value={form.is_active} onChange={handleChange} darkMode={darkMode} />
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowForm(false)} className={`px-4 py-2 rounded-xl text-sm ${textMuted} hover:bg-white/5`}>Anuluj</button>
-            <button type="submit" className="px-4 py-2 rounded-xl bg-yellow-500 text-black font-medium text-sm hover:bg-yellow-400">
-              {editId ? "Zapisz" : "Dodaj drużynę"}
+            <button type="button" onClick={() => setShowForm(false)} disabled={photoUploading || logoUploading} className={`px-4 py-2 rounded-xl text-sm ${textMuted} hover:bg-white/5 disabled:opacity-50`}>Anuluj</button>
+            <button type="submit" disabled={photoUploading || logoUploading} className="px-4 py-2 rounded-xl bg-yellow-500 text-black font-medium text-sm hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed">
+              {photoUploading || logoUploading ? "Przesyłanie pliku..." : editId ? "Zapisz" : "Dodaj drużynę"}
             </button>
           </div>
         </form>
