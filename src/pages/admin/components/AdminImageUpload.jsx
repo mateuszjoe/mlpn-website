@@ -86,6 +86,8 @@ export default function AdminImageUpload({
   folder,
   currentUrl,
   onUpload,
+  onRemove,
+  onUploadingChange,
   darkMode,
   label = "Zdjęcie",
   maxFileSizeMB = 2,
@@ -93,6 +95,7 @@ export default function AdminImageUpload({
   webpMaxSide = 1024,
   helperText = "",
   fallbackToDataUrl = false,
+  previewClassName = "w-16 h-16",
 }) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentUrl);
@@ -110,6 +113,7 @@ export default function AdminImageUpload({
     if (!file) return;
 
     setUploading(true);
+    onUploadingChange?.(true);
     setError(null);
     setNotice(null);
 
@@ -164,6 +168,7 @@ export default function AdminImageUpload({
       setError(uploadError.message || "Nie udalo sie przeslac pliku.");
     } finally {
       setUploading(false);
+      onUploadingChange?.(false);
       e.target.value = "";
     }
   };
@@ -171,19 +176,34 @@ export default function AdminImageUpload({
   return (
     <div className="space-y-2">
       <label className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{label}</label>
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         {preview ? (
-          <img src={preview} alt="" className="w-16 h-16 object-contain rounded-xl bg-white/5 border border-white/10" />
+          <img src={preview} alt={label} className={`${previewClassName} object-contain rounded-xl bg-white/5 border border-white/10`} />
         ) : (
-          <div className={`w-16 h-16 rounded-xl border ${borderColor} flex items-center justify-center`}>
+          <div className={`${previewClassName} rounded-xl border ${borderColor} flex items-center justify-center`}>
             <Image size={24} className="text-gray-500" />
           </div>
         )}
         <label className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${borderColor} cursor-pointer hover:bg-white/5 transition-colors text-sm ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
           <Upload size={16} />
           {uploading ? "Przesyłanie..." : "Wybierz plik"}
-          <input type="file" accept="image/*" onChange={handleUpload} className="hidden" disabled={uploading} />
+          <input type="file" accept="image/*" aria-label={label} onChange={handleUpload} className="hidden" disabled={uploading} />
         </label>
+        {preview && onRemove && (
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => {
+              setPreview("");
+              setError(null);
+              setNotice(null);
+              onRemove();
+            }}
+            className="text-sm text-red-500 hover:underline disabled:opacity-50"
+          >
+            Usuń zdjęcie
+          </button>
+        )}
       </div>
       {helperText && <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{helperText}</p>}
       {notice && <p className="text-xs text-yellow-400">{notice}</p>}
